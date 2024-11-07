@@ -1,0 +1,263 @@
+* {
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #F8F8F8;
+    color: #333;
+}
+
+h1,
+h2,
+th {
+    letter-spacing: 0.05em;
+}
+
+h1{
+    font-size: 1.3em;
+}
+
+h2 {
+    font-weight: 300;
+}
+
+table {
+    width: 100%;
+}
+
+thead {
+    background: #EEE;
+    color: #444;
+}
+
+tbody tr:nth-child(even) {
+    background: #F8F8F8;
+}
+
+th,
+td {
+    padding: 5px 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th:last-child, td:last-child {
+    width: 1%;
+    white-space: nowrap;
+}
+
+td a {
+    margin-right: 1rem;
+    color: var(--link-color);
+    text-decoration: none;
+    transition: 0.5s all;
+    line-height: 0.2;
+    user-select: none;
+}
+
+tbody tr:hover {
+    background-color: #F8F8F8;
+}
+
+.container {
+    padding: 30px 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    width:100%;
+    max-width: unset;
+    box-shadow: 0px 5px 15px 0px rgba(0, 0, 0, 0.1);
+}
+
+.container .empty{
+    height: 350px;
+    text-align: center;
+    padding-top: 50px;
+}
+
+.btn {
+    text-decoration: none;
+    color: #fff;
+    /* Changing text color to White */
+    background-color: var(--button-background-color);
+    border-radius: 20px;
+    padding: 3px 15px;
+    transition: 0.5s;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    white-space: nowrap;
+}
+
+.btn.cancel{
+    color: #444;
+    background-color: #eee;
+}
+
+.btn:hover {
+    background-color: var(--button-hover);
+}
+
+.table-header > * {
+    margin-bottom: 15px;
+}
+
+.table-header h2{
+    font-size: 0.8em;
+}
+
+.table-header .controls {
+    display: flex;
+}
+
+.table-header .controls .btn {
+    min-height: 22px;
+    font-size: 0.8em;
+}
+
+.table-header .controls .search {
+    width:100%;
+    margin-right: 10px;
+    position: relative;
+}
+
+.table-header .controls .search input{
+    position: relative;
+}
+
+.table-header .controls .search::before {
+    content: "";
+    background-image: url("../../public/search.png");
+    background-size: 17px;
+    position: absolute;
+    top: 6px;
+    left: 7px;
+    width: 20px;
+    height: 20px;
+    opacity: 0.25;
+    z-index: 2;
+    background-repeat: no-repeat;
+}
+
+.table-header .controls .search input[type="text"] {
+    padding: 2px 15px 2px 28px;
+    border-radius: 25px;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+.tabs{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+.tabs a {
+    background-color: #EEE;
+    color: #444;
+    padding: 10px 20px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    text-decoration: none;
+    transition: 0.5s all;
+    margin-right: 1rem;
+}
+
+.pagination ul {
+    display: flex;
+    padding: 8px 0;
+    margin: 0.1em 0;
+    justify-content: center;
+}
+
+/* .pagination ul li {
+    margin:0 2px;
+    font-size: 0.9em;
+}
+
+.pagination li.selected a{
+    background-color: #ccc;
+} */
+
+.pagination ul li.previous a, .pagination ul li.next a {
+    padding: 7px 6px 7px 8px;
+    line-height: 20px;
+    font-size: 0.6em;
+}
+
+.pagination a,
+.tabs a,
+.search button {
+    background-color: #EEE;
+    color: #444;
+    padding: 7px;
+    border-radius: 27px;
+    text-decoration: none;
+    transition: 0.5s all;
+    white-space: nowrap;
+    overflow: hidden;
+    min-width: 35px;
+    display: inline-block;
+    text-align: center;
+    user-select: none;
+}
+
+.tabs {
+    float: left;
+}
+
+.tabs a {
+    padding: 10px 20px;
+    text-decoration: none;
+    transition: 0.5s all;
+}
+
+.tabs a.active {
+    background-color: #DDD;
+    color: #444;
+}
+
+.tabs a:hover {
+    background-color: #DDD;
+}
+
+.pagination a:hover,
+.tabs a:hover,
+.search button:hover {
+    background-color: #DDD;
+}
+
+.dialog {
+    position: fixed;
+    z-index: 1;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.dialog-content {
+    background: #fff;
+    margin: auto;
+    padding: 20px;
+    border-radius: 4px;
+    max-width: 500px;
+}
+
+.dialog-content > *{
+    margin-bottom: 15px;
+}
+
+.dialog-content .dialog-buttons{
+    margin-bottom: 0;
+    text-align: right;
+}
+
+.dialog-content .dialog-buttons > *{
+    margin-left:10px;
+}

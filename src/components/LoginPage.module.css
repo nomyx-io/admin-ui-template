@@ -1,0 +1,13 @@
+.btnContainer button{
+    background: black !important;
+}
+
+.logoContainer{
+    background-position: center;
+    background-size: cover;
+}
+
+.logoContainer img{
+    position: relative;
+    top: -19px;
+}

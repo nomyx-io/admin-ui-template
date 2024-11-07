@@ -1,0 +1,16 @@
+.cardField{
+    width: 100%;
+    background: transparent;
+    text-align: right;
+}
+
+.cardField:focus-visible {
+    border: 0;
+    outline: 0;
+}
+
+.cardFieldLabel{
+    min-width: 150px;
+    text-align: left;
+}
+
