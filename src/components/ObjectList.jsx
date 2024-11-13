@@ -1,15 +1,14 @@
 import "./ObjectList.css";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+
 import ReactPaginate from "react-paginate";
+
 import { getValue, recursiveSearch } from "../utils";
 
-export const ConfirmationDialog = ({ title, message, onConfirm, onCancel }) => {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-
+export const ConfirmationDialog = ({ message, onConfirm, onCancel }) => {
   const handleConfirm = (event) => {
-    onConfirm({ event, name, description });
+    onConfirm({ event });
   };
 
   const handleCancel = (event) => {
@@ -90,7 +89,7 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
     let pageData = filteredData.slice(itemOffset, endOffset);
     setPageData(pageData);
     setPageCount(Math.ceil(filteredData.length / pageSize));
-  }, [itemOffset, pageSize, showDialog, data, filteredData]);
+  }, [itemOffset, pageSize, showDialog, data, filteredData, searchText]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -106,9 +105,14 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
         <div className="tabs">
           {tabs.map((tab) => {
             return (
-              <a key={tab.id} href="#" className={tab.id === activeTab ? "active" : ""} onClick={() => handleTabClick(tab)}>
+              <button
+                key={tab.id}
+                className={tab.id === activeTab ? "active" : ""}
+                onClick={() => handleTabClick(tab)}
+                style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}
+              >
                 {tab.name}
-              </a>
+              </button>
             );
           })}
         </div>
@@ -178,13 +182,13 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                   <td key={"actions" + record.id}>
                     {actions.map((action) => {
                       return (
-                        <a
+                        <button
                           key={record.id + "-action-" + action.name}
-                          href="#"
                           onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
+                          style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }} // Style it like a link
                         >
                           {action.label}
-                        </a>
+                        </button>
                       );
                     })}
                   </td>
@@ -195,7 +199,7 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
         </tbody>
       </table>
 
-      {pageData.length == 0 && isLoading && (
+      {pageData.length === 0 && isLoading && (
         <div className="empty">
           {/* A simple loading timout to be replaced by more robust Loading notifications*/}
           <p>Loading {title}...</p>
@@ -224,72 +228,3 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
 };
 
 export default ObjectList;
-
-// example usage:
-
-// const tabs = [
-//     { id: "all", name: "All" },
-//     { id: "active", name: "Active" },
-//     { id: "inactive", name: "Inactive" },
-// ];
-
-// const columns = [
-//     "Name",
-//     "Description",
-//     "Status",
-// ];
-
-// const actions = [
-//     "edit",
-//     "delete",
-// ];
-
-// const globalActions = [
-//     "create",
-// ];
-
-// const search = true;
-
-// const children = [
-//     {
-//         name: "Object 1",
-//         description: "This is object 1",
-//         status: "active",
-//         tabs: ["all", "active"],
-//     },
-//     {
-//         name: "Object 2",
-//         description: "This is object 2",
-//         status: "inactive",
-//         tabs: ["all", "inactive"],
-//     },
-//     {
-//         name: "Object 3",
-//         description: "This is object 3",
-//         status: "active",
-//         tabs: ["all", "active"],
-//     },
-//     {
-//         name: "Object 4",
-//         description: "This is object 4",
-//         status: "inactive",
-//         tabs: ["all", "inactive"],
-//     },
-//     {
-//         name: "Object 5",
-//         description: "This is object 5",
-//         status: "active",
-//         tabs: ["all", "active"],
-//     },
-//     ]
-//
-// <ObjectList
-//     title="Objects"
-//     tabs={tabs}
-//     columns={columns}
-//     actions={actions}
-//     globalActions={globalActions}
-//     search={search}
-//     children={children}
-//     onAction={handleAction}
-// />

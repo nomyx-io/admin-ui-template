@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Link } from "react-router-dom";
 import { useAccount, useDisconnect } from "wagmi";
+
 import NomyxLogo from "../images/nomyx.svg";
 import "@rainbow-me/rainbowkit/styles.css";
 

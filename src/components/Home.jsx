@@ -1,8 +1,10 @@
 import React from "react";
-import { Row, Col, Card, Typography, Button } from "antd";
+
+import { Row, Col, Card, Typography } from "antd";
+
 import NomyxLogo from "../Assets/nomyx.svg";
 
-const { Title, Paragraph } = Typography;
+const { Paragraph } = Typography;
 
 const Home = () => {
   return (

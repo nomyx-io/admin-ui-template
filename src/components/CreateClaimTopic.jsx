@@ -1,7 +1,9 @@
+import React, { useCallback, useEffect } from "react";
+
 import { Breadcrumb, Button, Input } from "antd";
-import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+
 import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 
 function CreateClaimTopic({ service }) {
@@ -9,7 +11,7 @@ function CreateClaimTopic({ service }) {
   const [displayName, setDisplayName] = React.useState("");
   const [hiddenName, setHiddenName] = React.useState(0);
 
-  const getNextClaimTopicId = async () => {
+  const getNextClaimTopicId = useCallback(async () => {
     try {
       const nextClaimTopicId = await service.getNextClaimTopicId();
       setHiddenName(nextClaimTopicId);
@@ -18,7 +20,7 @@ function CreateClaimTopic({ service }) {
       console.error("Failed to get next claim topic ID:", e);
       toast.error("Failed to load initial data");
     }
-  };
+  }, [service]);
 
   function validateClaimTopic(displayName) {
     if (displayName.trim() === "") {
@@ -72,7 +74,7 @@ function CreateClaimTopic({ service }) {
 
   useEffect(() => {
     getNextClaimTopicId();
-  }, [service]);
+  }, [service, getNextClaimTopicId]);
 
   return (
     <div>

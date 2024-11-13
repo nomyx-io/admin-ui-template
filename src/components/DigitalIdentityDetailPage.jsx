@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
+
 import { ClaimCard } from "./ClaimCard";
 
 function DigitalIdentityDetailView({ service }) {
@@ -11,11 +12,11 @@ function DigitalIdentityDetailView({ service }) {
 
   const navigate = useNavigate();
 
-  const getIdentity = async () => {
+  const getIdentity = useCallback(async () => {
     if (!service.getDigitalIdentity) return;
     let result = await service.getDigitalIdentity(identityId);
     setIdentity(result);
-  };
+  }, [service, identityId]);
 
   const backBtn = () => {
     navigate("/identities");
@@ -23,7 +24,7 @@ function DigitalIdentityDetailView({ service }) {
 
   useEffect(() => {
     getIdentity();
-  }, []);
+  }, [getIdentity]);
 
   return (
     <div>

@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+
 import { useNavigate } from "react-router-dom";
-import { NomyxAction } from "../utils/Constants";
+
 import ObjectList from "./ObjectList";
+import { NomyxAction } from "../utils/Constants";
 
 const ClaimTopicsPage = ({ service }) => {
   const navigate = useNavigate();
@@ -27,11 +29,15 @@ const ClaimTopicsPage = ({ service }) => {
         let id = record.id;
         navigate("/topics/" + id);
         break;
+      default:
+        console.log("Unknown action: " + action);
     }
   };
 
   useEffect(() => {
     (async function () {
+      console.log("Getting Claim Topics");
+      console.log(service);
       const result = await service.getClaimTopics();
       setClaimTopics(result);
     })();

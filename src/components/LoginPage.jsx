@@ -1,19 +1,17 @@
 import { useContext, useEffect, useState, useRef } from "react";
+
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { RoleContext } from "../App";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAccount, useDisconnect } from "wagmi";
 import { Spin } from "antd";
+import { useNavigate } from "react-router-dom";
+import { useAccount, useDisconnect } from "wagmi";
 
 import styles from "./LoginPage.module.css";
-
+import { RoleContext } from "../App";
 import bg from "../images/BlackPaintBackground.webp";
 import logo from "../images/NomyxLogoWhite.svg";
 
 export default function Login({ forceLogout, service, onConnect, onDisconnect }) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
   const { role } = useContext(RoleContext);
   const { disconnect } = useDisconnect();
   const { isConnected } = useAccount();
@@ -41,7 +39,9 @@ export default function Login({ forceLogout, service, onConnect, onDisconnect })
   }, [forceLogout, disconnect]);
 
   const handleConnect = ({ address, connector, isReconnected }) => {
+    console.log("Connected with address: ", address);
     if (!isConnectTriggered) {
+      console.log("Connect Triggered");
       setIsConnectTriggered(true);
       onConnect(address, connector);
     }

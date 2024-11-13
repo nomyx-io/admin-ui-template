@@ -1,8 +1,10 @@
-import { Breadcrumb, Button, Input } from "antd";
 import React, { useEffect } from "react";
+
+import { Breadcrumb, Button, Input } from "antd";
 import { Transfer } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+
 import { isAlphanumericAndSpace, isEthereumAddress, awaitTimeout } from "../utils";
 
 function CreateTrustedIssuer({ service }) {
@@ -23,9 +25,6 @@ function CreateTrustedIssuer({ service }) {
         setVerifierName(issuerData?.attributes?.verifierName || "");
         setWalletAddress(issuerData?.attributes?.issuer || "");
         let newArr = [];
-        const claimTopics = issuerData?.attributes?.claimTopics.forEach((item) => {
-          newArr.push(item.topic);
-        });
         setTargetKeys(newArr || "");
         let data = [];
 
@@ -42,7 +41,7 @@ function CreateTrustedIssuer({ service }) {
         }
       }
     })();
-  }, [service]);
+  }, [service, id]);
 
   const onChange = (nextTargetKeys, direction, moveKeys) => {
     setTargetKeys(nextTargetKeys);
@@ -116,7 +115,7 @@ function CreateTrustedIssuer({ service }) {
       toast.promise(
         () => {
           let keys = [];
-          targetKeys.map((item) => {
+          targetKeys.forEach((item) => {
             keys.push({ topic: item, timestamp: Date.now() });
           });
           return service
@@ -157,7 +156,7 @@ function CreateTrustedIssuer({ service }) {
             title: <Link to={"/issuers"}>Trusted Issuer</Link>,
           },
           {
-            title: id == "create" ? "Add" : "Update",
+            title: id === "create" ? "Add" : "Update",
           },
         ]}
       />
@@ -188,7 +187,7 @@ function CreateTrustedIssuer({ service }) {
               className="border w-full p-2 rounded-lg text-xl"
               placeholder="Wallet Address"
               type="text"
-              onChange={(e) => (id == "create" ? setWalletAddress(e.target.value.trim()) : "")}
+              onChange={(e) => (id === "create" ? setWalletAddress(e.target.value.trim()) : "")}
             />
           </div>
           <p className="my-4">Manage Claim Topic IDs</p>
@@ -212,7 +211,7 @@ function CreateTrustedIssuer({ service }) {
           />
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
-          {id == "create" ? (
+          {id === "create" ? (
             <Button
               className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
               onClick={saveTrustedIssuer}

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
+
 import { Breadcrumb, Button, Input, Transfer } from "antd";
 import { Link, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const EditClaims = ({ service }) => {
   const navigate = useNavigate();
@@ -11,7 +12,6 @@ const EditClaims = ({ service }) => {
   const [claimTopics, setClaimTopics] = useState([]);
   const [targetKeys, setTargetKeys] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState([]);
-  const [working, setWorking] = useState(false);
 
   // Handling the transfer box for claim topics
   const onChange = (nextTargetKeys) => {
@@ -140,7 +140,6 @@ const EditClaims = ({ service }) => {
               </div>
             )}
             listStyle={{ width: "50%", minWidth: "120px" }}
-            disabled={working}
           />
         </div>
       </div>
@@ -185,7 +184,6 @@ const EditClaims = ({ service }) => {
       <div className="flex justify-end gap-4">
         <Button
           onClick={saveClaims}
-          disabled={working}
           className="flex items-center gap-2 min-w-max text-center font-semibold rounded-2xl p-2 h-fit bg-[#7F56D9] text-white"
         >
           <div>Save Claims</div>

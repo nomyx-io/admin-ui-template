@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+
 import { Tooltip } from "antd";
+
 import styles from "./ClaimCard.module.css";
 export const ClaimCard = ({ data, setClaim = false }) => {
   const [isCopied, setIsCopied] = useState(false);

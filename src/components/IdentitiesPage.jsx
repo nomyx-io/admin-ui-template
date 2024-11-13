@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+import { Tabs } from "antd";
 import { useNavigate } from "react-router-dom";
-import { Tabs, Spin } from "antd";
+import { toast } from "react-toastify";
+
 import ObjectList from "./ObjectList";
 import { NomyxAction } from "../utils/Constants";
-import { toast } from "react-toastify";
 
 const { TabPane } = Tabs;
 
@@ -11,104 +13,94 @@ const IdentitiesPage = ({ service }) => {
   const navigate = useNavigate();
   const [identities, setIdentities] = useState([]);
   const [pendingIdentities, setPendingIdentities] = useState([]);
-  const [selectedIdentities, setSelectedIdentities] = useState([]);
-  const [isAddDialogVisible, setIsAddDialogVisible] = useState(false);
-  const [isRemoveDialogVisible, setIsRemoveDialogVisible] = useState(false);
-  const [data, setData] = useState([]);
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
 
+  const fetchData = useCallback(
+    async (tab) => {
+      try {
+        let fetchedIdentities = [];
+        if (service) {
+          if (tab === "Identities" || tab === "Claims") {
+            // Fetch active identities for Identities and Claims tabs
+            fetchedIdentities = await service.getActiveIdentities();
+            fetchedIdentities = fetchedIdentities.map((identity) => {
+              let identidyObj = {};
+              if (identity && identity.attributes) {
+                // Map active identities fields
+                const claimsArray = identity.attributes.claims || [];
+                identidyObj.claims = claimsArray.join(", "); // Convert claims array to comma-separated string
+                identidyObj.displayName = identity.attributes.displayName || "";
+                identidyObj.kyc_id = identity.attributes.accountNumber || "";
+                identidyObj.identityAddress = identity.attributes.address || "";
+                identidyObj.id = identity.id;
+              } else {
+                // Default empty values if attributes are missing
+                identidyObj.claims = "";
+                identidyObj.displayName = "";
+                identidyObj.kyc_id = "";
+                identidyObj.identityAddress = "";
+                identidyObj.id = "";
+              }
+              return identidyObj;
+            });
+
+            if (tab === "Claims") {
+              fetchedIdentities = fetchedIdentities.filter((identity) => !identity.claims || identity.claims.length === 0);
+            }
+          } else if (tab === "Pending") {
+            fetchedIdentities = await service.getPendingIdentities();
+            fetchedIdentities = fetchedIdentities.map((identity) => {
+              const firstName = identity.attributes.firstName || "";
+              const lastName = identity.attributes.lastName || "";
+              const personaData = identity.attributes.personaVerificationData ? JSON.parse(identity.attributes.personaVerificationData) : {};
+
+              const templateId =
+                personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
+                personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
+                "";
+              const identityType =
+                templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
+                  ? "KYC"
+                  : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
+                    ? "KYB"
+                    : "";
+
+              const name = personaData?.data?.attributes?.name || "";
+              const status = name.split(".")[1]?.toUpperCase() || "";
+
+              return {
+                displayName: `${firstName} ${lastName}`.trim(), // Concatenate first and last names
+                identityAddress: identity.attributes.walletAddress || "", // Wallet address remains the same
+                kyc_id: identity.attributes.personaReferenceId || "", // KYC ID set to personaReferenceId
+                type: identityType || "", // Type of identity
+                status: status || "", // Status of identity
+                ...identity, // Include other identity attributes as is
+              };
+            });
+          }
+        } else {
+          console.error("Service object is not available");
+        }
+
+        // Set the state for identities or pending identities
+        if (tab === "Identities" || tab === "Claims") {
+          setIdentities(fetchedIdentities);
+        } else if (tab === "Pending") {
+          setPendingIdentities(fetchedIdentities);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    },
+    [service]
+  );
+
   useEffect(() => {
     fetchData(activeTab);
-  }, [activeTab, service, refreshTrigger]);
-
-  const fetchData = async (tab) => {
-    try {
-      let fetchedIdentities = [];
-      if (service) {
-        if (tab === "Identities" || tab === "Claims") {
-          // Fetch active identities for Identities and Claims tabs
-          fetchedIdentities = await service.getActiveIdentities();
-          fetchedIdentities = fetchedIdentities.map((identity) => {
-            let identidyObj = {};
-            if (identity && identity.attributes) {
-              // Map active identities fields
-              const claimsArray = identity.attributes.claims || [];
-              identidyObj.claims = claimsArray.join(", "); // Convert claims array to comma-separated string
-              identidyObj.displayName = identity.attributes.displayName || "";
-              identidyObj.kyc_id = identity.attributes.accountNumber || "";
-              identidyObj.identityAddress = identity.attributes.address || "";
-              identidyObj.id = identity.id;
-            } else {
-              // Default empty values if attributes are missing
-              identidyObj.claims = "";
-              identidyObj.displayName = "";
-              identidyObj.kyc_id = "";
-              identidyObj.identityAddress = "";
-              identidyObj.id = "";
-            }
-            return identidyObj;
-          });
-
-          if (tab === "Claims") {
-            fetchedIdentities = fetchedIdentities.filter((identity) => !identity.claims || identity.claims.length === 0);
-          }
-        } else if (tab === "Pending") {
-          fetchedIdentities = await service.getPendingIdentities();
-          fetchedIdentities = fetchedIdentities.map((identity) => {
-            const firstName = identity.attributes.firstName || "";
-            const lastName = identity.attributes.lastName || "";
-            const personaData = identity.attributes.personaVerificationData ? JSON.parse(identity.attributes.personaVerificationData) : {};
-
-            const templateId =
-              personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
-              personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
-              "";
-            const identityType =
-              templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
-                ? "KYC"
-                : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
-                  ? "KYB"
-                  : "";
-
-            const name = personaData?.data?.attributes?.name || "";
-            const status = name.split(".")[1]?.toUpperCase() || "";
-
-            return {
-              displayName: `${firstName} ${lastName}`.trim(), // Concatenate first and last names
-              identityAddress: identity.attributes.walletAddress || "", // Wallet address remains the same
-              kyc_id: identity.attributes.personaReferenceId || "", // KYC ID set to personaReferenceId
-              type: identityType || "", // Type of identity
-              status: status || "", // Status of identity
-              ...identity, // Include other identity attributes as is
-            };
-          });
-        }
-      } else {
-        console.error("Service object is not available");
-      }
-
-      // Set the state for identities or pending identities
-      if (tab === "Identities" || tab === "Claims") {
-        setIdentities(fetchedIdentities);
-      } else if (tab === "Pending") {
-        setPendingIdentities(fetchedIdentities);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
+  }, [activeTab, service, refreshTrigger, fetchData]);
   const handleTabChange = (key) => {
     setActiveTab(key);
-  };
-
-  const handleAddIdentity = async (identity) => {
-    const signer = service.provider.getSigner();
-    const identityData = {};
-    await service.addIdentity(signer, identity, identityData);
-    const newIdentities = await service.getRegistryUsers();
-    setIdentities(newIdentities);
   };
 
   const handleRemoveUser = async (record) => {
@@ -141,7 +133,6 @@ const IdentitiesPage = ({ service }) => {
     toast.promise(
       async () => {
         const identities = [record.identityAddress];
-        setSelectedIdentities(identities);
 
         for (const identity of identities) {
           // Step 1: Call removeIdentity
@@ -152,8 +143,6 @@ const IdentitiesPage = ({ service }) => {
 
         // After successful removal, trigger a refresh of the component
         setRefreshTrigger((prev) => !prev); // This needs to be tested upon updated removal event contract redeployment
-
-        setSelectedIdentities([]);
       },
       {
         pending: `Removing ${record?.displayName}...`,

@@ -1,6 +1,6 @@
 import "react-toastify/dist/ReactToastify.css";
 
-import React, { useEffect, useState, createContext } from "react";
+import { useEffect, useState, createContext } from "react";
 
 import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { Spin } from "antd";
@@ -28,7 +28,6 @@ import Protected from "./components/Protected";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
 import BlockchainService from "./services/BlockchainService.js";
-import TestService from "./services/TestService";
 import { generateRandomString } from "./utils";
 
 export const RoleContext = createContext({});
@@ -109,8 +108,8 @@ const wagmiConfig = createConfig({
 });
 
 function App() {
-  const [isConnected, setIsConnected] = React.useState(false);
-  const [blockchainService, setBlockchainService] = React.useState(new TestService());
+  const [isConnected, setIsConnected] = useState(false);
+  const [blockchainService, setBlockchainService] = useState<BlockchainService | null>(null);
   const [role, setRole] = useState<any>([]);
   const [forceLogout, setForceLogout] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -149,7 +148,7 @@ function App() {
     provider.getNetwork().then(async (network: any) => {
       const chainId = network.chainId;
 
-      const config = process.env.REACT_APP_HARDHAT_CHAIN_ID || "";
+      const config = Number(process.env.REACT_APP_HARDHAT_CHAIN_ID) || 0;
 
       if (!config || config !== chainId) {
         setIsConnected(false);

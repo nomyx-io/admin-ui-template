@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
+
 import { Button, Input, Tooltip } from "antd";
-import { ShareIcon } from "../Assets/icons";
-import { ClaimCard } from "./ClaimCard";
 import { useNavigate, useParams } from "react-router-dom";
+
+import { ClaimCard } from "./ClaimCard";
+import { ShareIcon } from "../Assets/icons";
 
 const EditClaimsSummaryView = ({ service }) => {
   const { identity } = useParams();

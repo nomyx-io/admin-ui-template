@@ -1,9 +1,11 @@
+import { useEffect, useState, useCallback } from "react";
+
 import { Breadcrumb } from "antd";
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
 import { Tabs } from "antd";
-import ObjectList from "./ObjectList";
 import moment from "moment";
+import { Link, useNavigate, useParams } from "react-router-dom";
+
+import ObjectList from "./ObjectList";
 
 function ViewClaimTopic({ service }) {
   const navigate = useNavigate();
@@ -12,11 +14,7 @@ function ViewClaimTopic({ service }) {
   const [claimTopicDetails, setClaimTopicDetails] = useState(null);
   let { topicId } = useParams();
 
-  useEffect(() => {
-    fetchData();
-  }, [service]);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     if (!service.getClaimTopicById) return;
     const claimTopicData = service.getClaimTopicById && (await service.getClaimTopicById(topicId));
     setClaimTopicDetails(claimTopicData);
@@ -25,7 +23,11 @@ function ViewClaimTopic({ service }) {
     setTrustedIssuers(issuers);
     const claims = service.getClaimsForClaimTopics && (await service.getClaimsForClaimTopics(topicId));
     setClaims(claims);
-  }
+  }, [service, topicId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [service, fetchData]);
 
   const onChange = (key) => {
     // console.log(key);
@@ -76,15 +78,15 @@ function ViewClaimTopic({ service }) {
       render: (row) => (
         <div className="text-[#272b30]">
           <div className="text-base">
-            <a
-              href="#"
+            <button
               onClick={(event) => {
                 event.preventDefault();
                 navigate("/identities/" + row?.attributes?.identityObj.id);
               }}
+              style={{ background: "none", border: "none", color: "inherit", textDecoration: "underline", cursor: "pointer" }}
             >
               {row?.attributes?.identityObj?.attributes?.displayName}
-            </a>
+            </button>
           </div>
           <div className="text-sm">{row?.attributes?.identityObj?.attributes?.identity}</div>
         </div>

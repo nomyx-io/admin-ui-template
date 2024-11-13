@@ -1,8 +1,10 @@
+import { useState } from "react";
+
 import { Breadcrumb, Button, Input } from "antd";
-import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { isAlphanumericAndSpace, isEthereumAddress, awaitTimeout } from "../utils";
+import { toast } from "react-toastify";
+
+import { isEthereumAddress } from "../utils";
 
 function CreateDigitalId({ service }) {
   const location = useLocation();
