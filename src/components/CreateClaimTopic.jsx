@@ -37,33 +37,36 @@ function CreateClaimTopic({ service }) {
   const saveClaimTopic = async () => {
     const trimmedDisplayName = displayName.trim();
     if (validateClaimTopic(trimmedDisplayName)) {
-      toast.promise(
-        new Promise(async (resolve, reject) => {
-          try {
-            await service.addClaimTopic(hiddenName);
-            await awaitTimeout(10000);  // Simulating a delay for the process
-            await service.updateClaimTopic({
-              topic: String(hiddenName),
-              displayName: trimmedDisplayName,
-            });
-            resolve();
-          } catch (e) {
-            console.error("Failed to create/update claim topic:", e);
-            reject(e);
+      toast
+        .promise(
+          new Promise(async (resolve, reject) => {
+            try {
+              await service.addClaimTopic(hiddenName);
+              await awaitTimeout(10000); // Simulating a delay for the process
+              await service.updateClaimTopic({
+                topic: String(hiddenName),
+                displayName: trimmedDisplayName,
+              });
+              resolve();
+            } catch (e) {
+              console.error("Failed to create/update claim topic:", e);
+              reject(e);
+            }
+          }),
+          {
+            pending: "Creating Claim Topic...",
+            success: `Successfully created Claim Topic ${hiddenName}`,
+            error: `An error occurred while creating Claim Topic ${hiddenName}`,
           }
-        }),
-        {
-          pending: "Creating Claim Topic...",
-          success: `Successfully created Claim Topic ${hiddenName}`,
-          error: `An error occurred while creating Claim Topic ${hiddenName}`,
-        }
-      ).then(() => {
-        setTimeout(() => {
-          navigate("/topics");
-        }, 500); // Delay navigation to ensure the success toast has time to display
-      }).catch((error) => {
-        console.error("Error after attempting to create claim topic:", error);
-      });
+        )
+        .then(() => {
+          setTimeout(() => {
+            navigate("/topics");
+          }, 500); // Delay navigation to ensure the success toast has time to display
+        })
+        .catch((error) => {
+          console.error("Error after attempting to create claim topic:", error);
+        });
     }
   };
 
@@ -75,11 +78,7 @@ function CreateClaimTopic({ service }) {
     <div>
       <Breadcrumb
         className="bg-transparent"
-        items={[
-          { title: <Link to={"/"}>Home</Link> },
-          { title: <Link to={"/topics"}>Claim Topics</Link> },
-          { title: "Add" },
-        ]}
+        items={[{ title: <Link to={"/"}>Home</Link> }, { title: <Link to={"/topics"}>Claim Topics</Link> }, { title: "Add" }]}
       />
       <p className="text-xl p-6">Create Claim Topic</p>
       <hr />
@@ -117,10 +116,7 @@ function CreateClaimTopic({ service }) {
           <p>Only alphanumeric characters allowed and no spaces. Not seen by end-users.</p>
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
-          <Button
-            className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
-            onClick={saveClaimTopic}
-          >
+          <Button className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white" onClick={saveClaimTopic}>
             Create Claim Topic
           </Button>
         </div>

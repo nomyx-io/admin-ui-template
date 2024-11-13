@@ -22,7 +22,7 @@ export default function Login({ forceLogout, service, onConnect, onDisconnect })
 
   useEffect(() => {
     if (previousRole.current !== role) {
-      let newRedirectionUrl = '/';
+      let newRedirectionUrl = "/";
 
       if (role.includes("CentralAuthority")) {
         newRedirectionUrl = "/";
@@ -67,25 +67,15 @@ export default function Login({ forceLogout, service, onConnect, onDisconnect })
       ) : (
         <>
           <div
-            className={
-              styles.logoContainer +
-              " bg-black max-[550px]:hidden w-1/2 flex flex-col justify-center items-center gap-10"
-            }
+            className={styles.logoContainer + " bg-black max-[550px]:hidden w-1/2 flex flex-col justify-center items-center gap-10"}
             style={{ backgroundImage: `url(${bg})` }}
           >
-            <img alt="LenderLab Logo" src={logo} style={{ width: '75%' }} />
+            <img alt="LenderLab Logo" src={logo} style={{ width: "75%" }} />
           </div>
 
           <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">
-            <div className="text-right font-bold text-xl w-full">
-              DID MANAGER
-            </div>
-            <div
-              className={
-                styles.btnContainer +
-                " flex flex-grow justify-center items-center align-middle"
-              }
-            >
+            <div className="text-right font-bold text-xl w-full">DID MANAGER</div>
+            <div className={styles.btnContainer + " flex flex-grow justify-center items-center align-middle"}>
               <ConnectButton label="Log in with Wallet" onConnect={handleConnect} onDisconnect={handleDisconnect} />
             </div>
           </div>

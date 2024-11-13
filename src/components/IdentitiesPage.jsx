@@ -51,32 +51,25 @@ const IdentitiesPage = ({ service }) => {
           });
 
           if (tab === "Claims") {
-            fetchedIdentities = fetchedIdentities.filter(
-              (identity) => !identity.claims || identity.claims.length === 0
-            );
+            fetchedIdentities = fetchedIdentities.filter((identity) => !identity.claims || identity.claims.length === 0);
           }
         } else if (tab === "Pending") {
           fetchedIdentities = await service.getPendingIdentities();
           fetchedIdentities = fetchedIdentities.map((identity) => {
             const firstName = identity.attributes.firstName || "";
             const lastName = identity.attributes.lastName || "";
-            const personaData = identity.attributes.personaVerificationData
-              ? JSON.parse(identity.attributes.personaVerificationData)
-              : {};
+            const personaData = identity.attributes.personaVerificationData ? JSON.parse(identity.attributes.personaVerificationData) : {};
 
             const templateId =
-              personaData?.data?.attributes?.payload?.data?.relationships
-                ?.inquiry_template?.data?.id ||
-              personaData?.data?.attributes?.payload?.data?.relationships?.[
-                "inquiry-template"
-              ]?.data?.id ||
+              personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
+              personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
               "";
             const identityType =
               templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
                 ? "KYC"
                 : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
-                ? "KYB"
-                : "";
+                  ? "KYB"
+                  : "";
 
             const name = personaData?.data?.attributes?.name || "";
             const status = name.split(".")[1]?.toUpperCase() || "";
@@ -167,12 +160,7 @@ const IdentitiesPage = ({ service }) => {
         success: `Successfully removed ${record?.displayName}`,
         error: {
           render({ data }) {
-            return (
-              <div>
-                {data?.reason ||
-                  `An error occurred while removing ${record?.displayName}`}
-              </div>
-            );
+            return <div>{data?.reason || `An error occurred while removing ${record?.displayName}`}</div>;
           },
         },
       }
@@ -219,9 +207,7 @@ const IdentitiesPage = ({ service }) => {
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
-  const globalActions = [
-    { label: "Create identity", name: NomyxAction.CreateIdentity },
-  ];
+  const globalActions = [{ label: "Create identity", name: NomyxAction.CreateIdentity }];
 
   const search = true;
 
@@ -244,9 +230,7 @@ const IdentitiesPage = ({ service }) => {
         break;
       case NomyxAction.CreatePendingIdentity:
         const { displayName, kyc_id, identityAddress } = record;
-        navigate(
-          `/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}`
-        );
+        navigate(`/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}`);
         break;
       case NomyxAction.RemoveUser:
         await handleRemoveUser(record);

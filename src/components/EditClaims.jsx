@@ -27,13 +27,9 @@ const EditClaims = ({ service }) => {
     const currentClaims = identity.claims || [];
     const selectedClaimTopics = targetKeys;
     // Claims that are selected but were not already part of the current claims
-    const claimsToRemove = currentClaims.filter(
-      (claim) => !selectedClaimTopics.includes(claim)
-    );
+    const claimsToRemove = currentClaims.filter((claim) => !selectedClaimTopics.includes(claim));
     // Claims that are new and weren't in current claims
-    const claimsToAdd = selectedClaimTopics.filter(
-      (claim) => !currentClaims.includes(claim)
-    );
+    const claimsToAdd = selectedClaimTopics.filter((claim) => !currentClaims.includes(claim));
 
     try {
       // Remove the claims that are not selected anymore
@@ -50,21 +46,14 @@ const EditClaims = ({ service }) => {
         toast.promise(
           async () => {
             try {
-              const reponse = await service.setClaims(
-                identity.address,
-                claimsToAdd
-              );
+              const reponse = await service.setClaims(identity.address, claimsToAdd);
               // Fetch the updated identity to verify changes
-              const updatedIdentity = await service.getDigitalIdentity(
-                identityId
-              );
+              const updatedIdentity = await service.getDigitalIdentity(identityId);
               // Update the state with the latest identity data and selected claims
               setIdentity(updatedIdentity);
               setTargetKeys(updatedIdentity?.claims.map((t) => t.topic) || []);
               // Navigate to the summary page
-              navigate(
-                `/identities/${JSON.stringify({ data: reponse })}/edit/summary`
-              );
+              navigate(`/identities/${JSON.stringify({ data: reponse })}/edit/summary`);
             } catch (error) {
               throw error; // Rethrow the error to trigger the error notification
             }
@@ -75,9 +64,7 @@ const EditClaims = ({ service }) => {
             error: {
               // Notification on error
               render({ data }) {
-                return (
-                  <div>{data?.reason || data || "Error adding claims"}</div>
-                );
+                return <div>{data?.reason || data || "Error adding claims"}</div>;
               },
             },
           }
@@ -172,9 +159,7 @@ const EditClaims = ({ service }) => {
         </div>
 
         <div className="my-3">
-          <label htmlFor="investorAccountNumber">
-            Investor KYC Account Number
-          </label>
+          <label htmlFor="investorAccountNumber">Investor KYC Account Number</label>
           <Input
             id="investorAccountNumber"
             value={identity?.accountNumber}

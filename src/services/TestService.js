@@ -1,28 +1,28 @@
-const getTestData = ()=>{
-    const testData = [];
+// const getTestData = () => {
+//   const testData = [];
 
-    for(let i=1; i<=200; i++){
-        testData.push({
-            id: i,
-            attributes:{
-                name: "Object " + i,
-                description: "This is object " + i,
-                status: "active"
-            }
-        });
-    };
+//   for (let i = 1; i <= 200; i++) {
+//     testData.push({
+//       id: i,
+//       attributes: {
+//         name: "Object " + i,
+//         description: "This is object " + i,
+//         status: "active",
+//       },
+//     });
+//   }
 
-    return testData;
-};
+//   return testData;
+// };
 
 class TestService {
-    async getClaimTopics() {
-        return await this.parseClient.getRecords('ClaimTopic', [], [], ["*"]);
-    }
+  async getClaimTopics() {
+    return await this.parseClient.getRecords("ClaimTopic", [], [], ["*"]);
+  }
 
-    async getNextClaimTopicId(){
-        return Promise.resolve(1);
-    }
+  async getNextClaimTopicId() {
+    return Promise.resolve(1);
+  }
 }
 
 export default TestService;

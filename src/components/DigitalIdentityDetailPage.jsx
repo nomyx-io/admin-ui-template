@@ -67,9 +67,7 @@ function DigitalIdentityDetailView({ service }) {
             readOnly
             className="font-light text-4xl max-[500px]:text-base text-gray-300"
           ></input>
-          <label htmlFor="investorIdAccountNumber">
-            Investor KYC ID Provider Account Number
-          </label>
+          <label htmlFor="investorIdAccountNumber">Investor KYC ID Provider Account Number</label>
           <input
             id="investorIdAccountNumber"
             value={identity?.accountNumber || " "}
@@ -83,10 +81,7 @@ function DigitalIdentityDetailView({ service }) {
         })}
       </div>
       <div className="flex justify-end max-[500px]:justify-center">
-        <Button
-          className="max-[500px]:w-[50%] rounded-none my-6 mr-6 h-11 px-10 bg-[#9952b3] text-white"
-          onClick={backBtn}
-        >
+        <Button className="max-[500px]:w-[50%] rounded-none my-6 mr-6 h-11 px-10 bg-[#9952b3] text-white" onClick={backBtn}>
           Back
         </Button>
       </div>

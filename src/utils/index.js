@@ -4,9 +4,10 @@ const getFilterPropertyNames = function (obj) {
   let props = [];
 
   do {
-    Object.getOwnPropertyNames(obj).forEach(function (prop) {
-      if (props.indexOf(prop) === -1) {
-        props.push({ name: prop, type: typeof obj[prop] });
+    const currentObj = obj;
+    Object.getOwnPropertyNames(currentObj).forEach(function (prop) {
+      if (!props.some((p) => p.name === prop)) {
+        props.push({ name: prop, type: typeof currentObj[prop] });
       }
     });
   } while ((obj = Object.getPrototypeOf(obj)));
@@ -15,7 +16,7 @@ const getFilterPropertyNames = function (obj) {
     (prop) =>
       !prop.name.startsWith("_") &&
       !excludedFilterProperties.includes(prop.name) &&
-      (prop.type == "object" || prop.type == "string" || prop.type == "number")
+      (prop.type === "object" || prop.type === "string" || prop.type === "number")
   );
 };
 
@@ -31,17 +32,9 @@ const recursiveSearch = (item, text, _memory) => {
   const lowerText = text.toLowerCase();
   for (let { name } of props) {
     const value = item[name];
-    if (
-      typeof value === "object" &&
-      !memory.includes(value) &&
-      memory.push(value) &&
-      recursiveSearch(value, lowerText, memory)
-    ) {
+    if (typeof value === "object" && !memory.includes(value) && memory.push(value) && recursiveSearch(value, lowerText, memory)) {
       return item;
-    } else if (
-      typeof value === "string" &&
-      value.toLowerCase().includes(lowerText)
-    ) {
+    } else if (typeof value === "string" && value.toLowerCase().includes(lowerText)) {
       return item;
     } else if (value && value.toString().toLowerCase() === lowerText) {
       return item;
@@ -86,8 +79,7 @@ const isEthereumAddress = (address) => {
 };
 
 const generateRandomString = (length) => {
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
@@ -103,12 +95,4 @@ const awaitTimeout = (delay, reason) =>
     }, delay)
   );
 
-export {
-  getValue,
-  recursiveSearch,
-  isAlphanumeric,
-  isAlphanumericAndSpace,
-  isEthereumAddress,
-  generateRandomString,
-  awaitTimeout,
-};
+export { getValue, recursiveSearch, isAlphanumeric, isAlphanumericAndSpace, isEthereumAddress, generateRandomString, awaitTimeout };
