@@ -50,7 +50,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --fix --ext .js,.jsx,.ts,.tsx",
+    "format": "prettier --write .",
+    "prepare": "husky"
   },
   "eslintConfig": {
     "extends": [
@@ -73,7 +77,20 @@
   "devDependencies": {
     "@ant-design/icons": "^5.1.4",
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "tailwindcss": "^3.3.2"
+    "@eslint/compat": "^1.2.2",
+    "@eslint/eslintrc": "^3.1.0",
+    "@eslint/js": "^9.14.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^15.12.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "tailwindcss": "^3.3.2",
+    "typescript-eslint": "^8.14.0"
   },
   "browser": {
     "fs": false,
@@ -83,5 +100,16 @@
   "engines": {
     "npm": "8.19.2",
     "node": "18.12.1"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   }
 }

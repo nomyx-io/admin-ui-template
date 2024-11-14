@@ -1,26 +1,18 @@
+import { useState } from "react";
+
 import { Breadcrumb, Button, Input } from "antd";
-import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import {
-  isAlphanumericAndSpace,
-  isEthereumAddress,
-  awaitTimeout,
-} from "../utils";
+import { toast } from "react-toastify";
+
+import { isEthereumAddress } from "../utils";
 
 function CreateDigitalId({ service }) {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
 
-  const [displayName, setDisplayName] = useState(
-    searchParams.get("displayName") || ""
-  );
-  const [walletAddress, setWalletAddress] = useState(
-    searchParams.get("walletAddress") || ""
-  );
-  const [accountNumber, setAccountNumber] = useState(
-    searchParams.get("accountNumber") || ""
-  );
+  const [displayName, setDisplayName] = useState(searchParams.get("displayName") || "");
+  const [walletAddress, setWalletAddress] = useState(searchParams.get("walletAddress") || "");
+  const [accountNumber, setAccountNumber] = useState(searchParams.get("accountNumber") || "");
 
   const navigate = useNavigate();
 
@@ -59,13 +51,7 @@ function CreateDigitalId({ service }) {
   }
 
   const handleCreateDigitalId = async () => {
-    if (
-      !validateDigitalID(
-        displayName.trim(),
-        walletAddress,
-        accountNumber.trim()
-      )
-    ) {
+    if (!validateDigitalID(displayName.trim(), walletAddress, accountNumber.trim())) {
       return; // Early return if validation fails
     }
 
@@ -77,12 +63,7 @@ function CreateDigitalId({ service }) {
           pending: "Creating Digital Identity...",
           success: "Digital Identity created successfully",
           error: {
-            render: ({ data }) => (
-              <div>
-                {data?.reason ||
-                  "An error occurred while creating Digital Identity"}
-              </div>
-            ),
+            render: ({ data }) => <div>{data?.reason || "An error occurred while creating Digital Identity"}</div>,
           },
         }
       );
@@ -94,12 +75,7 @@ function CreateDigitalId({ service }) {
           pending: "Fetching identity details...",
           success: "Identity details fetched successfully",
           error: {
-            render: ({ data }) => (
-              <div>
-                {data?.reason ||
-                  "An error occurred while fetching identity details"}
-              </div>
-            ),
+            render: ({ data }) => <div>{data?.reason || "An error occurred while fetching identity details"}</div>,
           },
         }
       );
@@ -111,11 +87,7 @@ function CreateDigitalId({ service }) {
           pending: "Adding identity...",
           success: "Identity added successfully",
           error: {
-            render: ({ data }) => (
-              <div>
-                {data?.reason || "An error occurred while adding identity"}
-              </div>
-            ),
+            render: ({ data }) => <div>{data?.reason || "An error occurred while adding identity"}</div>,
           },
         }
       );
@@ -131,11 +103,7 @@ function CreateDigitalId({ service }) {
             pending: "Updating identity...",
             success: "Identity updated successfully",
             error: {
-              render: ({ data }) => (
-                <div>
-                  {data?.reason || "An error occurred while updating identity"}
-                </div>
-              ),
+              render: ({ data }) => <div>{data?.reason || "An error occurred while updating identity"}</div>,
             },
           }
         );
@@ -146,9 +114,7 @@ function CreateDigitalId({ service }) {
 
       // Step 5: Approve user if needed
       if (searchParams.has("walletAddress")) {
-        const userExists = await service.isUser(
-          walletAddress.toLocaleLowerCase()
-        ); // Check if the user exists
+        const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
         if (userExists) {
           await toast.promise(
             service.approveUser(walletAddress.toLocaleLowerCase()), // Directly pass the promise without awaiting it here
@@ -156,19 +122,13 @@ function CreateDigitalId({ service }) {
               pending: "Approving user...",
               success: "User approved successfully",
               error: {
-                render: ({ data }) => (
-                  <div>
-                    {data?.reason || "An error occurred while approving user"}
-                  </div>
-                ),
+                render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
               },
             }
           );
         } else {
           // Handle the case where the user doesn't exist
-          toast.error(
-            `User with wallet address ${walletAddress} does not exist.`
-          );
+          toast.error(`User with wallet address ${walletAddress} does not exist.`);
         }
       }
       navigate("/identities");
@@ -210,16 +170,11 @@ function CreateDigitalId({ service }) {
             />
             <p className="absolute right-5 top-3">{displayName.length}/32</p>
           </div>
-          <p>
-            User-friendly name that describes the trusted issuers.Shown to
-            end-users
-          </p>
+          <p>User-friendly name that describes the trusted issuers.Shown to end-users</p>
         </div>
         <div className="mt-10 mb-6 w-[100%] max-[600px]:w-full border p-6 rounded-lg">
           <div>
-            <label htmlFor="investorWalletAddress">
-              Investor Wallet Address
-            </label>
+            <label htmlFor="investorWalletAddress">Investor Wallet Address</label>
             <div className="mt-2 relative w-full flex border rounded-lg">
               <Input
                 id="walletAddress"
@@ -232,9 +187,7 @@ function CreateDigitalId({ service }) {
             </div>
           </div>
           <div className="mt-6">
-            <label htmlFor="investorAccountNumber">
-              Investor KYC ID Provider Account Number
-            </label>
+            <label htmlFor="investorAccountNumber">Investor KYC ID Provider Account Number</label>
             <div className="mt-2 relative w-full flex border rounded-lg">
               <Input
                 id="investorAccountNumber"
@@ -248,10 +201,7 @@ function CreateDigitalId({ service }) {
           </div>
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
-          <Button
-            onClick={handleCreateDigitalId}
-            className="nomyx-id-button max-[600px]:w-[60%] min-w-max text-center font-semibold h-11"
-          >
+          <Button onClick={handleCreateDigitalId} className="nomyx-id-button max-[600px]:w-[60%] min-w-max text-center font-semibold h-11">
             Create Digital Id
           </Button>
         </div>

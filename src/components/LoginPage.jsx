@@ -1,19 +1,17 @@
 import { useContext, useEffect, useState, useRef } from "react";
+
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { RoleContext } from "../App";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAccount, useDisconnect } from "wagmi";
 import { Spin } from "antd";
+import { useNavigate } from "react-router-dom";
+import { useAccount, useDisconnect } from "wagmi";
 
 import styles from "./LoginPage.module.css";
-
+import { RoleContext } from "../App";
 import bg from "../images/BlackPaintBackground.webp";
 import logo from "../images/NomyxLogoWhite.svg";
 
 export default function Login({ forceLogout, service, onConnect, onDisconnect }) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
   const { role } = useContext(RoleContext);
   const { disconnect } = useDisconnect();
   const { isConnected } = useAccount();
@@ -22,7 +20,7 @@ export default function Login({ forceLogout, service, onConnect, onDisconnect })
 
   useEffect(() => {
     if (previousRole.current !== role) {
-      let newRedirectionUrl = '/';
+      let newRedirectionUrl = "/";
 
       if (role.includes("CentralAuthority")) {
         newRedirectionUrl = "/";
@@ -41,7 +39,9 @@ export default function Login({ forceLogout, service, onConnect, onDisconnect })
   }, [forceLogout, disconnect]);
 
   const handleConnect = ({ address, connector, isReconnected }) => {
+    console.log("Connected with address: ", address);
     if (!isConnectTriggered) {
+      console.log("Connect Triggered");
       setIsConnectTriggered(true);
       onConnect(address, connector);
     }
@@ -67,25 +67,15 @@ export default function Login({ forceLogout, service, onConnect, onDisconnect })
       ) : (
         <>
           <div
-            className={
-              styles.logoContainer +
-              " bg-black max-[550px]:hidden w-1/2 flex flex-col justify-center items-center gap-10"
-            }
+            className={styles.logoContainer + " bg-black max-[550px]:hidden w-1/2 flex flex-col justify-center items-center gap-10"}
             style={{ backgroundImage: `url(${bg})` }}
           >
-            <img alt="LenderLab Logo" src={logo} style={{ width: '75%' }} />
+            <img alt="LenderLab Logo" src={logo} style={{ width: "75%" }} />
           </div>
 
           <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">
-            <div className="text-right font-bold text-xl w-full">
-              DID MANAGER
-            </div>
-            <div
-              className={
-                styles.btnContainer +
-                " flex flex-grow justify-center items-center align-middle"
-              }
-            >
+            <div className="text-right font-bold text-xl w-full">DID MANAGER</div>
+            <div className={styles.btnContainer + " flex flex-grow justify-center items-center align-middle"}>
               <ConnectButton label="Log in with Wallet" onConnect={handleConnect} onDisconnect={handleDisconnect} />
             </div>
           </div>

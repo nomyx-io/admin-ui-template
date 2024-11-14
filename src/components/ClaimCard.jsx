@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+
 import { Tooltip } from "antd";
+
 import styles from "./ClaimCard.module.css";
 export const ClaimCard = ({ data, setClaim = false }) => {
   const [isCopied, setIsCopied] = useState(false);
@@ -46,10 +48,7 @@ export const ClaimCard = ({ data, setClaim = false }) => {
         </div>
       )}
       <div className="flex justify-between max-[500px]:flex-col text-center">
-        <label
-          htmlFor={`blockHash-${data.id}`}
-          className={`max-[500px]:text-sm ${styles.cardFieldLabel}`}
-        >
+        <label htmlFor={`blockHash-${data.id}`} className={`max-[500px]:text-sm ${styles.cardFieldLabel}`}>
           Block hash
         </label>
         <div className="flex gap-2 justify-center w-full">
@@ -62,26 +61,14 @@ export const ClaimCard = ({ data, setClaim = false }) => {
             readOnly
           ></input>
           <Tooltip title={isCopied ? "Copied!" : "Copy text!"}>
-            <button
-              onClick={() =>
-                copyToClipboard(
-                  `blockHash-${data?.blockHash + "_" + data?.topic}`
-                )
-              }
-            >
-              <img
-                src={require("../images/copy-icon.png")}
-                alt="Copy to Clipboard"
-              ></img>
+            <button onClick={() => copyToClipboard(`blockHash-${data?.blockHash + "_" + data?.topic}`)}>
+              <img src={require("../images/copy-icon.png")} alt="Copy to Clipboard"></img>
             </button>
           </Tooltip>
         </div>
       </div>
       <div className="flex justify-between max-[500px]:flex-col text-center">
-        <label
-          htmlFor={`transactionHash-${data.id}`}
-          className={`max-[500px]:text-sm ${styles.cardFieldLabel}`}
-        >
+        <label htmlFor={`transactionHash-${data.id}`} className={`max-[500px]:text-sm ${styles.cardFieldLabel}`}>
           Transaction hash
         </label>
         <div className="flex gap-2 justify-center w-full">
@@ -94,17 +81,8 @@ export const ClaimCard = ({ data, setClaim = false }) => {
             readOnly
           ></input>
           <Tooltip title={isCopied ? "Copied!" : "Copy text!"}>
-            <button
-              onClick={() =>
-                copyToClipboard(
-                  `transactionHash-${data?.transactionHash + "_" + data?.topic}`
-                )
-              }
-            >
-              <img
-                src={require("../images/copy-icon.png")}
-                alt="Copy to Clipboard"
-              ></img>
+            <button onClick={() => copyToClipboard(`transactionHash-${data?.transactionHash + "_" + data?.topic}`)}>
+              <img src={require("../images/copy-icon.png")} alt="Copy to Clipboard"></img>
             </button>
           </Tooltip>
         </div>

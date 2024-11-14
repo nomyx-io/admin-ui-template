@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
+
 import { ClaimCard } from "./ClaimCard";
 
 function DigitalIdentityDetailView({ service }) {
@@ -11,11 +12,11 @@ function DigitalIdentityDetailView({ service }) {
 
   const navigate = useNavigate();
 
-  const getIdentity = async () => {
+  const getIdentity = useCallback(async () => {
     if (!service.getDigitalIdentity) return;
     let result = await service.getDigitalIdentity(identityId);
     setIdentity(result);
-  };
+  }, [service, identityId]);
 
   const backBtn = () => {
     navigate("/identities");
@@ -23,7 +24,7 @@ function DigitalIdentityDetailView({ service }) {
 
   useEffect(() => {
     getIdentity();
-  }, []);
+  }, [getIdentity]);
 
   return (
     <div>
@@ -67,9 +68,7 @@ function DigitalIdentityDetailView({ service }) {
             readOnly
             className="font-light text-4xl max-[500px]:text-base text-gray-300"
           ></input>
-          <label htmlFor="investorIdAccountNumber">
-            Investor KYC ID Provider Account Number
-          </label>
+          <label htmlFor="investorIdAccountNumber">Investor KYC ID Provider Account Number</label>
           <input
             id="investorIdAccountNumber"
             value={identity?.accountNumber || " "}
@@ -83,10 +82,7 @@ function DigitalIdentityDetailView({ service }) {
         })}
       </div>
       <div className="flex justify-end max-[500px]:justify-center">
-        <Button
-          className="max-[500px]:w-[50%] rounded-none my-6 mr-6 h-11 px-10 bg-[#9952b3] text-white"
-          onClick={backBtn}
-        >
+        <Button className="max-[500px]:w-[50%] rounded-none my-6 mr-6 h-11 px-10 bg-[#9952b3] text-white" onClick={backBtn}>
           Back
         </Button>
       </div>

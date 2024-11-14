@@ -1,5 +1,6 @@
-import React from 'react';
-import { Collapse,  Menu, Image, Input } from 'antd';
+import React from "react";
+
+import { Collapse, Menu, Image, Input } from "antd";
 
 const { Panel } = Collapse;
 const { TextArea } = Input;
@@ -18,7 +19,7 @@ const HelpSupport = () => {
       </Collapse>
 
       <div className="shadow-md mb-4 p-4">
-        <TextArea placeholder="Type message here ..." className="shadow-md"/>
+        <TextArea placeholder="Type message here ..." className="shadow-md" />
       </div>
 
       <Menu mode="inline" className="shadow-md mb-4">
