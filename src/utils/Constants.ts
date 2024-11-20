@@ -23,6 +23,7 @@ enum NomyxAction {
   CreateIdentity,
   CreatePendingIdentity,
   ViewIdentity,
+  ViewPendingIdentity,
   RemoveIdentity,
   RemoveUser,
   EditClaims,
