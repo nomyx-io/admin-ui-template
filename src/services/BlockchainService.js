@@ -377,8 +377,9 @@ class BlockchainService {
   async getDigitalIdentity(id) {
     // Fetch the identity record based on the given ID
     const identities = await this.parseClient.getRecords("Identity", ["objectId"], [id], ["*"]);
-    const claims = await this.parseClient.getRecords("ClaimTopic", undefined, undefined, ["*"]);
     const identity = identities.length > 0 ? identities[0] : null;
+    const user = (await this.parseClient.getRecords("_User", ["personaReferenceId"], [identity.attributes.accountNumber], ["*"]))[0];
+    const claims = await this.parseClient.getRecords("ClaimTopic", undefined, undefined, ["*"]);
 
     // If no identity is found, return null
     if (!identity) {
@@ -406,6 +407,8 @@ class BlockchainService {
       ...identity, // The identity object itself
       ...identity.attributes, // Spread the attributes of the identity for easier access
       claims: matchedClaims || [], // Return claims from identity attributes or an empty array
+      personaData:
+        user && user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
     };
   }
 
