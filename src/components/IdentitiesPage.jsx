@@ -181,6 +181,7 @@ const IdentitiesPage = ({ service }) => {
   ];
   const pendingActions = [
     { label: "Approve", name: NomyxAction.CreatePendingIdentity },
+    { label: "View", name: NomyxAction.ViewPendingIdentity },
     {
       label: "Deny",
       name: NomyxAction.RemoveUser,
@@ -207,6 +208,9 @@ const IdentitiesPage = ({ service }) => {
         break;
       case NomyxAction.ViewIdentity:
         navigate("/identities/" + record.id);
+        break;
+      case NomyxAction.ViewPendingIdentity:
+        navigate("/identities/pending/" + record.id);
         break;
       case NomyxAction.EditClaims:
         navigate("/identities/" + record.id + "/edit");

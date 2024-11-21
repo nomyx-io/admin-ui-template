@@ -185,7 +185,12 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                         <button
                           key={record.id + "-action-" + action.name}
                           onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
-                          style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }} // Style it like a link
+                          style={{
+                            marginRight: "1rem",
+                            color: "var(--link-color)",
+                            transition: "0.5s all",
+                            lineHeight: "0.2",
+                          }}
                         >
                           {action.label}
                         </button>

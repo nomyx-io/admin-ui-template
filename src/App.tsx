@@ -304,7 +304,7 @@ function App() {
                     }
                   />
                   <Route
-                    path="/identities/:identityId"
+                    path="/identities/:identityId/:userId?"
                     element={
                       <Protected role={"TrustedIssuer"} roles={role}>
                         <DigitalIdentityDetailView service={blockchainService} />

@@ -5,16 +5,45 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { ClaimCard } from "./ClaimCard";
 
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, function (txt) {
+    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+  });
+}
+
 function DigitalIdentityDetailView({ service }) {
-  const { identityId } = useParams();
+  const { identityId, userId } = useParams();
   const [displayName, setDisplayName] = useState("");
   const [identity, setIdentity] = useState({});
+  const personaData = identity?.personaData;
+  const verifications = personaData?.payload?.included?.filter((item) => {
+    return item.type.startsWith("verification");
+  });
+  const documents = personaData?.payload?.included?.filter((item) => {
+    return item.type.startsWith("document");
+  });
 
   const navigate = useNavigate();
 
   const getIdentity = useCallback(async () => {
-    if (!service.getDigitalIdentity) return;
-    let result = await service.getDigitalIdentity(identityId);
+    let result;
+    if (identityId === "pending" && userId) {
+      if (!service.getPendingIdentities) return;
+      const user = (await service.getPendingIdentities()).filter((item) => item.id === userId)[0];
+      if (!user) {
+        navigate("/identities");
+        return;
+      }
+      result = {
+        displayName: `${user.attributes.firstName} ${user.attributes.lastName}`.trim(),
+        address: user.attributes.walletAddress,
+        accountNumber: user.attributes.personaReferenceId,
+        personaData: user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
+      };
+    } else {
+      if (!service.getDigitalIdentity) return;
+      result = await service.getDigitalIdentity(identityId);
+    }
     setIdentity(result);
   }, [service, identityId]);
 
@@ -38,7 +67,7 @@ function DigitalIdentityDetailView({ service }) {
             title: <Link to={"/identities"}>Identities</Link>,
           },
           {
-            title: identityId,
+            title: identityId === "pending" ? "Pending" : identity?.displayName,
           },
         ]}
       />
@@ -76,7 +105,43 @@ function DigitalIdentityDetailView({ service }) {
             className="font-light text-4xl max-[500px]:text-base text-gray-300"
           ></input>
         </div>
-        <p>Active Claims</p>
+        {personaData && (
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between mb-2">
+              <p>Verification Data</p>
+              <span className="rounded-full border border-[#9952b3] px-4 py-1 text-[#9952b3] text-xs">
+                {personaData?.name?.split(".")[1]?.toUpperCase() || ""}
+              </span>
+            </div>
+            {verifications && (
+              <div className="rounded-lg bg-gray-200 p-2">
+                <p className="font-bold">Verifications</p>
+                {verifications?.map((item) => {
+                  return (
+                    <div key={item.id} className="flex justify-between p-2">
+                      <p>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</p>
+                      <p className="rounded-full border border-[#9952b3] px-4 py-1 text-[#9952b3] text-xs">{item.attributes.status.toUpperCase()}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {documents && (
+              <div className="rounded-lg bg-gray-200 p-2">
+                <p className="font-bold">Documents</p>
+                {documents?.map((item) => {
+                  return (
+                    <div key={item.id} className="flex justify-between p-2">
+                      <p>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</p>
+                      <p className="rounded-full border border-[#9952b3] px-4 py-1 text-[#9952b3] text-xs">{item.attributes.status.toUpperCase()}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        {identityId !== "pending" && <p>Active Claims</p>}
         {identity?.claims?.map((item) => {
           return <ClaimCard key={item.id} data={item} />;
         })}
