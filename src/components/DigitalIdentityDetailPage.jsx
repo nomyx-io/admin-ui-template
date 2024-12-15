@@ -106,37 +106,57 @@ function DigitalIdentityDetailView({ service }) {
           ></input>
         </div>
         {personaData && (
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between mb-2">
-              <p>Verification Data</p>
-              <span className="rounded-full border border-[#9952b3] px-4 py-1 text-[#9952b3] text-xs">
+          <div className="flex flex-col gap-2 rounded-lg bg-gray-200 p-6">
+            <div className="flex mb-2">
+              <p className="mr-12">Verification Data</p>
+              <span
+                className={`rounded-full border px-4 py-1 text-xs font-bold ${
+                  personaData?.name?.split(".")[1]?.toUpperCase() === "APPROVED" || personaData?.name?.split(".")[1]?.toUpperCase() === "COMPLETED"
+                    ? "border-green-500 text-green-500"
+                    : "border-red-500 text-red-500"
+                }`}
+              >
                 {personaData?.name?.split(".")[1]?.toUpperCase() || ""}
               </span>
             </div>
             {verifications && (
-              <div className="rounded-lg bg-gray-200 p-2">
+              <div className="rounded-lg bg-white p-2">
                 <p className="font-bold">Verifications</p>
-                {verifications?.map((item) => {
-                  return (
-                    <div key={item.id} className="flex justify-between p-2">
-                      <p>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</p>
-                      <p className="rounded-full border border-[#9952b3] px-4 py-1 text-[#9952b3] text-xs">{item.attributes.status.toUpperCase()}</p>
-                    </div>
-                  );
-                })}
+                <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
+                  {verifications?.map((item) => {
+                    return (
+                      <>
+                        <label htmlFor={item.id}>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</label>
+                        <input
+                          id={item.id}
+                          value={item?.attributes?.status.toUpperCase() || ""}
+                          readOnly
+                          className="font-light text-2xl max-[500px]:text-base text-gray-300"
+                        ></input>
+                      </>
+                    );
+                  })}
+                </div>
               </div>
             )}
             {documents && (
-              <div className="rounded-lg bg-gray-200 p-2">
+              <div className="rounded-lg bg-white p-2">
                 <p className="font-bold">Documents</p>
-                {documents?.map((item) => {
-                  return (
-                    <div key={item.id} className="flex justify-between p-2">
-                      <p>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</p>
-                      <p className="rounded-full border border-[#9952b3] px-4 py-1 text-[#9952b3] text-xs">{item.attributes.status.toUpperCase()}</p>
-                    </div>
-                  );
-                })}
+                <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
+                  {documents?.map((item) => {
+                    return (
+                      <>
+                        <label htmlFor={item.id}>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</label>
+                        <input
+                          id={item.id}
+                          value={item?.attributes?.status.toUpperCase() || ""}
+                          readOnly
+                          className="font-light text-2xl max-[500px]:text-base text-gray-300"
+                        ></input>
+                      </>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
