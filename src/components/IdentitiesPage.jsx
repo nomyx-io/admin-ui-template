@@ -34,6 +34,8 @@ const IdentitiesPage = ({ service }) => {
                 identidyObj.kyc_id = identity.attributes.accountNumber || "";
                 identidyObj.identityAddress = identity.attributes.address || "";
                 identidyObj.id = identity.id;
+                identidyObj.pepMatched = identity?.pepMatched || false;
+                identidyObj.watchlistMatched = identity?.watchlistMatched || false;
               } else {
                 // Default empty values if attributes are missing
                 identidyObj.claims = "";
@@ -41,6 +43,8 @@ const IdentitiesPage = ({ service }) => {
                 identidyObj.kyc_id = "";
                 identidyObj.identityAddress = "";
                 identidyObj.id = "";
+                identidyObj.pepMatched = false;
+                identidyObj.watchlistMatched = false;
               }
               return identidyObj;
             });
@@ -73,6 +77,8 @@ const IdentitiesPage = ({ service }) => {
                 displayName: `${firstName} ${lastName}`.trim(), // Concatenate first and last names
                 identityAddress: identity.attributes.walletAddress || "", // Wallet address remains the same
                 kyc_id: identity.attributes.personaReferenceId || "", // KYC ID set to personaReferenceId
+                pepMatched: identity.attributes.pepMatched,
+                watchlistMatched: identity.attributes.watchlistMatched,
                 type: identityType || "", // Type of identity
                 status: status || "", // Status of identity
                 ...identity, // Include other identity attributes as is
@@ -160,12 +166,14 @@ const IdentitiesPage = ({ service }) => {
     { label: "Identity", name: "displayName" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
+    { label: "Flagged?", name: "flagged_account" },
     { label: "Claims", name: "claims" },
   ];
   const pendingColumns = [
     { label: "Identity", name: "displayName" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
+    { label: "Flagged?", name: "flagged_account" },
     { label: "Type", name: "type" },
     { label: "Status", name: "status" },
   ];

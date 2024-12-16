@@ -39,6 +39,8 @@ function DigitalIdentityDetailView({ service }) {
         address: user.attributes.walletAddress,
         accountNumber: user.attributes.personaReferenceId,
         personaData: user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
+        watchlistMatched: user.attributes.watchlistMatched,
+        pepMatched: user.attributes.pepMatched,
       };
     } else {
       if (!service.getDigitalIdentity) return;
@@ -107,17 +109,31 @@ function DigitalIdentityDetailView({ service }) {
         </div>
         {personaData && (
           <div className="flex flex-col gap-2 rounded-lg bg-gray-200 p-6">
-            <div className="flex mb-2">
-              <p className="mr-12">Verification Data</p>
-              <span
-                className={`rounded-full border px-4 py-1 text-xs font-bold ${
-                  personaData?.name?.split(".")[1]?.toUpperCase() === "APPROVED" || personaData?.name?.split(".")[1]?.toUpperCase() === "COMPLETED"
-                    ? "border-green-500 text-green-500"
-                    : "border-red-500 text-red-500"
-                }`}
-              >
-                {personaData?.name?.split(".")[1]?.toUpperCase() || ""}
-              </span>
+            <div className="flex">
+              <div className="flex mb-2 mr-5">
+                <p className="mr-5">Verification Data</p>
+                <span
+                  className={`rounded-full border px-4 py-1 text-xs font-bold ${
+                    personaData?.name?.split(".")[1]?.toUpperCase() === "APPROVED" || personaData?.name?.split(".")[1]?.toUpperCase() === "COMPLETED"
+                      ? "border-green-500 text-green-500"
+                      : "border-red-500 text-red-500"
+                  }`}
+                >
+                  {personaData?.name?.split(".")[1]?.toUpperCase() || ""}
+                </span>
+              </div>
+              {identity?.watchlistMatched && (
+                <div className="flex mb-2 mr-5">
+                  <p className="mr-5">Watchlist</p>
+                  <span className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">MATCHED</span>
+                </div>
+              )}
+              {identity?.pepMatched && (
+                <div className="flex mb-2">
+                  <p className="mr-5">PEP</p>
+                  <span className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">MATCHED</span>
+                </div>
+              )}
             </div>
             {verifications && (
               <div className="rounded-lg bg-white p-2">
