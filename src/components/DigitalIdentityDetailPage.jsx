@@ -124,14 +124,14 @@ function DigitalIdentityDetailView({ service }) {
               </div>
               {identity?.watchlistMatched && (
                 <div className="flex mb-2 mr-5">
-                  <p className="mr-5">Watchlist</p>
-                  <span className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">MATCHED</span>
+                  <span className="mr-5">Matched</span>
+                  <p className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">Watchlist</p>
                 </div>
               )}
               {identity?.pepMatched && (
                 <div className="flex mb-2">
-                  <p className="mr-5">PEP</p>
-                  <span className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">MATCHED</span>
+                  <span className="mr-5">Matched</span>
+                  <p className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">Politically Exposed Person</p>
                 </div>
               )}
             </div>
