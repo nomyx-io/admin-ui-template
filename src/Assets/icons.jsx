@@ -66,4 +66,16 @@ const ShareIcon = (props) => {
     </svg>
   );
 };
-export { RightArrow, CopyIcon, ShareIcon };
+
+const WarningIcon = (props) => {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M12 9v4m0 4h.01M4.93 19h14.14c1.23 0 1.91-1.4 1.2-2.4L13.2 4.6c-.71-1-2.49-1-3.2 0L3.73 16.6c-.71 1 .03 2.4 1.2 2.4z"
+      />
+    </svg>
+  );
+};
+export { RightArrow, CopyIcon, ShareIcon, WarningIcon };
