@@ -76,7 +76,7 @@ export default function Login({ forceLogout, service, onConnect, onDisconnect })
           <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">
             <div className="text-right font-bold text-xl w-full">DID MANAGER</div>
             <div className={styles.btnContainer + " flex flex-grow justify-center items-center align-middle"}>
-              <ConnectButton label="Log in with Wallet" onConnect={handleConnect} onDisconnect={handleDisconnect} />
+              <ConnectButton label="Log in with Maisum's Face" onConnect={handleConnect} onDisconnect={handleDisconnect} />
             </div>
           </div>
         </>
