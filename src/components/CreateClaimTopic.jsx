@@ -17,7 +17,7 @@ function CreateClaimTopic({ service }) {
       setHiddenName(nextClaimTopicId);
       setDisplayName("");
     } catch (e) {
-      console.error("Did not get next claim topic ID:", e);
+      console.error("Failed get next claim topic ID:", e);
       toast.error("Failed to load initial data");
     }
   }, [service]);
