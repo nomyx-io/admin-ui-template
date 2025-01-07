@@ -29,17 +29,9 @@ const NavBar = ({ onConnect, onDisconnect, role }) => {
               </Link>
             </li>
             <li>
-              <span>
-                <a
-                  href="https://kronos-mintify-ui.vercel.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline flex items-center"
-                >
-                  Mint
-                  <span className="text-[#7F56D9]">↗</span>
-                </a>
-              </span>
+              <Link to="/mint" className="hover:underline">
+                Mint
+              </Link>
             </li>
             <li>
               <Link to="/topics" className="hover:underline">

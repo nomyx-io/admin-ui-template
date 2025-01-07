@@ -144,7 +144,7 @@ class BlockchainService {
 
   async mint(metaData) {
     const contractWithSigner = this.mintService.connect(this.signer);
-    const tx = await contractWithSigner.llMint(metaData);
+    const tx = await contractWithSigner.gemforceMint(metaData);
     return await tx.wait();
   }
 
