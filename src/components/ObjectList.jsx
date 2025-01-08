@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 
 import ReactPaginate from "react-paginate";
 
+import { WarningIcon } from "../Assets/icons";
 import { getValue, recursiveSearch } from "../utils";
 
 export const ConfirmationDialog = ({ message, onConfirm, onCancel }) => {
@@ -176,7 +177,23 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                 {columns.map((column) => {
                   let fieldName = typeof column === "object" ? column.name : column;
                   let key = fieldName + "-" + record.id;
-                  return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{getValue(fieldName, record)}</>}</td>;
+                  if (column.name != "flagged_account")
+                    return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{getValue(fieldName, record)}</>}</td>;
+                  else
+                    return (
+                      <td key={key}>
+                        {record.watchlistMatched && (
+                          <div className="w-7 text-red-700">
+                            <WarningIcon />
+                          </div>
+                        )}
+                        {record.pepMatched && (
+                          <div className="w-7 text-red-700">
+                            <WarningIcon />
+                          </div>
+                        )}
+                      </td>
+                    );
                 })}
                 {actions && actions.length > 0 && (
                   <td key={"actions" + record.id}>
