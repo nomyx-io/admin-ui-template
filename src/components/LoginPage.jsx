@@ -168,26 +168,26 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
                 </Form.Item>
 
                 <div className="flex justify-between">
-                  <a href="/forgot-password" className="text-blue-600">
+                  <a href="/forgot-password" className="text-blue-600 font-bold">
                     Forgot Password?
                   </a>
-                  <span>
+                  <div className="text-black font-bold">
                     Need an account?{" "}
                     <a href="/signup" className="text-blue-600">
                       Register here.
                     </a>
-                  </span>
+                  </div>
                 </div>
               </Form>
             ) : (
               <div className="flex flex-col items-center">
                 <ConnectButton showBalance={false} />
-                <Typography.Text className="text-black font-medium mt-5">
+                <div className="text-black font-bold mt-5">
                   Need an account?{" "}
                   <a href="/signup" className="text-blue-600">
                     Register here.
                   </a>
-                </Typography.Text>
+                </div>
               </div>
             )}
           </Card>

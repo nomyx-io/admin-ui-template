@@ -25,6 +25,7 @@ import Layout from "./components/Layout";
 import Login from "./components/LoginPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
+import SignUpPage from "./components/SignUpPage.jsx";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
 import BlockchainService from "./services/BlockchainService.js";
@@ -340,6 +341,7 @@ function App() {
                       />
                     }
                   />
+                  <Route path="/signup" element={<SignUpPage />} />
                   <Route
                     path="/topics"
                     element={
