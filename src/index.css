@@ -197,3 +197,27 @@ nav ul li ul li a:hover {
 label {
   text-transform: capitalize;
 }
+
+.signup-card .ant-card-head, .password-card .ant-card-head {
+  border-bottom: 1px solid #BBBBBB !important
+}
+
+.wallet-setup-radio-group .ant-radio-button-wrapper {
+  border: 1px solid #878787;
+  background: #fff;
+  color:#000;
+}
+
+button.ant-btn-primary:not([disabled]), [type='button'].ant-btn-primary:not([disabled]){
+  background-color: #1668dc;
+}
+
+.signup-button {
+  background-color: var(--button-background-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0px 20px;
+}

@@ -30,4 +30,9 @@ enum NomyxAction {
   AddClaims,
 }
 
-export { NomyxEvent, NomyxAction };
+enum LoginPreference {
+  USERNAME_PASSWORD,
+  WALLET,
+}
+
+export { NomyxEvent, NomyxAction, LoginPreference };
