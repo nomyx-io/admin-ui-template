@@ -233,6 +233,22 @@ class BlockchainService {
         if (claims && claims.length > 0) {
           for (let i = 0; i < identities.length; i++) {
             const identity = identities[i];
+            const walletAddress = identity.get("walletAddress"); // Get walletAddress from the Identity
+
+            if (walletAddress) {
+              // Query the User class for pepMatched and watchlistMatched columns
+              const userRecords = await this.parseClient.getRecords("User", ["walletAddress"], [walletAddress], ["pepMatched", "watchlistMatched"]);
+              if (userRecords && userRecords.length > 0) {
+                const user = userRecords[0]; // Assuming walletAddress is unique and returns one record
+                // Add pepMatched and watchlistMatched to the identity response
+                if (user.attributes?.pepMatched) {
+                  identity.pepMatched = user.attributes.pepMatched;
+                }
+                if (user.attributes?.watchlistMatched) {
+                  identity.watchlistMatched = user.attributes.watchlistMatched;
+                }
+              }
+            }
 
             // Filter and map claims to the corresponding identity, with a check for valid identityObj
             const activeClaims = claims.filter((claim) => {
@@ -409,6 +425,8 @@ class BlockchainService {
       claims: matchedClaims || [], // Return claims from identity attributes or an empty array
       personaData:
         user && user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
+      pepMatched: user && user.attributes.pepMatched,
+      watchlistMatched: user && user.attributes.watchlistMatched,
     };
   }
 
