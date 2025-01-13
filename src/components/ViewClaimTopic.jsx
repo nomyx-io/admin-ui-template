@@ -22,7 +22,8 @@ function ViewClaimTopic({ service }) {
     const issuers = service.getTrustedIssuersForClaimTopics && (await service.getTrustedIssuersForClaimTopics(topic));
     setTrustedIssuers(issuers);
     const claims = service.getClaimsForClaimTopics && (await service.getClaimsForClaimTopics(topicId));
-    setClaims(claims);
+    const uniqueIdentities = Array.from(new Map(claims.map((obj) => [obj.attributes.identity, obj])).values());
+    setClaims(uniqueIdentities);
   }, [service, topicId]);
 
   useEffect(() => {

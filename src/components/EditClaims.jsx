@@ -35,9 +35,9 @@ const EditClaims = ({ service }) => {
       // Remove the claims that are not selected anymore
       for (let claimTopic of claimsToRemove) {
         await toast.promise(service.removeClaim(identity.address, claimTopic), {
-          pending: `Removing claim ${claimTopic}...`,
-          success: `Successfully removed claim ${claimTopic}`,
-          error: `Error removing claim ${claimTopic}`,
+          pending: `Removing claim ${claimTopic.topic}...`,
+          success: `Successfully removed claim ${claimTopic.topic}`,
+          error: `Error removing claim ${claimTopic.topic}`,
         });
       }
 

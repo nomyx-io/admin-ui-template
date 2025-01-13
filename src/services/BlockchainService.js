@@ -321,10 +321,15 @@ class BlockchainService {
   }
 
   async createIdentity(identity) {
-    const contract = this.identityFactoryService.connect(this.signer);
-    const tx = await contract.createIdentity(identity);
-    await tx.wait();
-    return tx;
+    try {
+      console.log("this.signer", this.signer);
+      const contract = this.identityFactoryService.connect(this.signer);
+      const tx = await contract.createIdentity(identity);
+      await tx.wait();
+      return tx;
+    } catch (error) {
+      console.log("createIdentity error", error);
+    }
   }
 
   async getIdentity(address) {
@@ -466,11 +471,24 @@ class BlockchainService {
     return tx;
   }
 
-  async removeClaim(identity, claimTopic) {
-    const contract = this.identityRegistryService.connect(this.signer);
-    const tx = await contract.removeClaim(identity, claimTopic);
-    await tx.wait();
-    return tx;
+  async removeClaim(identity, claimTopicObject) {
+    try {
+      console.log("claimTopicObject", claimTopicObject);
+      // Extract the 'topic' field if claimTopicObject is an object
+      const claimTopic = claimTopicObject.topic;
+
+      // Ensure claimTopic is a valid BigNumber-compatible value
+      if (!claimTopic || isNaN(Number(claimTopic))) {
+        throw new Error(`Invalid claimTopic value: ${claimTopic}`);
+      }
+
+      const contract = this.identityRegistryService.connect(this.signer);
+      const tx = await contract.removeClaim(identity, claimTopic); // Pass valid claimTopic
+      await tx.wait();
+      return tx;
+    } catch (error) {
+      console.error("Error in removeClaim:", error);
+    }
   }
 
   async contains(userAddress) {

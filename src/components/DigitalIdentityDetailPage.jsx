@@ -23,6 +23,11 @@ function DigitalIdentityDetailView({ service }) {
     return item.type.startsWith("document");
   });
 
+  const templateId = personaData?.payload?.included?.filter((item) => item.type === "inquiry-template").map((item) => item.id)[0];
+
+  const identityType =
+    templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
+
   const navigate = useNavigate();
 
   const getIdentity = useCallback(async () => {
@@ -160,9 +165,11 @@ function DigitalIdentityDetailView({ service }) {
                 <p className="font-bold">Documents</p>
                 <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
                   {documents?.map((item) => {
+                    debugger;
                     return (
                       <>
-                        <label htmlFor={item.id}>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</label>
+                        {identityType == "KYC" && <label htmlFor={item.id}>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</label>}
+                        {identityType == "KYB" && <label htmlFor={item.id}>{toTitleCase(item.attributes.kind)}</label>}
                         <input
                           id={item.id}
                           value={item?.attributes?.status.toUpperCase() || ""}
