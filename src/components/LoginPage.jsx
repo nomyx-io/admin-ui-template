@@ -1,14 +1,14 @@
 import { useContext, useEffect, useState, useRef } from "react";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Spin, Layout, Card, Radio, Form, Input, Button, Typography } from "antd";
+import { Spin, Layout, Card, Radio, Form, Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAccount, useDisconnect } from "wagmi";
 
 import styles from "./LoginPage.module.css";
-import { RoleContext } from "../App";
 import nomyxLogo from "../Assets/nomyx_logo_white.svg";
+import { RoleContext } from "../context/RoleContext";
 import bg from "../images/BlackPaintBackground.webp";
 import { LoginPreference } from "../utils/Constants";
 
@@ -55,15 +55,15 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
   const handleStandardLogin = async (values) => {
     const { email, password } = values;
     await onLogin(email, password); // Invoke the onLogin function passed from App
-    navigate("/dashboard"); // Redirect after successful login
+    // navigate("/"); // Redirect after successful login
   };
 
-  const handleConnect = ({ address, connector, isReconnected }) => {
+  const handleConnect = async ({ address, connector, isReconnected }) => {
     console.log("Connected with address: ", address);
     if (!isConnectTriggered) {
       console.log("Connect Triggered");
       setIsConnectTriggered(true);
-      onConnect(address, connector);
+      await onConnect(address, connector);
     }
   };
 
@@ -167,27 +167,15 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
                   </div>
                 </Form.Item>
 
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <a href="/forgot-password" className="text-blue-600 font-bold">
                     Forgot Password?
                   </a>
-                  <div className="text-black font-bold">
-                    Need an account?{" "}
-                    <a href="/signup" className="text-blue-600">
-                      Register here.
-                    </a>
-                  </div>
-                </div>
+                </div> */}
               </Form>
             ) : (
               <div className="flex flex-col items-center">
                 <ConnectButton showBalance={false} />
-                <div className="text-black font-bold mt-5">
-                  Need an account?{" "}
-                  <a href="/signup" className="text-blue-600">
-                    Register here.
-                  </a>
-                </div>
               </div>
             )}
           </Card>

@@ -6,6 +6,8 @@ import { CheckOutlined } from "@ant-design/icons";
 import { Card, Form, Input, Button } from "antd";
 import { Link } from "react-router-dom"; // Import Link from react-router-dom
 
+import nomyxLogo from "../../Assets/nomyx_logo_white.svg"; // Adjust the path as needed
+
 // import CheckUserOnboarding from "./CheckUserOnboarding"; // Adjust the import path as needed
 
 const PasswordForm = ({ onBack, onSubmit }) => {
@@ -38,7 +40,7 @@ const PasswordForm = ({ onBack, onSubmit }) => {
       {/* Left Section - Custom Gradient Background and Logo */}
       <div className="w-1/2 flex justify-center items-center bg-black">
         <img
-          src="/images/Kronos-Carbon-Logo.png" // Ensure this path is correct in your public folder
+          src={nomyxLogo} // Ensure this path is correct in your public folder
           alt="Logo"
           className="h-40" // Adjust height as needed (h-156 seems unusually large; h-40 is ~10rem)
         />
@@ -129,14 +131,14 @@ const PasswordForm = ({ onBack, onSubmit }) => {
             <div className="grid grid-cols-2 gap-4 my-4">
               {/* Back Link - Centered in Left Column */}
               <div className="flex justify-center">
-                <Button onClick={onBack} className="text-blue-600 border-none hover:text-blue-800 hover:!bg-transparent">
+                <Button onClick={onBack} className="w-full !text-blue-600 border-none hover:text-blue-800 !bg-transparent signup-button">
                   Back
                 </Button>
               </div>
 
               {/* Submit Button - Full Width in Right Column */}
               <Form.Item className="m-0">
-                <Button type="primary" htmlType="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button type="primary" htmlType="submit" className="w-full bg-blue-600 hover:bg-blue-700 signup-button">
                   Submit
                 </Button>
               </Form.Item>
