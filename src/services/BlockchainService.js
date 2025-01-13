@@ -1,12 +1,12 @@
 import { ethers } from "ethers";
 import PubSub from "pubsub-js";
 
-import ParseClient from "./ParseClient.ts";
 import * as ClaimTopicsRegistry from "../abi/IClaimTopicsRegistry.json";
 import * as IdentityFactory from "../abi/IdentityFactory.json";
 import * as IdentityRegistry from "../abi/IIdentityRegistry.json";
 import * as MinterFacet from "../abi/IMinterFacet.json";
 import * as TrustedIssuersRegistry from "../abi/ITrustedIssuersRegistry.json";
+import ParseClient from "../services/ParseClient"; // Import the singleton instance
 import { NomyxEvent } from "../utils/Constants";
 
 class BlockchainService {
@@ -15,8 +15,6 @@ class BlockchainService {
   trustedIssuersRegistryAbi = TrustedIssuersRegistry.default.abi;
   identityFactoryAbi = IdentityFactory.default.abi;
   mintAbi = MinterFacet.default.abi;
-
-  parseClient = ParseClient;
 
   constructor(provider, contractAddress, identityRegistryAddress) {
     // this.provider = new ethers.providers.JsonRpcProvider(provider);
@@ -72,8 +70,6 @@ class BlockchainService {
     this.isTrustedIssuer = this.isTrustedIssuer.bind(this);
     this.getTrustedIssuerClaimTopics = this.getTrustedIssuerClaimTopics.bind(this);
     this.hasClaimTopic = this.hasClaimTopic.bind(this);
-
-    this.parseClient.initialize();
 
     this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicAdded, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicAdded, claimTopic));
     this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicRemoved, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicRemoved, claimTopic));
@@ -155,7 +151,7 @@ class BlockchainService {
   }
 
   updateClaimTopic(claimTopic) {
-    return this.parseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
+    return ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
   }
 
   async removeClaimTopic(claimTopic) {
@@ -166,27 +162,27 @@ class BlockchainService {
   }
 
   async getClaimTopics() {
-    return await this.parseClient.getRecords("ClaimTopic", [], [], ["*"]);
+    return await ParseClient.getRecords("ClaimTopic", [], [], ["*"]);
   }
 
   async getNextClaimTopicId() {
-    const result = await this.parseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "topic", "desc");
+    const result = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "topic", "desc");
     let highestTopicId = result.length > 0 ? Number.parseInt(result[0].attributes.topic) + 1 : 1;
     return highestTopicId;
   }
 
   async getClaimTopicById(id) {
-    const claimTopic = await this.parseClient.getRecords("ClaimTopic", ["objectId"], [id], ["*"]);
+    const claimTopic = await ParseClient.getRecords("ClaimTopic", ["objectId"], [id], ["*"]);
     return claimTopic;
   }
 
   async getTrustedIssuersForClaimTopics(id) {
-    const trustedIssuer = await this.parseClient.getRecords("TrustedIssuer", ["claimTopics.topic"], [id]);
+    const trustedIssuer = await ParseClient.getRecords("TrustedIssuer", ["claimTopics.topic"], [id]);
     return trustedIssuer;
   }
 
   async getTrustedIssuersByObjectId(id) {
-    const results = await this.parseClient.getRecords("TrustedIssuer", ["objectId"], [id]);
+    const results = await ParseClient.getRecords("TrustedIssuer", ["objectId"], [id]);
 
     let trustedIssuer = null;
 
@@ -204,14 +200,14 @@ class BlockchainService {
       objectId: id,
     };
 
-    const claimTopics = await this.parseClient.getRecords("Claim", ["claimTopicObj"], [pointerObject], ["*"]);
-    const claimTopicObj = await this.parseClient.getRecords("ClaimTopic", ["objectId"], [id]);
+    const claimTopics = await ParseClient.getRecords("Claim", ["claimTopicObj"], [pointerObject], ["*"]);
+    const claimTopicObj = await ParseClient.getRecords("ClaimTopic", ["objectId"], [id]);
     if (claimTopicObj.length === 0) return []; // Return if no matching topic
 
     const claimTopicValue = claimTopicObj[0].attributes.topic;
 
     // Fetch identities that contain the claim topic in their claims array
-    const identities = await this.parseClient.getRecords("Identity", ["claims"], [claimTopicValue]);
+    const identities = await ParseClient.getRecords("Identity", ["claims"], [claimTopicValue]);
 
     // Filter claim topics to include only those that match with identities
     const filteredClaims = claimTopics.filter((claim) =>
@@ -224,11 +220,11 @@ class BlockchainService {
   async getActiveIdentities() {
     try {
       // Fetch all active identities
-      const identities = await this.parseClient.getRecords("Identity", ["active"], [true], ["*"]);
+      const identities = await ParseClient.getRecords("Identity", ["active"], [true], ["*"]);
 
       if (identities && identities.length > 0) {
         // Fetch active claims and include the related identityObj and claimTopicObj
-        const claims = await this.parseClient.getRecords("Claim", ["active"], [true], ["identityObj", "claimTopicObj"]);
+        const claims = await ParseClient.getRecords("Claim", ["active"], [true], ["identityObj", "claimTopicObj"]);
 
         if (claims && claims.length > 0) {
           for (let i = 0; i < identities.length; i++) {
@@ -268,14 +264,14 @@ class BlockchainService {
   }
 
   async getPendingIdentities() {
-    const users = await this.parseClient.getRecords("_User", ["pendingApproval", "denied"], [true, false], ["*"]);
+    const users = await ParseClient.getRecords("_User", ["pendingApproval", "denied"], [true, false], ["*"]);
     return users;
   }
 
   async getAddClaimIdentities() {
-    const identities = await this.parseClient.getRecords("Identity", ["active"], [true], ["*"]);
+    const identities = await ParseClient.getRecords("Identity", ["active"], [true], ["*"]);
     if (identities && identities.length > 0) {
-      const claims = await this.parseClient.getRecords("Claim", ["active"], [true], ["identityObj", "claimTopicObj"]);
+      const claims = await ParseClient.getRecords("Claim", ["active"], [true], ["identityObj", "claimTopicObj"]);
 
       for (let i = 0; i < identities.length; i++) {
         const identity = identities[i];
@@ -301,7 +297,7 @@ class BlockchainService {
 
   async softRemoveUser(identityAddress) {
     // set pending approval and denied to false
-    return await this.parseClient.updateExistingRecord("_User", ["walletAddress"], [identityAddress], { denied: true });
+    return await ParseClient.updateExistingRecord("_User", ["walletAddress"], [identityAddress], { denied: true });
   }
 
   async createIdentity(identity) {
@@ -327,7 +323,7 @@ class BlockchainService {
     // Function to perform the update
     const performUpdate = async () => {
       try {
-        const result = await this.parseClient.updateExistingRecord("Identity", ["address"], [identity], identityData);
+        const result = await ParseClient.updateExistingRecord("Identity", ["address"], [identity], identityData);
         return result; // Return the result if successful
       } catch (error) {
         console.error("Update failed:", error);
@@ -355,16 +351,16 @@ class BlockchainService {
   }
 
   async createParseIdentity(identity, identityData) {
-    return await this.parseClient.createRecord("_User", ["address"], [identity], identityData);
+    return await ParseClient.createRecord("_User", ["address"], [identity], identityData);
   }
 
   async isUser(identityAddress) {
-    const user = await this.parseClient.getRecord("_User", ["walletAddress"], [identityAddress]);
+    const user = await ParseClient.getRecord("_User", ["walletAddress"], [identityAddress]);
     return user ? true : false;
   }
 
   async approveUser(identityAddress) {
-    return await this.parseClient.updateExistingRecord("_User", ["walletAddress"], [identityAddress], { pendingApproval: false });
+    return await ParseClient.updateExistingRecord("_User", ["walletAddress"], [identityAddress], { pendingApproval: false });
   }
 
   async addIdentity(identity, identityData) {
@@ -376,17 +372,17 @@ class BlockchainService {
 
   async getDigitalIdentity(id) {
     // Fetch the identity record based on the given ID
-    const identities = await this.parseClient.getRecords("Identity", ["objectId"], [id], ["*"]);
+    const identities = await ParseClient.getRecords("Identity", ["objectId"], [id], ["*"]);
     const identity = identities.length > 0 ? identities[0] : null;
-    const user = (await this.parseClient.getRecords("_User", ["personaReferenceId"], [identity.attributes.accountNumber], ["*"]))[0];
-    const claims = await this.parseClient.getRecords("ClaimTopic", undefined, undefined, ["*"]);
+    const user = (await ParseClient.getRecords("_User", ["personaReferenceId"], [identity.attributes.accountNumber], ["*"]))[0];
+    const claims = await ParseClient.getRecords("ClaimTopic", undefined, undefined, ["*"]);
 
     // If no identity is found, return null
     if (!identity) {
       return null;
     }
 
-    const claimAdded = await this.parseClient.getRecords("ClaimAdded__e", ["identity"], [identity.attributes.identity], ["claimTopic", "blockHash"]);
+    const claimAdded = await ParseClient.getRecords("ClaimAdded__e", ["identity"], [identity.attributes.identity], ["claimTopic", "blockHash"]);
 
     // Map claimTopics to blockHashes for easy lookup
     const blockHashMap = claimAdded.reduce((acc, record) => {
@@ -495,7 +491,7 @@ class BlockchainService {
   }
 
   async updateTrustedIssuer(data) {
-    return await this.parseClient.updateExistingRecord("TrustedIssuer", ["issuer"], [data.issuer], data);
+    return await ParseClient.updateExistingRecord("TrustedIssuer", ["issuer"], [data.issuer], data);
   }
 
   async removeTrustedIssuer(trustedIssuer) {
@@ -513,7 +509,7 @@ class BlockchainService {
   }
 
   async getTrustedIssuers() {
-    const trustedIssuer = await this.parseClient.getRecords("TrustedIssuer", ["active"], [true], ["*"]);
+    const trustedIssuer = await ParseClient.getRecords("TrustedIssuer", ["active"], [true], ["*"]);
     return trustedIssuer;
   }
 
