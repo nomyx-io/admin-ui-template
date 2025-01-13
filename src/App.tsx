@@ -107,12 +107,37 @@ const wagmiConfig = createConfig({
   publicClient,
 });
 
+const validateToken = async (token: string) => {
+  try {
+    const response = await axios.get(`${process.env.REACT_APP_PARSE_SERVER_URL}/auth/validate`, {
+      headers: {
+        "x-parse-session-token": token,
+      },
+    });
+
+    console.log("Response", response);
+    const data = response.data;
+    console.log("Response Data", data);
+    return {
+      valid: data?.valid || false,
+      roles: data?.user?.roles || [],
+    };
+  } catch (error) {
+    console.error("Error validating token:", error);
+    return {
+      valid: false,
+      roles: [],
+    };
+  }
+};
+
 function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [blockchainService, setBlockchainService] = useState<BlockchainService | null>(null);
   const [role, setRole] = useState<any>([]);
   const [forceLogout, setForceLogout] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true); // New state for initialization
 
   const onConnect = async (address: any, connector: any) => {
     if (isConnected) {
@@ -169,6 +194,7 @@ function App() {
   const getToken = async (request: any) => {
     try {
       let data: any = await axios.post(`${process.env.REACT_APP_PARSE_SERVER_URL}/auth/login`, request);
+      console.log("Token Data", data);
       data = data.data;
       return {
         token: data?.access_token || "",
@@ -183,6 +209,31 @@ function App() {
     }
   };
 
+  const restoreSession = async () => {
+    const token = localStorage.getItem("sessionToken");
+    if (token) {
+      const { valid, roles } = await validateToken(token);
+      console.log("Valid", valid);
+      console.log("Roles", roles);
+      if (valid && roles.length > 0) {
+        setRole(roles);
+        setIsConnected(true);
+      } else {
+        // Token is invalid or roles are empty
+        localStorage.removeItem("sessionToken");
+        localStorage.removeItem("userRoles");
+        setForceLogout(true);
+      }
+    }
+    setInitializing(false);
+  };
+
+  useEffect(() => {
+    console.log("Restoring session");
+    restoreSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (role.length > 0) {
       setLoading(true);
@@ -196,7 +247,17 @@ function App() {
     setRole([]);
     setForceLogout(false);
     setIsConnected(false);
+    localStorage.removeItem("sessionToken");
+    localStorage.removeItem("userRoles");
   };
+
+  if (initializing) {
+    return (
+      <div className="z-50 h-screen w-screen flex justify-center items-center">
+        <Spin />
+      </div>
+    );
+  }
 
   return (
     <WagmiConfig config={wagmiConfig}>
