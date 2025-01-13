@@ -23,6 +23,11 @@ function DigitalIdentityDetailView({ service }) {
     return item.type.startsWith("document");
   });
 
+  const templateId = personaData?.payload?.included?.filter((item) => item.type === "inquiry-template").map((item) => item.id)[0];
+
+  const identityType =
+    templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
+
   const navigate = useNavigate();
 
   const getIdentity = useCallback(async () => {
@@ -39,6 +44,8 @@ function DigitalIdentityDetailView({ service }) {
         address: user.attributes.walletAddress,
         accountNumber: user.attributes.personaReferenceId,
         personaData: user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
+        watchlistMatched: user.attributes.watchlistMatched,
+        pepMatched: user.attributes.pepMatched,
       };
     } else {
       if (!service.getDigitalIdentity) return;
@@ -107,17 +114,31 @@ function DigitalIdentityDetailView({ service }) {
         </div>
         {personaData && (
           <div className="flex flex-col gap-2 rounded-lg bg-gray-200 p-6">
-            <div className="flex mb-2">
-              <p className="mr-12">Verification Data</p>
-              <span
-                className={`rounded-full border px-4 py-1 text-xs font-bold ${
-                  personaData?.name?.split(".")[1]?.toUpperCase() === "APPROVED" || personaData?.name?.split(".")[1]?.toUpperCase() === "COMPLETED"
-                    ? "border-green-500 text-green-500"
-                    : "border-red-500 text-red-500"
-                }`}
-              >
-                {personaData?.name?.split(".")[1]?.toUpperCase() || ""}
-              </span>
+            <div className="flex">
+              <div className="flex mb-2 mr-5">
+                <p className="mr-5">Verification Data</p>
+                <span
+                  className={`rounded-full border px-4 py-1 text-xs font-bold ${
+                    personaData?.name?.split(".")[1]?.toUpperCase() === "APPROVED" || personaData?.name?.split(".")[1]?.toUpperCase() === "COMPLETED"
+                      ? "border-green-500 text-green-500"
+                      : "border-red-500 text-red-500"
+                  }`}
+                >
+                  {personaData?.name?.split(".")[1]?.toUpperCase() || ""}
+                </span>
+              </div>
+              {identity?.watchlistMatched && (
+                <div className="flex mb-2 mr-5">
+                  <span className="mr-5">Matched</span>
+                  <p className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">Watchlist</p>
+                </div>
+              )}
+              {identity?.pepMatched && (
+                <div className="flex mb-2">
+                  <span className="mr-5">Matched</span>
+                  <p className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">Politically Exposed Person</p>
+                </div>
+              )}
             </div>
             {verifications && (
               <div className="rounded-lg bg-white p-2">
@@ -144,9 +165,11 @@ function DigitalIdentityDetailView({ service }) {
                 <p className="font-bold">Documents</p>
                 <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
                   {documents?.map((item) => {
+                    debugger;
                     return (
                       <>
-                        <label htmlFor={item.id}>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</label>
+                        {identityType == "KYC" && <label htmlFor={item.id}>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</label>}
+                        {identityType == "KYB" && <label htmlFor={item.id}>{toTitleCase(item.attributes.kind)}</label>}
                         <input
                           id={item.id}
                           value={item?.attributes?.status.toUpperCase() || ""}

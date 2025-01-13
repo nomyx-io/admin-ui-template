@@ -23,6 +23,7 @@ import Home from "./components/Home.jsx";
 import IdentitiesPage from "./components/IdentitiesPage.jsx";
 import Layout from "./components/Layout";
 import Login from "./components/LoginPage.jsx";
+import MintPage from "./components/MintPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
@@ -478,6 +479,14 @@ function App() {
                     element={
                       <Protected role={"TrustedIssuer"} roles={role}>
                         <EditClaimsSummaryView service={blockchainService} />
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="/mint"
+                    element={
+                      <Protected role={"TrustedIssuer"} roles={role}>
+                        <MintPage service={blockchainService} />
                       </Protected>
                     }
                   />

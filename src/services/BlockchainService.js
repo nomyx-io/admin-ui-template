@@ -140,7 +140,7 @@ class BlockchainService {
 
   async mint(metaData) {
     const contractWithSigner = this.mintService.connect(this.signer);
-    const tx = await contractWithSigner.llMint(metaData);
+    const tx = await contractWithSigner.gemforceMint(metaData);
     return await tx.wait();
   }
 
@@ -229,6 +229,22 @@ class BlockchainService {
         if (claims && claims.length > 0) {
           for (let i = 0; i < identities.length; i++) {
             const identity = identities[i];
+            const walletAddress = identity.get("walletAddress"); // Get walletAddress from the Identity
+
+            if (walletAddress) {
+              // Query the User class for pepMatched and watchlistMatched columns
+              const userRecords = await this.parseClient.getRecords("User", ["walletAddress"], [walletAddress], ["pepMatched", "watchlistMatched"]);
+              if (userRecords && userRecords.length > 0) {
+                const user = userRecords[0]; // Assuming walletAddress is unique and returns one record
+                // Add pepMatched and watchlistMatched to the identity response
+                if (user.attributes?.pepMatched) {
+                  identity.pepMatched = user.attributes.pepMatched;
+                }
+                if (user.attributes?.watchlistMatched) {
+                  identity.watchlistMatched = user.attributes.watchlistMatched;
+                }
+              }
+            }
 
             // Filter and map claims to the corresponding identity, with a check for valid identityObj
             const activeClaims = claims.filter((claim) => {
@@ -301,10 +317,15 @@ class BlockchainService {
   }
 
   async createIdentity(identity) {
-    const contract = this.identityFactoryService.connect(this.signer);
-    const tx = await contract.createIdentity(identity);
-    await tx.wait();
-    return tx;
+    try {
+      console.log("this.signer", this.signer);
+      const contract = this.identityFactoryService.connect(this.signer);
+      const tx = await contract.createIdentity(identity);
+      await tx.wait();
+      return tx;
+    } catch (error) {
+      console.log("createIdentity error", error);
+    }
   }
 
   async getIdentity(address) {
@@ -405,6 +426,8 @@ class BlockchainService {
       claims: matchedClaims || [], // Return claims from identity attributes or an empty array
       personaData:
         user && user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
+      pepMatched: user && user.attributes.pepMatched,
+      watchlistMatched: user && user.attributes.watchlistMatched,
     };
   }
 
@@ -444,11 +467,24 @@ class BlockchainService {
     return tx;
   }
 
-  async removeClaim(identity, claimTopic) {
-    const contract = this.identityRegistryService.connect(this.signer);
-    const tx = await contract.removeClaim(identity, claimTopic);
-    await tx.wait();
-    return tx;
+  async removeClaim(identity, claimTopicObject) {
+    try {
+      console.log("claimTopicObject", claimTopicObject);
+      // Extract the 'topic' field if claimTopicObject is an object
+      const claimTopic = claimTopicObject.topic;
+
+      // Ensure claimTopic is a valid BigNumber-compatible value
+      if (!claimTopic || isNaN(Number(claimTopic))) {
+        throw new Error(`Invalid claimTopic value: ${claimTopic}`);
+      }
+
+      const contract = this.identityRegistryService.connect(this.signer);
+      const tx = await contract.removeClaim(identity, claimTopic); // Pass valid claimTopic
+      await tx.wait();
+      return tx;
+    } catch (error) {
+      console.error("Error in removeClaim:", error);
+    }
   }
 
   async contains(userAddress) {
