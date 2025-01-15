@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 
 import { Breadcrumb, Button, Input, Transfer } from "antd";
 import { Link, useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+
+import { RoleContext } from "../context/RoleContext";
+import DfnsService from "../services/DfnsService";
+import { WalletPreference } from "../utils/Constants";
 
 const EditClaims = ({ service }) => {
   const navigate = useNavigate();
@@ -12,6 +16,7 @@ const EditClaims = ({ service }) => {
   const [claimTopics, setClaimTopics] = useState([]);
   const [targetKeys, setTargetKeys] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState([]);
+  const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   // Handling the transfer box for claim topics
   const onChange = (nextTargetKeys) => {
@@ -34,41 +39,119 @@ const EditClaims = ({ service }) => {
     try {
       // Remove the claims that are not selected anymore
       for (let claimTopic of claimsToRemove) {
-        await toast.promise(service.removeClaim(identity.address, claimTopic), {
-          pending: `Removing claim ${claimTopic.topic}...`,
-          success: `Successfully removed claim ${claimTopic.topic}`,
-          error: `Error removing claim ${claimTopic.topic}`,
-        });
+        if (walletPreference === WalletPreference.MANAGED) {
+          toast
+            .promise(
+              (async () => {
+                // Initiate remove claim
+                const { initiateResponse, error: initError } = await DfnsService.initiateRemoveClaim(
+                  identity.address,
+                  claimTopic,
+                  user.walletId,
+                  dfnsToken
+                );
+                if (initError) throw new Error(initError);
+
+                // Complete remove claim
+                const { completeResponse, error: completeError } = await DfnsService.completeRemoveClaim(
+                  user.walletId,
+                  dfnsToken,
+                  initiateResponse.challenge,
+                  initiateResponse.requestBody
+                );
+                if (completeError) throw new Error(completeError);
+
+                return completeResponse;
+              })(),
+              {
+                pending: `Removing claim ${claimTopic.topic}...`,
+                success: `Successfully removed claim ${claimTopic.topic}`,
+                error: `Error removing claim ${claimTopic.topic}`,
+              }
+            )
+            .catch((error) => {
+              console.error("Error after attempting to remove claim:", error);
+            });
+        } else if (walletPreference === WalletPreference.PRIVATE) {
+          await toast.promise(service.removeClaim(identity.address, claimTopic), {
+            pending: `Removing claim ${claimTopic.topic}...`,
+            success: `Successfully removed claim ${claimTopic.topic}`,
+            error: `Error removing claim ${claimTopic.topic}`,
+          });
+        }
       }
 
       // Only add new claims (claimsToAdd) if there are any to add
       if (claimsToAdd.length > 0) {
-        toast.promise(
-          async () => {
-            try {
-              const reponse = await service.setClaims(identity.address, claimsToAdd);
-              // Fetch the updated identity to verify changes
-              const updatedIdentity = await service.getDigitalIdentity(identityId);
-              // Update the state with the latest identity data and selected claims
-              setIdentity(updatedIdentity);
-              setTargetKeys(updatedIdentity?.claims.map((t) => t.topic) || []);
-              // Navigate to the summary page
-              navigate(`/identities/${JSON.stringify({ data: reponse })}/edit/summary`);
-            } catch (error) {
-              throw error; // Rethrow the error to trigger the error notification
-            }
-          },
-          {
-            pending: "Adding new claims...",
-            success: "Successfully added new claims.", // Notification on success
-            error: {
-              // Notification on error
-              render({ data }) {
-                return <div>{data?.reason || data || "Error adding claims"}</div>;
-              },
+        if (walletPreference === WalletPreference.MANAGED) {
+          toast
+            .promise(
+              (async () => {
+                // Initiate set claim
+                const { initiateResponse, error: initError } = await DfnsService.initiateSetClaims(
+                  identity.address,
+                  claimsToAdd,
+                  user.walletId,
+                  dfnsToken
+                );
+                if (initError) throw new Error(initError);
+
+                // Complete set claim
+                const { completeResponse, error: completeError } = await DfnsService.completeSetClaims(
+                  user.walletId,
+                  dfnsToken,
+                  initiateResponse.challenge,
+                  initiateResponse.requestBody
+                );
+                if (completeError) throw new Error(completeError);
+
+                return completeResponse;
+              })(),
+              {
+                pending: "Adding new claims...",
+                success: `Successfully added new claims`,
+                error: {
+                  // Notification on error
+                  render({ data }) {
+                    return <div>{data?.reason || data || "Error adding claims"}</div>;
+                  },
+                },
+              }
+            )
+            .then(() => {
+              //navigate(`/identities/${JSON.stringify({ data: completeResponse })}/edit/summary`);
+            })
+            .catch((error) => {
+              console.error("Error after attempting to set claim:", error);
+            });
+        } else if (walletPreference === WalletPreference.PRIVATE) {
+          toast.promise(
+            async () => {
+              try {
+                const reponse = await service.setClaims(identity.address, claimsToAdd);
+                // Fetch the updated identity to verify changes
+                const updatedIdentity = await service.getDigitalIdentity(identityId);
+                // Update the state with the latest identity data and selected claims
+                setIdentity(updatedIdentity);
+                setTargetKeys(updatedIdentity?.claims.map((t) => t.topic) || []);
+                // Navigate to the summary page
+                navigate(`/identities/${JSON.stringify({ data: reponse })}/edit/summary`);
+              } catch (error) {
+                throw error; // Rethrow the error to trigger the error notification
+              }
             },
-          }
-        );
+            {
+              pending: "Adding new claims...",
+              success: "Successfully added new claims.", // Notification on success
+              error: {
+                // Notification on error
+                render({ data }) {
+                  return <div>{data?.reason || data || "Error adding claims"}</div>;
+                },
+              },
+            }
+          );
+        }
       } else {
         toast.error("No new claims to add.");
       }

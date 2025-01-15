@@ -125,7 +125,7 @@ const validateToken = async (token: string) => {
       roles: data?.user?.roles || [],
       user: data?.user,
       walletPreference: data?.user?.walletPreference,
-      dfnsToken: data?.dfnsToken,
+      dfnsToken: data?.dfns_token,
     };
   } catch (error) {
     console.error("Error validating token:", error);
@@ -160,7 +160,7 @@ function App() {
         token: data?.access_token || "",
         roles: data?.user?.roles || [],
         user: data?.user,
-        dfnsToken: data?.dfnsToken,
+        dfnsToken: data?.dfns_token,
       };
     } catch (error) {
       console.log("Error during authentication:", error);
@@ -204,7 +204,7 @@ function App() {
       return;
     }
 
-    const { token, roles, walletPreference }: any = await getToken({
+    const { token, roles, walletPreference, dfnsToken }: any = await getToken({
       message: message,
       signature: signature,
     });
@@ -213,6 +213,7 @@ function App() {
       setRole([...roles]);
       setUser(user);
       setWalletPreference(walletPreference);
+      setDfnsToken(dfnsToken);
       localStorage.setItem("sessionToken", token);
     } else {
       if (signature) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 
 // Third-party UI/component libraries
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -13,6 +13,9 @@ import "react-toastify/dist/ReactToastify.css";
 
 // Local components
 import Compliance from "./Compliance";
+import { RoleContext } from "../context/RoleContext";
+import DfnsService from "../services/DfnsService";
+import { WalletPreference } from "../utils/Constants";
 
 // Validation Schema
 const validationSchema = yup.object().shape({
@@ -34,6 +37,7 @@ const MintPage = ({ service }) => {
   const [targetKeys, setTargetKeys] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   // Form Handling with react-hook-form
   const {
@@ -106,22 +110,58 @@ const MintPage = ({ service }) => {
       { key: "claimTopics", attributeType: 0, value: targetKeys.join(",") },
     ];
 
-    // Toast Notification for Minting
-    toast.promise(
-      service
-        .mint(metadata)
+    if (walletPreference === WalletPreference.MANAGED) {
+      toast
+        .promise(
+          async () => {
+            // Initiate minting token
+            const { initiateResponse, error: initError } = await DfnsService.initiateGemforceMint(metadata, user.walletId, dfnsToken);
+            if (initError) throw new Error(initError);
+
+            // Complete minting token
+            const { completeResponse, error: completeError } = await DfnsService.completeGemforceMint(
+              user.walletId,
+              dfnsToken,
+              initiateResponse.challenge,
+              initiateResponse.requestBody
+            );
+            if (completeError) throw new Error(completeError);
+
+            return completeResponse;
+          },
+          {
+            pending: "Minting NFT...",
+            success: `Successfully minted NFT to ${data.mintAddress}`,
+            error: "An error occurred while minting NFT",
+          }
+        )
         .then(() => {
           setTargetKeys([]);
           setSelectedKeys([]);
           reset();
         })
-        .finally(() => setLoading(false)),
-      {
-        pending: "Minting NFT...",
-        success: `Successfully minted NFT to ${data.mintAddress}`,
-        error: "An error occurred while minting NFT",
-      }
-    );
+        .finally(() => setLoading(false))
+        .catch((error) => {
+          console.error("Error after attempting to mint a token:", error);
+        });
+    } else if (walletPreference === WalletPreference.PRIVATE) {
+      // Toast Notification for Minting
+      toast.promise(
+        service
+          .mint(metadata)
+          .then(() => {
+            setTargetKeys([]);
+            setSelectedKeys([]);
+            reset();
+          })
+          .finally(() => setLoading(false)),
+        {
+          pending: "Minting NFT...",
+          success: `Successfully minted NFT to ${data.mintAddress}`,
+          error: "An error occurred while minting NFT",
+        }
+      );
+    }
   };
 
   // Transfer Handlers
