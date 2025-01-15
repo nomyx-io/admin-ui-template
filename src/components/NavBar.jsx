@@ -2,7 +2,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
 import { useAccount, useDisconnect } from "wagmi";
 
-import NomyxLogo from "../images/nomyx.svg";
+import NomyxLogo from "../Assets/nomyx_logo_black.svg";
 import "@rainbow-me/rainbowkit/styles.css";
 
 const NavBar = ({ onConnect, onDisconnect, role }) => {
@@ -21,7 +21,7 @@ const NavBar = ({ onConnect, onDisconnect, role }) => {
         {role.includes("CentralAuthority") && (
           <>
             <li style={{ padding: "20px 20px", minWidth: "100px" }}>
-              <img src={NomyxLogo} alt="Nomyx Logo" className="h-6 w-auto" />
+              <img src={NomyxLogo} alt="Nomyx Logo" className="h-8 w-auto" />
             </li>
             <li>
               <Link to="/" className="hover:underline">
@@ -35,7 +35,7 @@ const NavBar = ({ onConnect, onDisconnect, role }) => {
             </li>
             <li>
               <Link to="/topics" className="hover:underline">
-                Claim Topics
+                Compliance Rules
               </Link>
             </li>
             <li>

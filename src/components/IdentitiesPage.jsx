@@ -179,7 +179,7 @@ const IdentitiesPage = ({ service }) => {
   ];
 
   const actions = [
-    { label: "Edit Claims", name: NomyxAction.EditClaims },
+    { label: "Edit Rules", name: NomyxAction.EditClaims },
     { label: "View", name: NomyxAction.ViewIdentity },
     {
       label: "Remove",
@@ -197,7 +197,7 @@ const IdentitiesPage = ({ service }) => {
     },
   ];
   const claimsActions = [
-    { label: "Add Claims", name: NomyxAction.AddClaims },
+    { label: "Add Rules", name: NomyxAction.AddClaims },
     { label: "View", name: NomyxAction.ViewIdentity },
     {
       label: "Remove",
@@ -248,7 +248,7 @@ const IdentitiesPage = ({ service }) => {
         <TabPane tab="Identities" key="Identities">
           <ObjectList
             title="Identities"
-            description="Identities represent individuals that can be related to Claim Topics"
+            description="Identities represent individuals that can be related to Compliance Rules"
             columns={columns}
             actions={actions}
             globalActions={globalActions}
@@ -273,10 +273,10 @@ const IdentitiesPage = ({ service }) => {
             onGlobalAction={handleAction}
           />
         </TabPane>
-        <TabPane tab="Add Claims" key="Claims">
+        <TabPane tab="Add Rules" key="Claims">
           <ObjectList
-            title="Add Claims"
-            description="Identies that have yet to be related to Claim Topics"
+            title="Add Rules"
+            description="Identies that have yet to be related to Compliance Rules"
             columns={columns}
             actions={claimsActions}
             globalActions={globalActions}

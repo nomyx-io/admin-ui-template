@@ -45,7 +45,7 @@ const MintPage = ({ service }) => {
     resolver: yupResolver(validationSchema),
   });
 
-  // Fetch Claim Topics from Service
+  // Fetch compliance rules from Service
   useEffect(() => {
     const fetchClaimTopics = async () => {
       try {
@@ -59,7 +59,7 @@ const MintPage = ({ service }) => {
           }))
         );
       } catch (error) {
-        console.error("Failed to fetch claim topics", error);
+        console.error("Failed to fetch compliance rules", error);
       }
     };
     fetchClaimTopics();
@@ -68,10 +68,10 @@ const MintPage = ({ service }) => {
   // Form Fields
   const fields = [
     {
-      label: "NFT Title",
+      label: "Asset Name",
       type: "string",
       name: "nftTitle",
-      placeholder: "Enter NFT Title",
+      placeholder: "Enter Asset Name",
     },
     {
       label: "Description",
@@ -117,9 +117,9 @@ const MintPage = ({ service }) => {
         })
         .finally(() => setLoading(false)),
       {
-        pending: "Minting NFT...",
+        pending: "Issuing asset...",
         success: `Successfully minted NFT to ${data.mintAddress}`,
-        error: "An error occurred while minting NFT",
+        error: "An error occurred while issuing asset",
       }
     );
   };
@@ -137,7 +137,7 @@ const MintPage = ({ service }) => {
   return (
     <div className="container">
       <header className="table-header">
-        <h1>Mint NFT</h1>
+        <h1>Mint Token</h1>
         <h2>
           Fill out the form below to mint a new NFT. Provide all the necessary details to ensure the NFT is created with the correct information.
         </h2>

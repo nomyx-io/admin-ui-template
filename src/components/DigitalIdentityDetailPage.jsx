@@ -16,17 +16,87 @@ function DigitalIdentityDetailView({ service }) {
   const [displayName, setDisplayName] = useState("");
   const [identity, setIdentity] = useState({});
   const personaData = identity?.personaData;
-  const verifications = personaData?.payload?.included?.filter((item) => {
-    return item.type.startsWith("verification");
-  });
-  const documents = personaData?.payload?.included?.filter((item) => {
-    return item.type.startsWith("document");
-  });
 
+  // Determine identity type based on the templateId
   const templateId = personaData?.payload?.included?.filter((item) => item.type === "inquiry-template").map((item) => item.id)[0];
 
   const identityType =
     templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
+
+  // Process verifications
+  // Process verifications with specific labels
+  const verifications = personaData?.payload?.included
+    ?.filter((item) => item.type?.startsWith("verification")) // Safeguard: Ensure item.type exists
+    .map((item, index) => {
+      // Define labels for KYC and KYB
+      const kycLabels = [
+        null, // First entry remains as-is
+        "Proof of Address Verification", // Second entry gets this label
+        "Identity Verification", // Third entry gets this label
+        "Selfie Verification", // Fourth entry gets this label
+      ];
+
+      const kybLabels = [
+        "Business Address Verification", // First entry for KYB
+        "Bank Verification", // Second entry
+        "EIN Verification", // Third entry
+        "Incorporation Verification", // Fourth entry
+        "Optional Verification 1", // Fifth entry
+        "Optional Verification 2", // Sixth entry
+      ];
+
+      // Safeguard: Default label if item.type is undefined
+      const defaultLabel = "Unknown Verification";
+
+      // Select labels based on identityType and index
+      let label;
+      if (identityType === "KYC") {
+        label = kycLabels[index] || (item.type ? toTitleCase(item.type.split("/")[1].replace("-", " ")) : defaultLabel);
+      } else if (identityType === "KYB") {
+        label = kybLabels[index] || (item.type ? toTitleCase(item.type.split("/")[1].replace("-", " ")) : defaultLabel);
+      } else {
+        label = item.type ? toTitleCase(item.type.split("/")[1].replace("-", " ")) : defaultLabel;
+      }
+
+      return {
+        id: item.id,
+        kind: label,
+        status: item.attributes?.status?.toUpperCase() || "UNKNOWN", // Handle undefined status
+      };
+    });
+
+  // Process documents with labels for KYC and KYB
+  const documents = personaData?.payload?.included
+    ?.filter((item) => {
+      return item.type.startsWith("document");
+    })
+    .map((item, index) => {
+      const kycLabels = ["Government Id", "Proof of Address"];
+      const kybLabels = [
+        "Proof of Business Address",
+        "Bank Statement",
+        "EIN Document",
+        "Articles of Incorporation",
+        "Optional Document 1",
+        "Optional Document 2",
+      ];
+
+      // Assign labels based on identity type
+      let label;
+      if (identityType === "KYC") {
+        label = kycLabels[index] || toTitleCase(item.type.split("/")[1].replace("-", " "));
+      } else if (identityType === "KYB") {
+        label = kybLabels[index] || toTitleCase(item.type.split("/")[1].replace("-", " "));
+      } else {
+        label = toTitleCase(item.type.split("/")[1].replace("-", " "));
+      }
+
+      return {
+        id: item.id,
+        kind: label,
+        status: item.attributes?.status.toUpperCase(),
+      };
+    });
 
   const navigate = useNavigate();
 
@@ -143,18 +213,17 @@ function DigitalIdentityDetailView({ service }) {
             {verifications && (
               <div className="rounded-lg bg-white p-2">
                 <p className="font-bold">Verifications</p>
-                <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
-                  {verifications?.map((item) => {
+                <div className="border rounded-xl p-6 bg-white flex flex-col gap-3">
+                  {verifications.map((item) => {
+                    // Safeguard: Handle undefined type or status
+                    const kind = item.kind || "Unknown Verification";
+                    const status = item.status || "UNKNOWN";
+
                     return (
-                      <>
-                        <label htmlFor={item.id}>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</label>
-                        <input
-                          id={item.id}
-                          value={item?.attributes?.status.toUpperCase() || ""}
-                          readOnly
-                          className="font-light text-2xl max-[500px]:text-base text-gray-300"
-                        ></input>
-                      </>
+                      <div key={item.id} className="flex flex-col gap-2">
+                        <label htmlFor={item.id}>{kind}</label>
+                        <input id={item.id} value={status} readOnly className="font-light text-2xl max-[500px]:text-base text-gray-300" />
+                      </div>
                     );
                   })}
                 </div>
@@ -163,22 +232,13 @@ function DigitalIdentityDetailView({ service }) {
             {documents && (
               <div className="rounded-lg bg-white p-2">
                 <p className="font-bold">Documents</p>
-                <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
-                  {documents?.map((item) => {
-                    debugger;
-                    return (
-                      <>
-                        {identityType == "KYC" && <label htmlFor={item.id}>{toTitleCase(item.type.split("/")[1].replace("-", " "))}</label>}
-                        {identityType == "KYB" && <label htmlFor={item.id}>{toTitleCase(item.attributes.kind)}</label>}
-                        <input
-                          id={item.id}
-                          value={item?.attributes?.status.toUpperCase() || ""}
-                          readOnly
-                          className="font-light text-2xl max-[500px]:text-base text-gray-300"
-                        ></input>
-                      </>
-                    );
-                  })}
+                <div className="border rounded-xl p-6 bg-white flex flex-col gap-3">
+                  {documents.map((item) => (
+                    <div key={item.id} className="flex flex-col gap-2">
+                      <label htmlFor={item.id}>{item.kind}</label>
+                      <input id={item.id} value={item.status || ""} readOnly className="font-light text-2xl max-[500px]:text-base text-gray-300" />
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

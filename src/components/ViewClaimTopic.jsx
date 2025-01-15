@@ -62,7 +62,7 @@ function ViewClaimTopic({ service }) {
       ),
     },
     {
-      label: "Managed Claim Topics",
+      label: "Managed Compliance Rules",
       name: "attributes?.claimTopics",
       render: (row) => (
         <div className="text-[#272b30]">
@@ -126,7 +126,7 @@ function ViewClaimTopic({ service }) {
             title: <Link to={"/"}>Home</Link>,
           },
           {
-            title: <Link to={"/topics"}>Claim Topic</Link>,
+            title: <Link to={"/topics"}>Compliance Rule</Link>,
           },
           {
             title: topicId,
@@ -160,7 +160,7 @@ function ViewClaimTopic({ service }) {
             key: 2,
             children: (
               <ObjectList
-                title="Identities represent individuals that can be related to Claim Topics"
+                title="Identities represent individuals that can be related to Compliance Rules"
                 description=" "
                 columns={digitalIdsColumns}
                 actions={[]}
