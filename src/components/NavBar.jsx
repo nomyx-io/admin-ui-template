@@ -1,12 +1,31 @@
+import React, { useContext } from "react";
+
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import { useAccount, useDisconnect } from "wagmi";
 
+import { RoleContext } from "../context/RoleContext";
 import NomyxLogo from "../images/nomyx.svg";
+import { WalletPreference } from "../utils/Constants";
+
 import "@rainbow-me/rainbowkit/styles.css";
 
-const NavBar = ({ onConnect, onDisconnect, role }) => {
+const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
+  const { walletPreference } = useContext(RoleContext);
   const { disconnect } = useDisconnect();
+
+  console.log("Role: ", role);
+  console.log("Wallet Preference: ", walletPreference);
+
+  // Handle logout based on wallet preference
+  const handleLogout = () => {
+    if (walletPreference === WalletPreference.MANAGED) {
+      console.log("Logging out username and password");
+      // Logout for wallet-based login
+      onLogout();
+    }
+  };
 
   useAccount({
     onDisconnect: function () {
@@ -29,17 +48,9 @@ const NavBar = ({ onConnect, onDisconnect, role }) => {
               </Link>
             </li>
             <li>
-              <span>
-                <a
-                  href="https://kronos-mintify-ui.vercel.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline flex items-center"
-                >
-                  Mint
-                  <span className="text-[#7F56D9]">↗</span>
-                </a>
-              </span>
+              <Link to="/mint" className="hover:underline">
+                Mint
+              </Link>
             </li>
             <li>
               <Link to="/topics" className="hover:underline">
@@ -60,9 +71,20 @@ const NavBar = ({ onConnect, onDisconnect, role }) => {
             </Link>
           </li>
         )}
-        <li style={{ marginLeft: "auto" }}>
-          <ConnectButton />
-        </li>
+
+        {walletPreference === WalletPreference.PRIVATE && (
+          <li style={{ marginLeft: "auto" }}>
+            <ConnectButton />
+          </li>
+        )}
+
+        {walletPreference === WalletPreference.MANAGED && (
+          <li style={{ marginLeft: "auto" }}>
+            <button onClick={handleLogout} className="bg-black text-white px-4 py-2 rounded-md">
+              Logout
+            </button>
+          </li>
+        )}
       </ul>
     </nav>
   );

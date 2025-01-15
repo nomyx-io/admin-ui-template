@@ -5,7 +5,10 @@ import { Transfer } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
+import { RoleContext } from "../context/RoleContext";
+import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, isEthereumAddress, awaitTimeout } from "../utils";
+import { WalletPreference } from "../utils/Constants";
 
 function CreateTrustedIssuer({ service }) {
   const navigate = useNavigate();
@@ -15,6 +18,8 @@ function CreateTrustedIssuer({ service }) {
   const [targetKeys, setTargetKeys] = React.useState([]);
   const [selectedKeys, setSelectedKeys] = React.useState([]);
   const location = useLocation();
+
+  const { walletPreference, user, dfnsToken } = React.useContext(RoleContext);
 
   let id = location.pathname.split("/")[2];
   useEffect(() => {
@@ -79,68 +84,183 @@ function CreateTrustedIssuer({ service }) {
     return true;
   }
 
-  const saveTrustedIssuer = () => {
-    if (validateTrustedIssuer(verifierName.trim(), walletAddress, targetKeys)) {
-      toast.promise(
-        new Promise(async (resolve, reject) => {
-          try {
-            await service.addTrustedIssuer(walletAddress, targetKeys);
-            await awaitTimeout(10000);
-            await service.updateTrustedIssuer({
-              verifierName: verifierName.trim(),
-              issuer: walletAddress,
-            });
+  const saveTrustedIssuer = async () => {
+    const trimmedVerifierName = verifierName.trim();
+
+    if (!validateTrustedIssuer(trimmedVerifierName, walletAddress, targetKeys)) {
+      return;
+    }
+
+    try {
+      if (walletPreference === WalletPreference.MANAGED) {
+        // Handle MANAGED wallet preference using DFNSService
+        toast
+          .promise(
+            (async () => {
+              // Initiate adding the trusted issuer
+              const { initiateResponse, error: initError } = await DfnsService.initiateAddTrustedIssuer(
+                walletAddress,
+                targetKeys,
+                user.walletId,
+                dfnsToken
+              );
+              if (initError) throw new Error(initError);
+
+              // Complete adding the trusted issuer
+              const { completeResponse, error: completeError } = await DfnsService.completeAddTrustedIssuer(
+                walletAddress,
+                dfnsToken,
+                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                {
+                  verifierName: trimmedVerifierName,
+                  issuer: walletAddress,
+                  claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })),
+                }
+              );
+              if (completeError) throw new Error(completeError);
+
+              return completeResponse;
+            })(),
+            {
+              pending: "Adding Trusted Issuer...",
+              success: `Successfully Added Trusted Issuer ${walletAddress}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${walletAddress}`}</div>;
+                },
+              },
+            }
+          )
+          .then(() => {
             navigate("/issuers");
-            resolve();
-          } catch (e) {
-            console.error("Failed to create/update claim topic:", e);
-            reject(e);
-          }
-        }),
-        {
-          pending: "Adding Trusted Issuer...",
-          success: "Successfully Added Trusted Issuer " + walletAddress,
-          error: {
-            render({ data }) {
-              return <div>{data?.reason || "An error occurred while adding Trusted Issuer " + walletAddress}</div>;
-            },
-          },
-        }
-      );
+          })
+          .catch((error) => {
+            console.error("Error after attempting to add Trusted Issuer:", error);
+          });
+      } else if (walletPreference === WalletPreference.PRIVATE) {
+        // Handle PRIVATE wallet preference
+        toast
+          .promise(
+            (async () => {
+              await service.addTrustedIssuer(walletAddress, targetKeys);
+              await service.updateTrustedIssuer({
+                verifierName: trimmedVerifierName,
+                issuer: walletAddress,
+                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
+              });
+            })(),
+            {
+              pending: "Adding Trusted Issuer...",
+              success: `Successfully Added Trusted Issuer ${walletAddress}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${walletAddress}`}</div>;
+                },
+              },
+            }
+          )
+          .then(() => {
+            navigate("/issuers");
+          })
+          .catch((error) => {
+            console.error("Error after attempting to add Trusted Issuer:", error);
+          });
+      }
+    } catch (error) {
+      console.error("Unexpected error during saveTrustedIssuer:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
-  const updateTrustedIssuer = () => {
-    if (validateTrustedIssuer(verifierName.trim(), walletAddress, targetKeys)) {
-      toast.promise(
-        () => {
-          let keys = [];
-          targetKeys.forEach((item) => {
-            keys.push({ topic: item, timestamp: Date.now() });
+  const updateTrustedIssuer = async () => {
+    const trimmedVerifierName = verifierName.trim();
+
+    if (!validateTrustedIssuer(trimmedVerifierName, walletAddress, targetKeys)) {
+      return;
+    }
+
+    try {
+      if (walletPreference === WalletPreference.MANAGED) {
+        // Handle MANAGED wallet preference using DFNSService
+        toast
+          .promise(
+            (async () => {
+              // Initiate updating the trusted issuer
+              const { initiateResponse, error: initError } = await DfnsService.initiateUpdateTrustedIssuer(
+                walletAddress,
+                targetKeys,
+                user.walletId,
+                dfnsToken
+              );
+              if (initError) throw new Error(initError);
+
+              // Complete updating the trusted issuer
+              const { completeResponse, error: completeError } = await DfnsService.completeUpdateTrustedIssuer(
+                walletAddress,
+                dfnsToken,
+                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                {
+                  verifierName: trimmedVerifierName,
+                  issuer: walletAddress,
+                  claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })),
+                }
+              );
+              if (completeError) throw new Error(completeError);
+
+              return completeResponse;
+            })(),
+            {
+              pending: "Updating Trusted Issuer...",
+              success: `Successfully Updated Trusted Issuer ${walletAddress}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while updating Trusted Issuer ${walletAddress}`}</div>;
+                },
+              },
+            }
+          )
+          .then(() => {
+            navigate("/issuers");
+          })
+          .catch((error) => {
+            console.error("Error after attempting to update Trusted Issuer:", error);
           });
-          return service
-            .updateIssuerClaimTopics(walletAddress, targetKeys)
-            .then((event) => {
-              return service.updateTrustedIssuer({
-                verifierName: verifierName.trim(),
+      } else if (walletPreference === WalletPreference.PRIVATE) {
+        // Handle PRIVATE wallet preference
+        toast
+          .promise(
+            (async () => {
+              const keysWithTimestamps = targetKeys.map((topic) => ({
+                topic,
+                timestamp: Date.now(),
+              }));
+              await service.updateIssuerClaimTopics(walletAddress, targetKeys);
+              await service.updateTrustedIssuer({
+                verifierName: trimmedVerifierName,
                 issuer: walletAddress,
-                claimTopics: keys,
+                claimTopics: keysWithTimestamps,
               });
-            })
-            .then(() => {
-              navigate("/issuers");
-            });
-        },
-        {
-          pending: "Updating Trusted Issuer...",
-          success: "Successfully Updated Trusted Issuer " + walletAddress,
-          error: {
-            render({ data }) {
-              return <div>{data?.reason || "An error occurred while updating Trusted Issuer " + walletAddress}</div>;
-            },
-          },
-        }
-      );
+            })(),
+            {
+              pending: "Updating Trusted Issuer...",
+              success: `Successfully Updated Trusted Issuer ${walletAddress}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while updating Trusted Issuer ${walletAddress}`}</div>;
+                },
+              },
+            }
+          )
+          .then(() => {
+            navigate("/issuers");
+          })
+          .catch((error) => {
+            console.error("Error after attempting to update Trusted Issuer:", error);
+          });
+      }
+    } catch (error) {
+      console.error("Unexpected error during updateTrustedIssuer:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 

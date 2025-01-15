@@ -1,17 +1,63 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+
+import { toast } from "react-toastify";
+
+import { RoleContext } from "../context/RoleContext";
+import DfnsService from "../services/DfnsService";
+import { WalletPreference } from "../utils/Constants";
 
 const ClaimsPage = ({ service }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const handleAddClaim = async (identity, claimTopic, claim) => {
-    const signer = service.provider.getSigner();
-    await service.addClaim(signer, identity, claimTopic, claim);
+    try {
+      if (walletPreference === WalletPreference.MANAGED) {
+        // Initiate adding the claim
+        const { initiateResponse, error: initError } = await DfnsService.initiateAddClaim(identity, claimTopic, claim, user.walletId, dfnsToken);
+        if (initError) throw new Error(initError);
+
+        // Complete adding the claim
+        const { completeResponse, error: completeError } = await DfnsService.completeAddClaim(
+          user.walletId,
+          dfnsToken,
+          initiateResponse.challenge,
+          initiateResponse.requestBody
+        );
+        if (completeError) throw new Error(completeError);
+      } else if (walletPreference === WalletPreference.PRIVATE) {
+        const signer = service.provider.getSigner();
+        await service.addClaim(signer, identity, claimTopic, claim);
+      }
+    } catch (error) {
+      console.error("Unexpected error during Add Claim:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
   };
 
   const handleRemoveClaim = async (identity, claimTopic) => {
-    const signer = service.provider.getSigner();
-    await service.removeClaim(signer, identity, claimTopic);
+    try {
+      if (walletPreference === WalletPreference.MANAGED) {
+        // Initiate removing the claim
+        const { initiateResponse, error: initError } = await DfnsService.initiateRemoveClaim(identity, claimTopic, user.walletId, dfnsToken);
+        if (initError) throw new Error(initError);
+        // Complete removing claim topic
+        const { completeResponse, error: completeError } = await DfnsService.completeRemoveClaim(
+          user.walletId,
+          dfnsToken,
+          initiateResponse.challenge,
+          initiateResponse.requestBody
+        );
+        if (completeError) throw new Error(completeError);
+      } else if (walletPreference === WalletPreference.PRIVATE) {
+        const signer = service.provider.getSigner();
+        await service.removeClaim(signer, identity, claimTopic);
+      }
+    } catch (error) {
+      console.error("Unexpected error during Remove Claim:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
   };
 
   return (
