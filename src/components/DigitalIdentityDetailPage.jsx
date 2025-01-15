@@ -32,8 +32,8 @@ function DigitalIdentityDetailView({ service }) {
       const kycLabels = [
         null, // First entry remains as-is
         "Proof of Address Verification", // Second entry gets this label
-        "Identity Verification", // Third entry gets this label
-        "Selfie Verification", // Fourth entry gets this label
+        "Selfie Verification", // Third entry gets this label
+        "Identity Verification", // Fourth entry gets this label
       ];
 
       const kybLabels = [
