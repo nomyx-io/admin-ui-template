@@ -233,7 +233,7 @@ class BlockchainService {
 
             if (walletAddress) {
               // Query the User class for pepMatched and watchlistMatched columns
-              const userRecords = await this.parseClient.getRecords("User", ["walletAddress"], [walletAddress], ["pepMatched", "watchlistMatched"]);
+              const userRecords = await ParseClient.getRecords("User", ["walletAddress"], [walletAddress], ["pepMatched", "watchlistMatched"]);
               if (userRecords && userRecords.length > 0) {
                 const user = userRecords[0]; // Assuming walletAddress is unique and returns one record
                 // Add pepMatched and watchlistMatched to the identity response

@@ -1,13 +1,13 @@
 import { WebAuthnSigner } from "@dfns/sdk-browser";
 
-class DFNSService {
-  private static _instance: DFNSService;
+class DfnsService {
+  private static _instance: DfnsService;
 
-  public static get instance(): DFNSService {
-    if (!DFNSService._instance) {
-      DFNSService._instance = new DFNSService();
+  public static get instance(): DfnsService {
+    if (!DfnsService._instance) {
+      DfnsService._instance = new DfnsService();
     }
-    return DFNSService._instance;
+    return DfnsService._instance;
   }
 
   public async getInitialState() {}
@@ -159,6 +159,10 @@ class DFNSService {
       return { completeResponse: null, error: error.message };
     }
   }
+
+  // TODO: add/remove claim topics from identities
+
+  // TODO: Mint a new token and add claim topic pre-requisites to token
 }
 
-export default DFNSService.instance;
+export default DfnsService.instance;
