@@ -117,15 +117,13 @@ const validateToken = async (token: string) => {
       },
     });
 
-    console.log("Response", response);
     const data = response.data;
-    console.log("Response Data", data);
     return {
       valid: data?.valid || false,
       roles: data?.user?.roles || [],
       user: data?.user,
       walletPreference: data?.user?.walletPreference,
-      dfnsToken: data?.dfns_token,
+      dfnsToken: data?.dfnsToken,
     };
   } catch (error) {
     console.error("Error validating token:", error);
@@ -154,7 +152,6 @@ function App() {
     try {
       const response = await axios.post(`${process.env.REACT_APP_PARSE_SERVER_URL}/auth/login`, request);
       const data = response.data;
-      console.log("Data", data);
       return {
         walletPreference: data?.user?.walletPreference,
         token: data?.access_token || "",
@@ -287,7 +284,6 @@ function App() {
       // Initialize blockchainService if required for standard login
       // If standard login doesn't require blockchainService, you can skip this
       if ((window as any).ethereum) {
-        console.log("Initializing blockchain service for managed wallet");
         const provider = new ethers.providers.Web3Provider((window as any).ethereum);
         initializeBlockchainService(provider);
       }
@@ -320,7 +316,6 @@ function App() {
   };
 
   useEffect(() => {
-    console.log("Restoring session");
     restoreSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

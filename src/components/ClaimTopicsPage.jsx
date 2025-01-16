@@ -36,8 +36,6 @@ const ClaimTopicsPage = ({ service }) => {
 
   useEffect(() => {
     (async function () {
-      console.log("Getting Claim Topics");
-      console.log(service);
       const result = await service.getClaimTopics();
       setClaimTopics(result);
     })();

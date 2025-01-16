@@ -2,7 +2,6 @@ import React, { useContext } from "react";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
-import { toast } from "react-toastify";
 import { useAccount, useDisconnect } from "wagmi";
 
 import { RoleContext } from "../context/RoleContext";
@@ -15,13 +14,9 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
   const { walletPreference } = useContext(RoleContext);
   const { disconnect } = useDisconnect();
 
-  console.log("Role: ", role);
-  console.log("Wallet Preference: ", walletPreference);
-
   // Handle logout based on wallet preference
   const handleLogout = () => {
     if (walletPreference === WalletPreference.MANAGED) {
-      console.log("Logging out username and password");
       // Logout for wallet-based login
       onLogout();
     }

@@ -1,4 +1,5 @@
 import { WebAuthnSigner } from "@dfns/sdk-browser";
+import Parse from "parse";
 
 class DfnsService {
   private static _instance: DfnsService;
@@ -359,8 +360,6 @@ class DfnsService {
       return { completeResponse: null, error: error.message };
     }
   }
-
-  // TODO: Mint a new token and add claim topic pre-requisites to token
 }
 
 export default DfnsService.instance;

@@ -111,11 +111,7 @@ function CreateTrustedIssuer({ service }) {
                 walletAddress,
                 dfnsToken,
                 initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
-                {
-                  verifierName: trimmedVerifierName,
-                  issuer: walletAddress,
-                  claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })),
-                }
+                initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
 

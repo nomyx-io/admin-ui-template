@@ -1,4 +1,3 @@
-import { WebAuthnSigner } from "@dfns/sdk-browser";
 import Parse from "parse";
 
 class ParseClient {
@@ -10,9 +9,7 @@ class ParseClient {
 
   // Singleton getInstance method
   public static getInstance(): ParseClient {
-    console.log("ParseClient getInstance");
     if (!ParseClient.instance) {
-      console.log("ParseClient instance created");
       ParseClient.instance = new ParseClient();
     }
     return ParseClient.instance;

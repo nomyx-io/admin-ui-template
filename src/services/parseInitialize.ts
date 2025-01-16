@@ -21,8 +21,6 @@ const parseInitialize = () => {
       console.error("Error becoming user with sessionToken:", error);
     });
   }
-
-  console.log("Parse initialized successfully.");
 };
 
 export default parseInitialize;
