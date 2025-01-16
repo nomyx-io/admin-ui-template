@@ -78,11 +78,7 @@ function CreateDigitalId({ service }) {
                 user.walletId,
                 dfnsToken,
                 initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
-                {
-                  displayName: trimmedDisplayName,
-                  walletAddress: walletAddress.toLocaleLowerCase(),
-                  accountNumber: trimmedAccountNumber,
-                }
+                initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
 
