@@ -40,7 +40,12 @@ const ClaimsPage = ({ service }) => {
     try {
       if (walletPreference === WalletPreference.MANAGED) {
         // Initiate removing the claim
-        const { initiateResponse, error: initError } = await DfnsService.initiateRemoveClaim(identity, claimTopic, user.walletId, dfnsToken);
+        const { initiateResponse, error: initError } = await DfnsService.initiateRemoveClaim(
+          identity,
+          parseInt(claimTopic.topic),
+          user.walletId,
+          dfnsToken
+        );
         if (initError) throw new Error(initError);
         // Complete removing claim topic
         const { completeResponse, error: completeError } = await DfnsService.completeRemoveClaim(

@@ -70,7 +70,7 @@ function CreateDigitalId({ service }) {
           .promise(
             (async () => {
               // Step 1: Initiate creating identity
-              const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(trimmedDisplayName, user.walletId, dfnsToken);
+              const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
               if (initError) throw new Error(initError);
 
               // Step 2: Complete creating identity

@@ -46,7 +46,7 @@ const EditClaims = ({ service }) => {
                 // Initiate remove claim
                 const { initiateResponse, error: initError } = await DfnsService.initiateRemoveClaim(
                   identity.address,
-                  claimTopic,
+                  parseInt(claimTopic.topic),
                   user.walletId,
                   dfnsToken
                 );
