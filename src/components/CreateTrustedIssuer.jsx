@@ -115,7 +115,12 @@ function CreateTrustedIssuer({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              return completeResponse;
+              //return completeResponse;
+              await service.updateTrustedIssuer({
+                verifierName: trimmedVerifierName,
+                issuer: walletAddress,
+                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
+              });
             })(),
             {
               pending: "Adding Trusted Issuer...",

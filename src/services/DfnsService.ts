@@ -161,6 +161,56 @@ class DfnsService {
     }
   }
 
+  public async initiateAddIdentity(ownerAddress: string, identity: any, walletId: string, dfnsToken: string) {
+    if (!ownerAddress || !identity || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for AddIdentity.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsAddIdentityInit", {
+        ownerAddress,
+        identity,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("AddIdentity initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating AddIdentity:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeAddIdentity(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing AddIdentity.");
+    }
+
+    try {
+      const webauthn = new WebAuthnSigner();
+      const assertion = await webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsAddIdentityComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("AddIdentity completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing AddIdentity:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
+
   public async initiateSetClaims(address: string, claims: number[], walletId: string, dfnsToken: string) {
     if (!address || !claims || !walletId || !dfnsToken) {
       throw new Error("Missing required parameters for SetClaims.");

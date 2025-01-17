@@ -66,7 +66,11 @@ function CreateClaimTopic({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              return completeResponse;
+              //return completeResponse;
+              await service.updateClaimTopic({
+                topic: String(hiddenName),
+                displayName: trimmedDisplayName,
+              });
             })(),
             {
               pending: "Creating Claim Topic...",

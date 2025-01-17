@@ -82,7 +82,35 @@ function CreateDigitalId({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              // Step 3: Approve user if needed
+              // Step 3: Get identity details
+              const identity = await service.getIdentity(walletAddress);
+
+              // Step 4: Initiate add identity
+              const { initiateAddIdentityResponse, error: initAddIdentityError } = await DfnsService.initiateAddIdentity(
+                walletAddress,
+                identity,
+                user.walletId,
+                dfnsToken
+              );
+              if (initAddIdentityError) throw new Error(initAddIdentityError);
+
+              // Step 5: Complete add identity
+              const { completeAddIdentityResponse, error: completeAddIdentityError } = await DfnsService.completeAddIdentity(
+                user.walletId,
+                dfnsToken,
+                initiateAddIdentityResponse.challenge,
+                initiateAddIdentityResponse.requestBody
+              );
+              if (completeAddIdentityError) throw new Error(completeAddIdentityError);
+
+              // Step 6: Update identity
+              await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
+                displayName: trimmedDisplayName,
+                walletAddress: walletAddress.toLocaleLowerCase(),
+                accountNumber: trimmedAccountNumber,
+              });
+
+              // Step 7: Approve user if needed
               if (searchParams.has("walletAddress")) {
                 const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
                 if (userExists) {
@@ -101,8 +129,7 @@ function CreateDigitalId({ service }) {
                   toast.error(`User with wallet address ${walletAddress} does not exist.`);
                 }
               }
-
-              return completeResponse;
+              //return completeResponse;
             })(),
             {
               pending: "Creating Digital Identity...",
