@@ -108,7 +108,7 @@ function CreateTrustedIssuer({ service }) {
 
               // Complete adding the trusted issuer
               const { completeResponse, error: completeError } = await DfnsService.completeAddTrustedIssuer(
-                walletAddress,
+                user.walletId,
                 dfnsToken,
                 initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
                 initiateResponse.requestBody
