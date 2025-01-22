@@ -29,9 +29,12 @@ const NavBar = ({ onConnect, onDisconnect, role }) => {
               </Link>
             </li>
             <li>
-              <Link to="/mint" className="hover:underline">
-                Mint
-              </Link>
+              <span>
+                <a href={process.env.MINTIFY_UI_URL} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center">
+                  Mint
+                  <span className="text-[#7F56D9]">↗</span>
+                </a>
+              </span>
             </li>
             <li>
               <Link to="/topics" className="hover:underline">
