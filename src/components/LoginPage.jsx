@@ -7,6 +7,8 @@ import { useAccount, useDisconnect } from "wagmi";
 
 import styles from "./LoginPage.module.css";
 import { RoleContext } from "../App";
+import logoDark from "../assets/nomyx_logo_dark.png";
+import logoLight from "../assets/nomyx_logo_light.png";
 import bg from "../images/BlackPaintBackground.webp";
 import logo from "../images/NomyxLogoWhite.svg";
 
@@ -59,27 +61,40 @@ export default function Login({ forceLogout, service, onConnect, onDisconnect })
   });
 
   return (
-    <div className="relative h-screen w-screen flex overflow-hidden p-0">
+    <div
+      className="relative w-full min-h-screen overflow-hidden flex flex-col"
+      style={{
+        backgroundImage: "url('/images/nomyx_banner.svg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       {isConnected ? (
-        <div className="z-50 h-screen w-screen overflow-hidden absolute top-0 left-0 flex justify-center items-center bg-[#00000040]">
+        <div className="flex flex-1 flex-col lg:flex-row items-center justify-center">
           <Spin />
         </div>
       ) : (
-        <>
-          <div
-            className={styles.logoContainer + " bg-black max-[550px]:hidden w-1/2 flex flex-col justify-center items-center gap-10"}
-            style={{ backgroundImage: `url(${bg})` }}
-          >
-            <img alt="LenderLab Logo" src={logo} style={{ width: "75%" }} />
+        <div className="flex flex-1 flex-col lg:flex-row">
+          {/* Left Side */}
+          <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-4 md:px-6 my-10">
+            <div className="w-full max-w-2xl">
+              <img src={logoLight} alt="Logo" width={630} height={240} priority className="block dark:hidden" />
+              <img src={logoDark} alt="Logo" width={630} height={240} priority className="hidden dark:block" />
+            </div>
           </div>
 
           <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">
-            <div className="text-right font-bold text-xl w-full">DID MANAGER</div>
-            <div className={styles.btnContainer + " flex flex-grow justify-center items-center align-middle"}>
-              <ConnectButton label="Log in with Wallet" onConnect={handleConnect} onDisconnect={handleDisconnect} />
+            {/* The heading at the top */}
+            <h1 className="text-right font-bold text-xl mb-4 w-full mt-8 mr-4">CARBON CREDIT MANAGER</h1>
+            {/* The container that will hold the button in the middle */}
+
+            <div className="flex-grow flex items-center justify-center">
+              <div className="bg-[#3E81C833] shadow-lg rounded-lg p-10 max-w-2xl items-center justify-center login-div">
+                <ConnectButton label="Log in with Wallet" onConnect={handleConnect} onDisconnect={handleDisconnect} />
+              </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

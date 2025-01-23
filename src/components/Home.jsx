@@ -2,7 +2,7 @@ import React from "react";
 
 import { Row, Col, Card, Typography } from "antd";
 
-import NomyxLogo from "../Assets/nomyx.svg";
+import NomyxLogo from "../assets/nomyx.svg";
 
 const { Paragraph } = Typography;
 
