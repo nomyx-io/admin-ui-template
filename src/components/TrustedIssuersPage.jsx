@@ -36,11 +36,11 @@ import { NomyxAction } from "../utils/Constants";
 //         </Form.Item>
 //         <Form.Item
 //           name="topics"
-//           label="Claim Topics"
+//           label="Compliance Rules"
 //           rules={[
 //             {
 //               required: true,
-//               message: "Please input one or more claim topics",
+//               message: "Please input one or more compliance rules",
 //             },
 //           ]}
 //         >
@@ -104,11 +104,11 @@ const TrustedIssuersPage = ({ service }) => {
   const columns = [
     { label: "Trusted Issuer", name: "trustedIssuer", width: "25%" },
     { label: "Address", name: "address", width: "45%" },
-    { label: "Managed Claim Topics", name: "claimTopics", width: "30%" },
+    { label: "Managed Compliance Rules", name: "claimTopics", width: "30%" },
   ];
 
   const actions = [
-    { label: "Update Claim Topics", name: NomyxAction.UpdateClaimTopics },
+    { label: "Update Compliance Rules", name: NomyxAction.UpdateClaimTopics },
     {
       label: "Remove",
       name: NomyxAction.RemoveTrustedIssuer,
@@ -140,7 +140,7 @@ const TrustedIssuersPage = ({ service }) => {
     <div className="p-6">
       <ObjectList
         title="Trusted Issuers"
-        description="Trusted Issuers can create Digital Identities and add Claim Topics to them"
+        description="Trusted Issuers can create Digital Identities and add Compliance Rules to them"
         columns={columns}
         actions={actions}
         globalActions={globalActions}
