@@ -4,7 +4,7 @@ import { Button, Input, Tooltip } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { ClaimCard } from "./ClaimCard";
-import { ShareIcon } from "../Assets/icons";
+import { ShareIcon } from "../assets/icons";
 
 const EditClaimsSummaryView = ({ service }) => {
   const { identity } = useParams();

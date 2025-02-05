@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 import ReactPaginate from "react-paginate";
 
-import { WarningIcon } from "../Assets/icons";
+import { WarningIcon } from "../assets/icons";
 import { getValue, recursiveSearch } from "../utils";
 
 export const ConfirmationDialog = ({ message, onConfirm, onCancel }) => {
