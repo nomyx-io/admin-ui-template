@@ -66,11 +66,13 @@ function CreateClaimTopic({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              //return completeResponse;
-              await service.updateClaimTopic({
-                topic: String(hiddenName),
-                displayName: trimmedDisplayName,
-              });
+              setTimeout(async () => {
+                await service.updateClaimTopic({
+                  topic: String(hiddenName),
+                  displayName: trimmedDisplayName,
+                });
+                navigate("/topics");
+              }, 2000);
             })(),
             {
               pending: "Creating Claim Topic...",
@@ -78,9 +80,6 @@ function CreateClaimTopic({ service }) {
               error: `An error occurred while creating Claim Topic ${hiddenName}`,
             }
           )
-          .then(() => {
-            navigate("/topics");
-          })
           .catch((error) => {
             console.error("Error after attempting to create claim topic:", error);
           });
