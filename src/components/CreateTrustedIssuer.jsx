@@ -181,7 +181,6 @@ function CreateTrustedIssuer({ service }) {
     if (!validateTrustedIssuer(trimmedVerifierName, walletAddress, targetKeys)) {
       return;
     }
-    console.log("targetKeys ", targetKeys);
 
     try {
       if (walletPreference === WalletPreference.MANAGED) {
