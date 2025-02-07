@@ -223,5 +223,10 @@ button.ant-btn-primary:not([disabled]), [type='button'].ant-btn-primary:not([dis
 }
 .login-div button {
   background: #3F206B !important;
-  font-size: 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+.login-radio-button.ant-radio-button-wrapper-checked {
+  background: #3f206b !important;
+  border-color: #3f206b !important;
 }

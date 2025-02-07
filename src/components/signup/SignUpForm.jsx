@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { Card, Form, Input, Button } from "antd";
 import { Link } from "react-router-dom"; // Import Link from react-router-dom
 
-import nomyxLogo from "../../Assets/nomyx_logo_white.svg"; // Adjust the path as needed
+import nomyxLogo from "../../assets/nomyx_logo_white.svg"; // Adjust the path as needed
 import bg from "../../images/BlackPaintBackground.webp";
 import styles from "../LoginPage.module.css";
 

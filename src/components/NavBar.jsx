@@ -4,9 +4,9 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
 import { useAccount, useDisconnect } from "wagmi";
 
+import NomyxLogo from "../assets/nomyx_logo_black.svg";
 import { RoleContext } from "../context/RoleContext";
 import { WalletPreference } from "../utils/Constants";
-import NomyxLogo from "../Assets/nomyx_logo_black.svg";
 import "@rainbow-me/rainbowkit/styles.css";
 
 const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
