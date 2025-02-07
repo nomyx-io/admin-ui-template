@@ -2,7 +2,7 @@ import React from "react";
 
 import { Row, Col, Card, Typography } from "antd";
 
-import NomyxLogo from "../Assets/nomyx.svg";
+import NomyxLogo from "../assets/nomyx.svg";
 
 const { Paragraph } = Typography;
 
@@ -20,19 +20,19 @@ const Home = () => {
             <Row justify="center" align="middle">
               <Col span={24}>
                 <Paragraph>
-                  To create a claim topic, navigate to the "Claim Topics" section in the Nomyx dashboard. Here, you can define a new topic by
-                  providing a unique identifier and a descriptive name. This process ensures that each claim topic is distinct and easily
-                  recognizable. Once created, these claim topics can be used to tag and organize various claims associated with an identity, providing
-                  a structured and clear representation of the identity's attributes.
+                  To create a compliance rule, navigate to the "Compliance Rules" section in the Nomyx dashboard. Here, you can define a new rule by
+                  providing a unique identifier and a descriptive name. This process ensures that each compliance rule is distinct and easily
+                  recognizable. Once created, these compliance rules can be used to tag and organize various rules associated with an identity,
+                  providing a structured and clear representation of the identity's attributes.
                 </Paragraph>
                 <Paragraph>
-                  In the "Identities" section, you can create new identities by generating a DID and associating it with relevant claim topics. You
-                  can also update existing identities, adding or modifying claims to reflect changes in attributes or status. This flexible and
+                  In the "Identities" section, you can create new identities by generating a DID and associating it with relevant compliance rules.
+                  You can also update existing identities, adding or modifying rules to reflect changes in attributes or status. This flexible and
                   decentralized method of managing identities allows for a robust and scalable system that can adapt to various use cases, from
                   personal identity management to organizational credentialing.
                 </Paragraph>
                 <Paragraph>
-                  The minted token can then be transferred or sold, carrying with it the embedded claims that can be verified independently. This
+                  The minted token can then be transferred or sold, carrying with it the embedded rules that can be verified independently. This
                   approach leverages the power of blockchain technology to provide immutable and transparent records, enhancing trust and authenticity
                   in digital transactions.
                 </Paragraph>

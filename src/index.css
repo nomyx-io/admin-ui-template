@@ -221,3 +221,7 @@ button.ant-btn-primary:not([disabled]), [type='button'].ant-btn-primary:not([dis
   font-weight: 700;
   padding: 0px 20px;
 }
+.login-div button {
+  background: #3F206B !important;
+  font-size: 16px !important;
+}

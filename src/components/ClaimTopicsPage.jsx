@@ -11,12 +11,12 @@ const ClaimTopicsPage = ({ service }) => {
 
   const columns = [
     { label: "Id", name: "attributes.topic" },
-    { label: "Claim Topic", name: "attributes.displayName", width: "95%" },
+    { label: "Compliance Rule", name: "attributes.displayName", width: "95%" },
   ];
 
   const actions = [{ label: "View", name: NomyxAction.ViewClaimTopic }];
 
-  const globalActions = [{ label: "Create Claim Topic", name: NomyxAction.CreateClaimTopic }];
+  const globalActions = [{ label: "Create Compliance Rule", name: NomyxAction.CreateClaimTopic }];
 
   const search = true;
 
@@ -43,8 +43,8 @@ const ClaimTopicsPage = ({ service }) => {
 
   return (
     <ObjectList
-      title="Claim Topics"
-      description="Claim Topics describe the types of Claims that can be created for any Identity"
+      title="Compliance Rules"
+      description="Compliance Rules describe the types of Claims that can be created for any Identity"
       columns={columns}
       actions={actions}
       globalActions={globalActions}

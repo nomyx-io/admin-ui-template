@@ -9,6 +9,8 @@ import { useAccount, useDisconnect } from "wagmi";
 import styles from "./LoginPage.module.css";
 import nomyxLogo from "../Assets/nomyx_logo_white.svg";
 import { RoleContext } from "../context/RoleContext";
+import logoDark from "../assets/nomyx_logo_dark.png";
+import logoLight from "../assets/nomyx_logo_light.png";
 import bg from "../images/BlackPaintBackground.webp";
 import { LoginPreference } from "../utils/Constants";
 
@@ -79,25 +81,36 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
   });
 
   return (
-    <Layout
+    <div
+      className="relative w-full min-h-screen overflow-hidden flex flex-col"
       style={{
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
+        backgroundImage: "url('/images/nomyx_banner.svg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
-      <div className="flex h-full w-full">
-        {/* Left Side - Logo */}
-        <div
-          className={styles.logoContainer + " bg-black hidden sm:flex w-1/2 flex-col justify-center items-center gap-10"}
-          style={{ backgroundImage: `url(${bg})` }}
-        >
-          <img alt="Nomyx Logo" src={nomyxLogo} style={{ width: "75%" }} />
+      {isConnected ? (
+        <div className="flex flex-1 flex-col lg:flex-row items-center justify-center">
+          <Spin />
         </div>
+      ) : (
+        <div className="flex flex-1 flex-col lg:flex-row">
+          {/* Left Side */}
+          <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-4 md:px-6 my-10">
+            <div className="w-full max-w-2xl">
+              <img src={logoLight} alt="Logo" width={630} height={240} priority className="block dark:hidden" />
+              <img src={logoDark} alt="Logo" width={630} height={240} priority className="hidden dark:block" />
+            </div>
+          </div>
 
-        {/* Right Side - Authentication Cards */}
-        <div className="w-full sm:w-1/2 flex flex-col justify-center items-center p-4 bg-white">
+          <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">
+            {/* The heading at the top */}
+            <h1 className="text-right font-bold text-xl mb-4 w-full mt-8 mr-4">CARBON CREDIT MANAGER</h1>
+            {/* The container that will hold the button in the middle */}
+
+            <div className="flex-grow flex items-center justify-center">
+              <div className="bg-[#3E81C833] shadow-lg rounded-lg p-10 max-w-2xl items-center justify-center login-div">
+                <div className="w-full sm:w-1/2 flex flex-col justify-center items-center p-4 bg-white">
           <Card
             title={<span className="text-black">Sign In</span>} // Set title color to black
             style={{
@@ -175,17 +188,14 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
               </Form>
             ) : (
               <div className="flex flex-col items-center">
-                <ConnectButton showBalance={false} />
+                <ConnectButton label="Log in with Wallet" showBalance={false} onConnect={handleConnect} onDisconnect={handleDisconnect} />
               </div>
             )}
           </Card>
         </div>
-      </div>
-
-      {/* Loading Spinner Overlay */}
-      {isConnected && (
-        <div className="z-50 h-full w-full overflow-hidden absolute top-0 left-0 flex justify-center items-center bg-[#00000040]">
-          <Spin size="large" />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </Layout>

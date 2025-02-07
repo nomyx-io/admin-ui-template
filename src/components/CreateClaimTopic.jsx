@@ -21,7 +21,7 @@ function CreateClaimTopic({ service }) {
       setHiddenName(nextClaimTopicId);
       setDisplayName("");
     } catch (e) {
-      console.error("Failed get next claim topic ID:", e);
+      console.error("Failed get next compliance rule ID:", e);
       toast.error("Failed to load initial data");
     }
   }, [service]);
@@ -95,20 +95,22 @@ function CreateClaimTopic({ service }) {
               });
             })(),
             {
-              pending: "Creating Claim Topic...",
-              success: `Successfully created Claim Topic ${hiddenName}`,
-              error: `An error occurred while creating Claim Topic ${hiddenName}`,
+               pending: "Creating Compliance Rule...",
+               success: `Successfully created Compliance Rule ${hiddenName}`,
+               error: `An error occurred while creating Compliance Rule ${hiddenName}`,
             }
           )
           .then(() => {
+            setTimeout(() => {
             navigate("/topics");
+            }, 500);  // Delay navigation to ensure the success toast has time to display
           })
           .catch((error) => {
-            console.error("Error after attempting to create claim topic:", error);
+            console.error("Error after attempting to create compliance rule:", error);
           });
       }
     } catch (error) {
-      console.error("Unexpected error during saveClaimTopic:", error);
+      console.error("Unexpected error during compliance rule creation:", error);
       toast.error("An unexpected error occurred. Please try again.");
     }
   };
@@ -121,13 +123,13 @@ function CreateClaimTopic({ service }) {
     <div>
       <Breadcrumb
         className="bg-transparent"
-        items={[{ title: <Link to={"/"}>Home</Link> }, { title: <Link to={"/topics"}>Claim Topics</Link> }, { title: "Add" }]}
+        items={[{ title: <Link to={"/"}>Home</Link> }, { title: <Link to={"/topics"}>Compliance Rules</Link> }, { title: "Add" }]}
       />
-      <p className="text-xl p-6">Create Claim Topic</p>
+      <p className="text-xl p-6">Create Compliance Rule</p>
       <hr />
       <div className="p-3 mt-2">
         <div>
-          <label htmlFor="claimTopicDisplayName">Claim Topic Display Name *</label>
+          <label htmlFor="claimTopicDisplayName">Compliance Rule Display Name *</label>
           <div className="mt-3 ml-1 relative w-full flex border rounded-lg p-0">
             <Input
               id="claimTopicDisplayName"
@@ -160,7 +162,7 @@ function CreateClaimTopic({ service }) {
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
           <Button className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white" onClick={saveClaimTopic}>
-            Create Claim Topic
+            Create Compliance Rule
           </Button>
         </div>
       </div>

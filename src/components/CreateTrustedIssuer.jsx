@@ -77,7 +77,7 @@ function CreateTrustedIssuer({ service }) {
     }
 
     if (targetKeys.length < 1) {
-      toast.error("Assign Atleast 1 Claim Topics");
+      toast.error("Assign Atleast 1 Compliance Rule");
       return false;
     }
 
@@ -307,7 +307,7 @@ function CreateTrustedIssuer({ service }) {
               onChange={(e) => (id === "create" ? setWalletAddress(e.target.value.trim()) : "")}
             />
           </div>
-          <p className="my-4">Manage Claim Topic IDs</p>
+          <p className="my-4">Manage Compliance Rule IDs</p>
         </div>
         <div className="my-5">
           <Transfer

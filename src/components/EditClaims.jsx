@@ -18,7 +18,7 @@ const EditClaims = ({ service }) => {
   const [selectedKeys, setSelectedKeys] = useState([]);
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
-  // Handling the transfer box for claim topics
+  // Handling the transfer box for compliance rules
   const onChange = (nextTargetKeys) => {
     setTargetKeys(nextTargetKeys);
   };
@@ -27,7 +27,7 @@ const EditClaims = ({ service }) => {
     setSelectedKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
   };
 
-  // Save the selected claim topics
+  // Save the selected compliance rules
   const saveClaims = async () => {
     const currentClaims = identity.claims || [];
     const selectedClaimTopics = targetKeys;
@@ -163,14 +163,14 @@ const EditClaims = ({ service }) => {
     }
   };
 
-  // Fetch claim topics and identity details on component mount
+  // Fetch compliance rules and identity details on component mount
   useEffect(() => {
     (async function () {
       const result = await service.getClaimTopics();
       let data = [];
 
       if (result) {
-        // Map claim topics to the format required by the Transfer component
+        // Map compliance rules to the format required by the Transfer component
         data = result.map((item) => ({
           key: item.attributes.topic,
           displayName: item.attributes.displayName,
@@ -207,10 +207,10 @@ const EditClaims = ({ service }) => {
           },
         ]}
       />
-      <div className="text-2xl py-2">Edit Claims for Selected ID</div>
+      <div className="text-2xl py-2">Edit Rules for Selected ID</div>
       <div className="flex flex-col items-center">
         <div className="w-full">
-          <div>Select Topics</div>
+          <div>Select Rules</div>
           <Transfer
             className="w-full"
             showSelectAll={false}

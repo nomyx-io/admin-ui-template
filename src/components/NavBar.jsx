@@ -5,9 +5,8 @@ import { Link } from "react-router-dom";
 import { useAccount, useDisconnect } from "wagmi";
 
 import { RoleContext } from "../context/RoleContext";
-import NomyxLogo from "../images/nomyx.svg";
 import { WalletPreference } from "../utils/Constants";
-
+import NomyxLogo from "../Assets/nomyx_logo_black.svg";
 import "@rainbow-me/rainbowkit/styles.css";
 
 const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
@@ -35,7 +34,7 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
         {role.includes("CentralAuthority") && (
           <>
             <li style={{ padding: "20px 20px", minWidth: "100px" }}>
-              <img src={NomyxLogo} alt="Nomyx Logo" className="h-6 w-auto" />
+              <img src={NomyxLogo} alt="Nomyx Logo" className="h-8 w-auto" />
             </li>
             <li>
               <Link to="/" className="hover:underline">
@@ -43,13 +42,16 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
               </Link>
             </li>
             <li>
-              <Link to="/mint" className="hover:underline">
-                Mint
-              </Link>
+              <span>
+                <a href={process.env.MINTIFY_UI_URL} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center">
+                  Mint
+                  <span className="text-[#7F56D9]">↗</span>
+                </a>
+              </span>
             </li>
             <li>
               <Link to="/topics" className="hover:underline">
-                Claim Topics
+                Compliance Rules
               </Link>
             </li>
             <li>
