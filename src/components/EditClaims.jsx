@@ -38,9 +38,10 @@ const EditClaims = ({ service }) => {
 
     try {
       // Remove the claims that are not selected anymore
+      // First, remove all claims sequentially
       for (let claimTopic of claimsToRemove) {
         if (walletPreference === WalletPreference.MANAGED) {
-          toast
+          await toast
             .promise(
               (async () => {
                 // Initiate remove claim
@@ -81,10 +82,10 @@ const EditClaims = ({ service }) => {
         }
       }
 
-      // Only add new claims (claimsToAdd) if there are any to add
+      // After successfully removing claims, check if there are claims to add
       if (claimsToAdd.length > 0) {
         if (walletPreference === WalletPreference.MANAGED) {
-          toast
+          await toast
             .promise(
               (async () => {
                 // Initiate set claim
@@ -105,46 +106,48 @@ const EditClaims = ({ service }) => {
                 );
                 if (completeError) throw new Error(completeError);
 
-                return completeResponse;
+                let claimResponse = {
+                  events: [
+                    {
+                      transactionHash: completeResponse?.transactionHash,
+                    },
+                  ],
+                };
+                setTimeout(() => {
+                  //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
+                  navigate("/identities");
+                }, 2000);
               })(),
               {
                 pending: "Adding new claims...",
                 success: `Successfully added new claims`,
                 error: {
-                  // Notification on error
                   render({ data }) {
                     return <div>{data?.reason || data || "Error adding claims"}</div>;
                   },
                 },
               }
             )
-            .then(() => {
-              //navigate(`/identities/${JSON.stringify({ data: completeResponse })}/edit/summary`);
-            })
             .catch((error) => {
               console.error("Error after attempting to set claim:", error);
             });
         } else if (walletPreference === WalletPreference.PRIVATE) {
-          toast.promise(
+          await toast.promise(
             async () => {
               try {
-                const reponse = await service.setClaims(identity.address, claimsToAdd);
-                // Fetch the updated identity to verify changes
+                const response = await service.setClaims(identity.address, claimsToAdd);
                 const updatedIdentity = await service.getDigitalIdentity(identityId);
-                // Update the state with the latest identity data and selected claims
                 setIdentity(updatedIdentity);
                 setTargetKeys(updatedIdentity?.claims.map((t) => t.topic) || []);
-                // Navigate to the summary page
-                navigate(`/identities/${JSON.stringify({ data: reponse })}/edit/summary`);
+                navigate(`/identities/${JSON.stringify({ data: response })}/edit/summary`);
               } catch (error) {
-                throw error; // Rethrow the error to trigger the error notification
+                throw error;
               }
             },
             {
               pending: "Adding new claims...",
-              success: "Successfully added new claims.", // Notification on success
+              success: "Successfully added new claims.",
               error: {
-                // Notification on error
                 render({ data }) {
                   return <div>{data?.reason || data || "Error adding claims"}</div>;
                 },

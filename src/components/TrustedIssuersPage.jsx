@@ -93,11 +93,7 @@ const TrustedIssuersPage = ({ service }) => {
   }, [service]);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchData();
-    }, 2000); // 2 second before fetching to await parse indexer update
-
-    return () => clearTimeout(timeoutId); // Cleanup timeout on unmount
+    fetchData();
   }, [service, fetchData]);
 
   // const addTrustedIssuer = async (issuer, claimTopics) => {

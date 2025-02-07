@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useContext } from "react";
 
 import { Tabs } from "antd";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
+import { RoleContext } from "../context/RoleContext"; // Import RoleContext
+import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
+import { WalletPreference } from "../utils/Constants";
 
 const { TabPane } = Tabs;
 
@@ -15,6 +18,7 @@ const IdentitiesPage = ({ service }) => {
   const [pendingIdentities, setPendingIdentities] = useState([]);
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const fetchData = useCallback(
     async (tab) => {
@@ -136,30 +140,84 @@ const IdentitiesPage = ({ service }) => {
   };
 
   const handleRemoveIdentity = async (event, action, record) => {
-    toast.promise(
-      async () => {
-        const identities = [record.identityAddress];
+    if (walletPreference === WalletPreference.MANAGED) {
+      const identities = [record.identityAddress];
+      for (const identity of identities) {
+        await toast
+          .promise(
+            (async () => {
+              // Initiate remove identity
+              const { initiateResponse, error: initError } = await DfnsService.initiateRemoveIdentity(identity, user.walletId, dfnsToken);
+              if (initError) throw new Error(initError);
 
-        for (const identity of identities) {
-          // Step 1: Call removeIdentity
-          await service.removeIdentity(identity);
-          // Step 2: Call unregisterIdentity
-          await service.unregisterIdentity(identity);
-        }
+              // Complete  remove identity
+              const { completeResponse, error: completeError } = await DfnsService.completeRemoveIdentity(
+                user.walletId,
+                dfnsToken,
+                initiateResponse.challenge,
+                initiateResponse.requestBody
+              );
+              if (completeError) throw new Error(completeError);
 
-        // After successful removal, trigger a refresh of the component
-        setRefreshTrigger((prev) => !prev); // This needs to be tested upon updated removal event contract redeployment
-      },
-      {
-        pending: `Removing ${record?.displayName}...`,
-        success: `Successfully removed ${record?.displayName}`,
-        error: {
-          render({ data }) {
-            return <div>{data?.reason || `An error occurred while removing ${record?.displayName}`}</div>;
-          },
-        },
+              setTimeout(async () => {
+                // Initiate Unregister identity
+                const { initiateResponse, error: initError } = await DfnsService.initiateUnregisterIdentity(identity, user.walletId, dfnsToken);
+                if (initError) throw new Error(initError);
+
+                // Complete  Unregister identity
+                const { completeResponse, error: completeError } = await DfnsService.completeUnregisterIdentity(
+                  user.walletId,
+                  dfnsToken,
+                  initiateResponse.challenge,
+                  initiateResponse.requestBody
+                );
+                if (completeError) throw new Error(completeError);
+
+                setTimeout(() => {
+                  setRefreshTrigger((prev) => !prev);
+                }, 1000);
+              }, 2000);
+            })(),
+            {
+              pending: `Removing ${record?.displayName}...`,
+              success: `Successfully removed ${record?.displayName}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while removing ${record?.displayName}`}</div>;
+                },
+              },
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to set claim:", error);
+          });
       }
-    );
+    } else if (walletPreference === WalletPreference.PRIVATE) {
+      toast.promise(
+        async () => {
+          const identities = [record.identityAddress];
+
+          for (const identity of identities) {
+            // Step 1: Call removeIdentity
+            await service.removeIdentity(identity);
+            // Step 2: Call unregisterIdentity
+            await service.unregisterIdentity(identity);
+          }
+
+          // After successful removal, trigger a refresh of the component
+          setRefreshTrigger((prev) => !prev); // This needs to be tested upon updated removal event contract redeployment
+        },
+        {
+          pending: `Removing ${record?.displayName}...`,
+          success: `Successfully removed ${record?.displayName}`,
+          error: {
+            render({ data }) {
+              return <div>{data?.reason || `An error occurred while removing ${record?.displayName}`}</div>;
+            },
+          },
+        }
+      );
+    }
   };
 
   const columns = [

@@ -122,7 +122,8 @@ function CreateTrustedIssuer({ service }) {
                   issuer: walletAddress,
                   claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
                 });
-              }, 3000);
+                navigate("/issuers");
+              }, 4000);
             })(),
             {
               pending: "Adding Trusted Issuer...",
@@ -134,9 +135,6 @@ function CreateTrustedIssuer({ service }) {
               },
             }
           )
-          .then(() => {
-            navigate("/issuers");
-          })
           .catch((error) => {
             console.error("Error after attempting to add Trusted Issuer:", error);
           });

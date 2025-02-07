@@ -260,6 +260,15 @@ class DfnsService {
     }
   }
 
+  public async getIdentity(walletAddress: string) {
+    const response = await Parse.Cloud.run("dfnsGetIdentity", {
+      identityOwner: walletAddress,
+    });
+    if (response?.identity) {
+      return response.identity;
+    }
+  }
+
   public async initiateAddIdentity(ownerAddress: string, identity: any, walletId: string, dfnsToken: string) {
     if (!ownerAddress || !identity || !walletId || !dfnsToken) {
       throw new Error("Missing required parameters for AddIdentity.");
@@ -268,7 +277,7 @@ class DfnsService {
     try {
       const initiateResponse = await Parse.Cloud.run("dfnsAddIdentityInit", {
         ownerAddress,
-        identity,
+        identityData: identity,
         walletId,
         dfns_token: dfnsToken,
       });
@@ -506,6 +515,104 @@ class DfnsService {
       return { completeResponse, error: null };
     } catch (error: any) {
       console.error("Error completing GemforceMint:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
+
+  public async initiateRemoveIdentity(ownerAddress: string, walletId: string, dfnsToken: string) {
+    if (!ownerAddress || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for RemoveIdentity.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsRemoveIdentityInit", {
+        ownerAddress,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("RemoveIdentity initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating RemoveClaim:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeRemoveIdentity(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing RemoveIdentity.");
+    }
+
+    try {
+      const webauthn = new WebAuthnSigner();
+      const assertion = await webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsRemoveIdentityComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("RemoveIdentity completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing RemoveIdentity:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
+
+  public async initiateUnregisterIdentity(identityAddress: string, walletId: string, dfnsToken: string) {
+    if (!identityAddress || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for UnregisterIdentity.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsUnregisterIdentityInit", {
+        identityAddress,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("UnregisterIdentity initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating RemoveClaim:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeUnregisterIdentity(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing UnregisterIdentity.");
+    }
+
+    try {
+      const webauthn = new WebAuthnSigner();
+      const assertion = await webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsUnregisterIdentityComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("UnregisterIdentity completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing UnregisterIdentity:", error);
       return { completeResponse: null, error: error.message };
     }
   }
