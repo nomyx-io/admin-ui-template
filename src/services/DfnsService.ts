@@ -112,6 +112,105 @@ class DfnsService {
     }
   }
 
+  public async initiateRemoveTrustedIssuer(trustedIssuer: string, walletId: string, dfnsToken: string) {
+    if (!trustedIssuer || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for RemoveTrustedIssuer.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsRemoveTrustedIssuerInit", {
+        trustedIssuer,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("RemoveTrustedIssuer initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating RemoveTrustedIssuer:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeRemoveTrustedIssuer(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing RemoveTrustedIssuer.");
+    }
+
+    try {
+      const webauthn = new WebAuthnSigner();
+      const assertion = await webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsRemoveTrustedIssuerComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("RemoveTrustedIssuer completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing RemoveTrustedIssuer:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
+
+  public async initiateUpdateTrustedIssuer(trustedIssuer: string, claimTopics: number[], walletId: string, dfnsToken: string) {
+    if (!trustedIssuer || !claimTopics || !walletId || !dfnsToken || !Array.isArray(claimTopics)) {
+      throw new Error("Missing required parameters for UpdateIssuerClaimTopics.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsUpdateIssuerClaimTopicsInit", {
+        trustedIssuer,
+        claimTopics,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("UpdateIssuerClaimTopics initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating UpdateIssuerClaimTopics:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeUpdateTrustedIssuer(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing UpdateIssuerClaimTopics.");
+    }
+
+    try {
+      const webauthn = new WebAuthnSigner();
+      const assertion = await webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsUpdateIssuerClaimTopicsComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("UpdateIssuerClaimTopics completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing UpdateIssuerClaimTopics:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
+
   public async initiateCreateIdentity(ownerAddress: string, walletId: string, dfnsToken: string) {
     if (!ownerAddress || !walletId || !dfnsToken) {
       throw new Error("Missing required parameters for CreateIdentity.");

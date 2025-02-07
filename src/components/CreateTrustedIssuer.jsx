@@ -116,11 +116,13 @@ function CreateTrustedIssuer({ service }) {
               if (completeError) throw new Error(completeError);
 
               //return completeResponse;
-              await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
-                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              });
+              setTimeout(async () => {
+                await service.updateTrustedIssuer({
+                  verifierName: trimmedVerifierName,
+                  issuer: walletAddress,
+                  claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
+                });
+              }, 3000);
             })(),
             {
               pending: "Adding Trusted Issuer...",
@@ -197,7 +199,7 @@ function CreateTrustedIssuer({ service }) {
 
               // Complete updating the trusted issuer
               const { completeResponse, error: completeError } = await DfnsService.completeUpdateTrustedIssuer(
-                walletAddress,
+                user.walletId,
                 dfnsToken,
                 initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
                 initiateResponse.requestBody

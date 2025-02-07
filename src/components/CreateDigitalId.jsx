@@ -104,11 +104,13 @@ function CreateDigitalId({ service }) {
               if (completeAddIdentityError) throw new Error(completeAddIdentityError);
 
               // Step 6: Update identity
-              await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
-                displayName: trimmedDisplayName,
-                walletAddress: walletAddress.toLocaleLowerCase(),
-                accountNumber: trimmedAccountNumber,
-              });
+              setTimeout(async () => {
+                await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
+                  displayName: trimmedDisplayName,
+                  walletAddress: walletAddress.toLocaleLowerCase(),
+                  accountNumber: trimmedAccountNumber,
+                });
+              }, 2000);
 
               // Step 7: Approve user if needed
               if (searchParams.has("walletAddress")) {
