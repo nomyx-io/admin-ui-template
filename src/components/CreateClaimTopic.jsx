@@ -95,15 +95,15 @@ function CreateClaimTopic({ service }) {
               });
             })(),
             {
-               pending: "Creating Compliance Rule...",
-               success: `Successfully created Compliance Rule ${hiddenName}`,
-               error: `An error occurred while creating Compliance Rule ${hiddenName}`,
+              pending: "Creating Compliance Rule...",
+              success: `Successfully created Compliance Rule ${hiddenName}`,
+              error: `An error occurred while creating Compliance Rule ${hiddenName}`,
             }
           )
           .then(() => {
             setTimeout(() => {
-            navigate("/topics");
-            }, 500);  // Delay navigation to ensure the success toast has time to display
+              navigate("/topics");
+            }, 500); // Delay navigation to ensure the success toast has time to display
           })
           .catch((error) => {
             console.error("Error after attempting to create compliance rule:", error);
