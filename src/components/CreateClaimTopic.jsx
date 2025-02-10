@@ -1,15 +1,19 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useContext } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
+import { RoleContext } from "../context/RoleContext";
+import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
+import { WalletPreference } from "../utils/Constants";
 
 function CreateClaimTopic({ service }) {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = React.useState("");
   const [hiddenName, setHiddenName] = React.useState(0);
+  const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const getNextClaimTopicId = useCallback(async () => {
     try {
@@ -38,37 +42,76 @@ function CreateClaimTopic({ service }) {
 
   const saveClaimTopic = async () => {
     const trimmedDisplayName = displayName.trim();
-    if (validateClaimTopic(trimmedDisplayName)) {
-      toast
-        .promise(
-          new Promise(async (resolve, reject) => {
-            try {
+
+    if (!validateClaimTopic(trimmedDisplayName)) {
+      return;
+    }
+
+    try {
+      if (walletPreference === WalletPreference.MANAGED) {
+        // Handle MANAGED wallet preference using DFNSService
+        toast
+          .promise(
+            (async () => {
+              // Initiate adding the claim topic
+              const { initiateResponse, error: initError } = await DfnsService.initiateAddClaimTopic(hiddenName, user.walletId, dfnsToken);
+              if (initError) throw new Error(initError);
+
+              // Complete adding the claim topic
+              const { completeResponse, error: completeError } = await DfnsService.completeAddClaimTopic(
+                user.walletId,
+                dfnsToken,
+                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                initiateResponse.requestBody
+              );
+              if (completeError) throw new Error(completeError);
+
+              setTimeout(async () => {
+                await service.updateClaimTopic({
+                  topic: String(hiddenName),
+                  displayName: trimmedDisplayName,
+                });
+                navigate("/topics");
+              }, 2000);
+            })(),
+            {
+              pending: "Creating Claim Topic...",
+              success: `Successfully created Claim Topic ${hiddenName}`,
+              error: `An error occurred while creating Claim Topic ${hiddenName}`,
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to create claim topic:", error);
+          });
+      } else if (walletPreference === WalletPreference.PRIVATE) {
+        // Handle PRIVATE wallet preference
+        toast
+          .promise(
+            (async () => {
               await service.addClaimTopic(hiddenName);
-              await awaitTimeout(10000); // Simulating a delay for the process
               await service.updateClaimTopic({
                 topic: String(hiddenName),
                 displayName: trimmedDisplayName,
               });
-              resolve();
-            } catch (e) {
-              console.error("Failed to create/update compliance rule:", e);
-              reject(e);
+            })(),
+            {
+              pending: "Creating Compliance Rule...",
+              success: `Successfully created Compliance Rule ${hiddenName}`,
+              error: `An error occurred while creating Compliance Rule ${hiddenName}`,
             }
-          }),
-          {
-            pending: "Creating Compliance Rule...",
-            success: `Successfully created Compliance Rule ${hiddenName}`,
-            error: `An error occurred while creating Compliance Rule ${hiddenName}`,
-          }
-        )
-        .then(() => {
-          setTimeout(() => {
-            navigate("/topics");
-          }, 500); // Delay navigation to ensure the success toast has time to display
-        })
-        .catch((error) => {
-          console.error("Error after attempting to create compliance rule:", error);
-        });
+          )
+          .then(() => {
+            setTimeout(() => {
+              navigate("/topics");
+            }, 500); // Delay navigation to ensure the success toast has time to display
+          })
+          .catch((error) => {
+            console.error("Error after attempting to create compliance rule:", error);
+          });
+      }
+    } catch (error) {
+      console.error("Unexpected error during compliance rule creation:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 

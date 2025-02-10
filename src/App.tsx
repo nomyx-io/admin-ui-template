@@ -1,6 +1,6 @@
 import "react-toastify/dist/ReactToastify.css";
 
-import { useEffect, useState, createContext } from "react";
+import { useEffect, useState } from "react";
 
 import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { Spin } from "antd";
@@ -28,10 +28,11 @@ import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
+import { RoleContext } from "./context/RoleContext";
 import BlockchainService from "./services/BlockchainService.js";
+import parseInitialize from "./services/parseInitialize";
 import { generateRandomString } from "./utils";
-
-export const RoleContext = createContext({});
+import { WalletPreference } from "./utils/Constants.js";
 
 const localhost: Chain = {
   id: 31337,
@@ -108,12 +109,77 @@ const wagmiConfig = createConfig({
   publicClient,
 });
 
+const validateToken = async (token: string) => {
+  try {
+    const response = await axios.get(`${process.env.REACT_APP_PARSE_SERVER_URL}/auth/validate`, {
+      headers: {
+        "x-parse-session-token": token,
+      },
+    });
+
+    const data = response.data;
+    return {
+      valid: data?.valid || false,
+      roles: data?.user?.roles || [],
+      user: data?.user,
+      walletPreference: data?.user?.walletPreference,
+      dfnsToken: data?.dfnsToken,
+    };
+  } catch (error) {
+    console.error("Error validating token:", error);
+    return {
+      valid: false,
+      roles: [],
+      walletPreference: "",
+      dfnsToken: null,
+    };
+  }
+};
+
 function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [blockchainService, setBlockchainService] = useState<BlockchainService | null>(null);
+  const [user, setUser] = useState(null); // State to hold user
   const [role, setRole] = useState<any>([]);
+  const [walletPreference, setWalletPreference] = useState<WalletPreference | null>(null);
+  const [dfnsToken, setDfnsToken] = useState<string | null>(null);
   const [forceLogout, setForceLogout] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true); // New state for initialization
+
+  // Define the getToken function
+  const getToken = async (request: any) => {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_PARSE_SERVER_URL}/auth/login`, request);
+      const data = response.data;
+      return {
+        walletPreference: data?.user?.walletPreference,
+        token: data?.access_token || "",
+        roles: data?.user?.roles || [],
+        user: data?.user,
+        dfnsToken: data?.dfns_token,
+      };
+    } catch (error) {
+      console.log("Error during authentication:", error);
+      return {
+        walletPreference: "",
+        token: "",
+        roles: [],
+        user: null,
+        dfnsToken: null,
+      };
+    }
+  };
+
+  // Abstracted function to initialize BlockchainService
+  const initializeBlockchainService = (provider: ethers.providers.Web3Provider) => {
+    const _blockchainService = new BlockchainService(
+      provider,
+      process.env.REACT_APP_HARDHAT_CONTRACT_ADDRESS || "",
+      process.env.REACT_APP_HARDHAT_IDENTITY_FACTORY_ADDRESS || ""
+    );
+    setBlockchainService(_blockchainService);
+  };
 
   const onConnect = async (address: any, connector: any) => {
     if (isConnected) {
@@ -123,7 +189,8 @@ function App() {
     const provider = new ethers.providers.Web3Provider((window as any).ethereum);
     const RandomString = generateRandomString(10);
     const message = `Sign this message to validate that you are the owner of the account. Random string: ${RandomString}`;
-    const signer = await provider.getSigner();
+    const signer = provider.getSigner();
+
     let signature;
     try {
       signature = await signer.signMessage(message);
@@ -131,59 +198,140 @@ function App() {
       const message = error.reason ? error.reason : error.message;
       toast.error(message);
       setForceLogout(true);
+      return;
     }
-    const { token, roles }: any = await getToken({
+
+    const { token, roles, walletPreference, dfnsToken }: any = await getToken({
       message: message,
       signature: signature,
     });
+
     if (roles.length > 0) {
       setRole([...roles]);
+      setUser(user);
+      setWalletPreference(walletPreference);
+      setDfnsToken(dfnsToken);
       localStorage.setItem("sessionToken", token);
-    } else if (roles.length === 0) {
+    } else {
       if (signature) {
-        toast.error("Sorry You are not Authorized !");
+        toast.error("Sorry you are not authorized!");
         setForceLogout(true);
       }
     }
 
-    provider.getNetwork().then(async (network: any) => {
-      const chainId = network.chainId;
+    const network = await provider.getNetwork();
+    const chainId = network.chainId;
+    const configChainId = Number(process.env.REACT_APP_HARDHAT_CHAIN_ID) || 0;
 
-      const config = Number(process.env.REACT_APP_HARDHAT_CHAIN_ID) || 0;
+    if (!configChainId || configChainId !== chainId) {
+      setIsConnected(false);
+      return;
+    }
 
-      if (!config || config !== chainId) {
-        setIsConnected(false);
-        return;
-      }
+    setIsConnected(true);
 
-      setIsConnected(true);
-
-      const _blockchainService = new BlockchainService(
-        provider,
-        process.env.REACT_APP_HARDHAT_CONTRACT_ADDRESS,
-        process.env.REACT_APP_HARDHAT_IDENTITY_FACTORY_ADDRESS
-      );
-      setBlockchainService(_blockchainService);
-    });
+    initializeBlockchainService(provider);
+    // Initialize Parse
+    parseInitialize();
   };
 
-  const getToken = async (request: any) => {
+  // Define the onLogout function for email/password login
+  const onLogoutEmailPassword = async () => {
     try {
-      let data: any = await axios.post(`${process.env.REACT_APP_PARSE_SERVER_URL}/auth/login`, request);
-      data = data.data;
-      return {
-        token: data?.access_token || "",
-        roles: data?.user?.roles || [],
-      };
+      const token = localStorage.getItem("sessionToken");
+      if (token) {
+        // Invalidate the session token on the server
+        await axios.post(
+          `${process.env.REACT_APP_PARSE_SERVER_URL}/auth/logout`,
+          {},
+          {
+            headers: {
+              "x-parse-session-token": token,
+            },
+          }
+        );
+      }
     } catch (error) {
-      console.log("Error", error);
-      return {
-        token: "",
-        roles: [],
-      };
+      console.error("Error during logout:", error);
+      toast.error("Error during logout. Please try again.");
+      return;
+    }
+
+    // Reset client-side state
+    setRole([]);
+    setWalletPreference(null);
+    setDfnsToken(null);
+    setUser(null);
+    setForceLogout(false);
+    setIsConnected(false);
+    localStorage.removeItem("sessionToken");
+    setBlockchainService(null);
+
+    toast.success("Logged out successfully.");
+  };
+
+  // Define the onLogin function (Username/Password Login)
+  const onLogin = async (email: string, password: string) => {
+    const { token, roles, walletPreference, user, dfnsToken } = await getToken({ email, password });
+
+    if (roles.length > 0) {
+      setRole([...roles]);
+      setUser(user);
+      setDfnsToken(dfnsToken);
+      setWalletPreference(walletPreference);
+      localStorage.setItem("sessionToken", token);
+      setIsConnected(true);
+      // Initialize blockchainService if required for standard login
+      // If standard login doesn't require blockchainService, you can skip this
+      if ((window as any).ethereum) {
+        const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        initializeBlockchainService(provider);
+      }
+
+      // Initialize Parse
+      parseInitialize();
+    } else {
+      toast.error("Sorry, you are not authorized!");
+      setForceLogout(true);
     }
   };
 
+  const restoreSession = async () => {
+    const token = localStorage.getItem("sessionToken");
+    if (token) {
+      const { valid, roles, walletPreference, user, dfnsToken } = await validateToken(token);
+      if (valid && roles.length > 0) {
+        setRole(roles);
+        setUser(user);
+        setDfnsToken(dfnsToken);
+        setWalletPreference(walletPreference);
+        setIsConnected(true);
+      } else {
+        // Token is invalid or roles are empty
+        localStorage.removeItem("sessionToken");
+        setForceLogout(true);
+      }
+    }
+    setInitializing(false);
+  };
+
+  useEffect(() => {
+    restoreSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // // Handle forced logout
+  // useEffect(() => {
+  //   if (forceLogout) {
+  //     // Clear state and localStorage
+  //     setRole([]);
+  //     setIsConnected(false);
+  //     localStorage.removeItem("sessionToken");
+  //     setForceLogout(false);
+  //   }
+  // }, [forceLogout]);
+
+  // Handle loading state when roles change
   useEffect(() => {
     if (role.length > 0) {
       setLoading(true);
@@ -195,23 +343,38 @@ function App() {
 
   const onDisconnect = () => {
     setRole([]);
+    setDfnsToken(null);
+    setUser(null);
+    setWalletPreference(null);
     setForceLogout(false);
     setIsConnected(false);
+    localStorage.removeItem("sessionToken");
+    setBlockchainService(null);
   };
+
+  if (initializing) {
+    return (
+      <div className="z-50 h-screen w-screen flex justify-center items-center">
+        <Spin />
+      </div>
+    );
+  }
 
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains}>
-        <RoleContext.Provider value={{ role, setRole }}>
+        <RoleContext.Provider value={{ role, setRole, walletPreference, setWalletPreference, dfnsToken, setDfnsToken, user, setUser }}>
+          {/* Loading Spinner Overlay */}
           {loading && (
             <div className="z-50 h-screen w-screen overflow-hidden absolute top-0 left-0 flex justify-center items-center bg-[#00000040]">
               <Spin />
             </div>
           )}
           <Router>
+            {/* Navigation Bar (Only visible when logged in) */}
             {role.length > 0 && (
               <div className={`topnav p-0`}>
-                <NavBar onConnect={onConnect} onDisconnect={onDisconnect} role={role} />
+                <NavBar onConnect={onConnect} onDisconnect={onDisconnect} onLogout={onLogoutEmailPassword} role={role} />
               </div>
             )}
 
@@ -225,6 +388,7 @@ function App() {
                   closeOnClick
                   pauseOnHover
                 />
+                {/* Application Routes */}
                 <Routes>
                   <Route
                     path="/"
@@ -236,14 +400,21 @@ function App() {
                   />
                   <Route
                     path="/login"
-                    element={<Login forceLogout={forceLogout} onConnect={onConnect} onDisconnect={onDisconnect} service={blockchainService} />}
+                    element={
+                      <Login
+                        forceLogout={forceLogout}
+                        onConnect={onConnect}
+                        onDisconnect={onDisconnect}
+                        onLogin={onLogin}
+                        service={blockchainService}
+                      />
+                    }
                   />
                   <Route
                     path="/topics"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
-                        {" "}
-                        <ClaimTopicsPage service={blockchainService} />{" "}
+                        <ClaimTopicsPage service={blockchainService} />
                       </Protected>
                     }
                   />

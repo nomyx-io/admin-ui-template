@@ -1,9 +1,21 @@
 import Parse from "parse";
 
-export default class ParseClient {
-  static createdSchemas: any = [];
+class ParseClient {
+  private static instance: ParseClient;
 
-  public static initialize() {
+  constuctor() {
+    console.log("ParseClient constructor");
+  }
+
+  // Singleton getInstance method
+  public static getInstance(): ParseClient {
+    if (!ParseClient.instance) {
+      ParseClient.instance = new ParseClient();
+    }
+    return ParseClient.instance;
+  }
+
+  private initialize() {
     Parse.initialize(process.env.REACT_APP_PARSE_APPLICATION_ID || "", process.env.REACT_APP_PARSE_JAVASCRIPT_KEY);
     Parse.serverURL = process.env.REACT_APP_PARSE_SERVER_URL + "/parse" || "";
     Parse.javaScriptKey = process.env.REACT_APP_PARSE_JAVASCRIPT_KEY;
@@ -23,7 +35,7 @@ export default class ParseClient {
    * @param id
    * @returns
    */
-  static async get(collectionName: string, id: string) {
+  public async get(collectionName: string, id: string) {
     const Collection = Parse.Object.extend(collectionName);
     const query = new Parse.Query(Collection);
     query.equalTo("objectId", id);
@@ -38,7 +50,7 @@ export default class ParseClient {
    * @param includesValues
    * @returns
    */
-  static async getRecord(
+  public async getRecord(
     className: string,
     whereFields: string[] = [],
     whereValues: any[] = [],
@@ -61,7 +73,7 @@ export default class ParseClient {
    * @param idValueFields
    * @returns
    */
-  static async getRecordWithBlockchain(collection: any, networkId: any, idFields: any = [], idValueFields: any = []) {
+  public async getRecordWithBlockchain(collection: any, networkId: any, idFields: any = [], idValueFields: any = []) {
     try {
       const Blockchain = Parse.Object.extend("Blockchain");
       const bquery = new Parse.Query(Blockchain);
@@ -77,7 +89,7 @@ export default class ParseClient {
     }
   }
 
-  static countRecords(collectionName: any, collectionIdFields: any, collectionIds: any) {
+  public countRecords(collectionName: any, collectionIdFields: any, collectionIds: any) {
     try {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
@@ -105,7 +117,7 @@ export default class ParseClient {
    * @constructor
    * @throws {Error} if the number of whereFields and whereValues do not match
    */
-  static async getRecords(
+  public async getRecords(
     className: string,
     whereFields: string[] = [],
     whereValues: any[] = [],
@@ -155,7 +167,7 @@ export default class ParseClient {
    * @constructor
    * @throws {Error} if the number of whereFields and whereValues do not match
    */
-  static async getFirstRecord(className: string, whereFields: string[], whereValues: any[]) {
+  public async getFirstRecord(className: string, whereFields: string[], whereValues: any[]) {
     try {
       if (whereFields.length !== whereValues.length) {
         throw new Error("The number of whereFields and whereValues must match");
@@ -171,7 +183,7 @@ export default class ParseClient {
     }
   }
 
-  static async getLatestRecord(className: string, whereFields: string[], whereValues: any[]) {
+  public async getLatestRecord(className: string, whereFields: string[], whereValues: any[]) {
     try {
       if (whereFields.length !== whereValues.length) {
         throw new Error("The number of whereFields and whereValues must match");
@@ -196,7 +208,7 @@ export default class ParseClient {
    * @param data
    * @returns {Promise<Parse.Object>}
    */
-  static async createOrUpdateRecord(
+  public async createOrUpdateRecord(
     collectionName: any,
     collectionIdFields: any = [],
     collectionIds: any = [],
@@ -231,7 +243,7 @@ export default class ParseClient {
    * @param data
    * @returns
    */
-  static async updateExistingRecord(collectionName: any, collectionIdFields: any, collectionIds: any, data: any) {
+  public async updateExistingRecord(collectionName: any, collectionIdFields: any, collectionIds: any, data: any) {
     try {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
@@ -259,7 +271,7 @@ export default class ParseClient {
    * @param data
    * @returns {Promise<Parse.Object>}
    */
-  static async createRecord(
+  public async createRecord(
     collectionName: any,
     collectionIdFields: any = [],
     collectionIdsValues: any = [],
@@ -288,7 +300,7 @@ export default class ParseClient {
     }
   }
 
-  static async createRecords(
+  public async createRecords(
     collectionName: any,
     collectionIdFields: any = [],
     collectionIdsValues: any = [],
@@ -323,7 +335,7 @@ export default class ParseClient {
    * @param collectionId
    * @returns
    */
-  static async deleteRecord(collectionName: any, collectionId: any) {
+  public async deleteRecord(collectionName: any, collectionId: any) {
     try {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
@@ -341,7 +353,7 @@ export default class ParseClient {
    * save all record in the parse database
    * @param records
    */
-  static async saveAll(records: any) {
+  public async saveAll(records: any) {
     try {
       const allRecords = [];
       for (let i = 0; i < records.length; i++) {
@@ -365,7 +377,7 @@ export default class ParseClient {
    * @param collectionName
    * @param records
    */
-  static async saveAllFor(collectionName: string, records: any) {
+  public async saveAllFor(collectionName: string, records: any) {
     try {
       const allRecords = [];
       for (let i = 0; i < records.length; i++) {
@@ -389,7 +401,7 @@ export default class ParseClient {
    * @param className
    * @returns
    */
-  static async getSchema(className: string) {
+  public async getSchema(className: string) {
     try {
       const query = new Parse.Query("_SCHEMA");
       query.equalTo("className", className);
@@ -404,7 +416,7 @@ export default class ParseClient {
    * @param schema
    * @returns
    */
-  static async saveSchema(schema: any) {
+  public async saveSchema(schema: any) {
     try {
       return await schema.save();
     } catch (e) {
@@ -418,10 +430,10 @@ export default class ParseClient {
    * @param fields
    * @returns
    */
-  static async createSchema(className: string, fields: any) {
+  public async createSchema(className: string, fields: any) {
     try {
       // get all the existing schemas
-      const schemas = await ParseClient.getAllSchemas();
+      const schemas = await this.getAllSchemas();
 
       // if the schema already exists, return
       if (!schemas) return;
@@ -482,13 +494,13 @@ export default class ParseClient {
    * create multiple schemas
    * @param schemasList
    */
-  static async createSchemas(schemasList: any) {
-    const schemas = await ParseClient.getAllSchemas();
+  public async createSchemas(schemasList: any) {
+    const schemas = await this.getAllSchemas();
     const schemaNames = schemas.map((s: any) => s.className);
     for (let i = 0; i < schemasList.length; i++) {
       const collectionName = schemasList[i];
       if (!schemaNames.includes(collectionName)) {
-        await ParseClient.createSchema(collectionName, {
+        await this.createSchema(collectionName, {
           name: "string",
         });
       }
@@ -500,7 +512,7 @@ export default class ParseClient {
    * @param collectionName
    * @returns
    */
-  static async deleteCollection(collectionName: string) {
+  public async deleteCollection(collectionName: string) {
     try {
       const query = new Parse.Query(collectionName);
       const records = await query.find();
@@ -515,9 +527,9 @@ export default class ParseClient {
    * @param className
    * @returns
    */
-  static async deleteSchema(className: string) {
+  public async deleteSchema(className: string) {
     try {
-      const schema = await ParseClient.getSchema(className);
+      const schema = await this.getSchema(className);
       return schema ? await schema.destroy() : undefined;
     } catch (e) {
       console.log(`deleteSchema: Error deleting schema for ${className}`);
@@ -527,11 +539,11 @@ export default class ParseClient {
   /**
    * get all schemas in the parse database
    */
-  static async getAllSchemas() {
+  public async getAllSchemas() {
     try {
-      this.initialize();
       return await Parse.Schema.all();
     } catch (e) {
+      console.error("Error getting all schemas:", e);
       return [];
     }
   }
@@ -543,20 +555,10 @@ export default class ParseClient {
    * @param type
    * @returns
    */
-  static async saveFile(name: string, data?: any, type?: string) {
+  public async saveFile(name: string, data?: any, type?: string) {
     const parseFile = new Parse.File(name, data, type);
     await parseFile.save({ useMasterKey: true });
     return parseFile;
-  }
-
-  /**
-   * run a parse cloud function
-   * @param cloudFunction
-   * @param params
-   * @returns
-   */
-  static async run(cloudFunction: string, params: any = {}) {
-    return Parse.Cloud.run(cloudFunction, params);
   }
 
   /**
@@ -565,7 +567,7 @@ export default class ParseClient {
    * @param id
    * @param fields
    */
-  static async updateRecord(collectionName: string | { className: string }, id: string, fields: { [x: string]: any }) {
+  public async updateRecord(collectionName: string | { className: string }, id: string, fields: { [x: string]: any }) {
     const Collection = Parse.Object.extend(collectionName);
     const collection = new Collection();
     collection.id = id;
@@ -581,7 +583,7 @@ export default class ParseClient {
    * @param fields
    * @returns
    */
-  static async create(collectionName: string, fields: { [x: string]: any }) {
+  public async create(collectionName: string, fields: { [x: string]: any }) {
     const Collection = Parse.Object.extend(collectionName);
     const collection = new Collection();
     for (const key in fields) {
@@ -598,7 +600,7 @@ export default class ParseClient {
    * @param objectToInsert
    * @returns
    */
-  static async update(collName: string | { className: string }, existingRecordId: string, objectToInsert: { [x: string]: any }) {
+  public async update(collName: string | { className: string }, existingRecordId: string, objectToInsert: { [x: string]: any }) {
     const Collection = Parse.Object.extend(collName);
     const collection = new Collection();
     collection.id = existingRecordId;
@@ -608,4 +610,51 @@ export default class ParseClient {
     await collection.save();
     return collection;
   }
+
+  /**
+   * Run a Parse Cloud Function
+   * @param cloudFunction - The name of the cloud function to run
+   * @param params - An object containing parameters for the cloud function
+   * @returns {Promise<any>}
+   */
+  public async run(cloudFunction: string, params: any = {}): Promise<any> {
+    try {
+      return await Parse.Cloud.run(cloudFunction, params);
+    } catch (error: any) {
+      console.error(`Error running cloud function "${cloudFunction}":`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Log out the current user
+   */
+  public async logout(): Promise<void> {
+    try {
+      await Parse.User.logOut();
+      console.log("User logged out successfully.");
+    } catch (error: any) {
+      console.error("Error logging out user:", error.message);
+    }
+  }
+
+  public async initiateDfnsRegistration(username: string) {
+    if (!username) {
+      throw new Error("Username is required for registration.");
+    }
+
+    try {
+      // Use Parse.Cloud.run to call registerInit
+      const challenge = await Parse.Cloud.run("registerInit", { username });
+      console.log("Received registration challenge:", challenge);
+
+      return { challenge, error: null };
+    } catch (error: any) {
+      console.error("Error initiating registration:", error);
+      return { challenge: null, error: error.message };
+    }
+  }
 }
+
+// Instantiate and export the singleton instance
+export default ParseClient.getInstance();

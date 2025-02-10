@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useContext } from "react";
 
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
-import { NomyxAction } from "../utils/Constants";
+import { RoleContext } from "../context/RoleContext";
+import DfnsService from "../services/DfnsService";
+import { NomyxAction, WalletPreference } from "../utils/Constants";
 
 // const AddTrustedIssuerDialog = ({ service, visible, setVisibility, addTrustedIssuer }) => {
 //   const [form] = Form.useForm();
@@ -70,6 +73,7 @@ import { NomyxAction } from "../utils/Constants";
 const TrustedIssuersPage = ({ service }) => {
   const navigate = useNavigate();
   const [trustedIssuers, setTrustedIssuers] = useState([]);
+  const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const fetchData = useCallback(async () => {
     const issuers = service.getTrustedIssuers && (await service.getTrustedIssuers());
@@ -97,8 +101,67 @@ const TrustedIssuersPage = ({ service }) => {
   // };
 
   const removeTrustedIssuer = async (issuer) => {
-    await service.removeTrustedIssuer(issuer);
-    fetchData();
+    try {
+      if (walletPreference === WalletPreference.MANAGED) {
+        // Handle MANAGED wallet preference using DFNSService
+        toast
+          .promise(
+            (async () => {
+              // Initiate removal of the trusted issuer
+              const { initiateResponse, error: initError } = await DfnsService.initiateRemoveTrustedIssuer(issuer, user.walletId, dfnsToken);
+              if (initError) throw new Error(initError);
+
+              // Complete removal of the trusted issuer
+              const { completeResponse, error: completeError } = await DfnsService.completeRemoveTrustedIssuer(
+                user.walletId,
+                dfnsToken,
+                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                initiateResponse.requestBody
+              );
+              if (completeError) throw new Error(completeError);
+
+              // Fetch updated data after successful removal
+              setTimeout(fetchData, 3000);
+            })(),
+            {
+              pending: "Removing Trusted Issuer...",
+              success: `Successfully Removed Trusted Issuer ${issuer}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while removing Trusted Issuer ${issuer}`}</div>;
+                },
+              },
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to remove Trusted Issuer:", error);
+          });
+      } else if (walletPreference === WalletPreference.PRIVATE) {
+        // Handle PRIVATE wallet preference
+        toast
+          .promise(
+            (async () => {
+              await service.removeTrustedIssuer(issuer);
+              fetchData();
+            })(),
+            {
+              pending: "Removing Trusted Issuer...",
+              success: `Successfully Removed Trusted Issuer ${issuer}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while removing Trusted Issuer ${issuer}`}</div>;
+                },
+              },
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to remove Trusted Issuer:", error);
+          });
+      }
+    } catch (error) {
+      console.error("Unexpected error during removeTrustedIssuer:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
   };
 
   const columns = [
