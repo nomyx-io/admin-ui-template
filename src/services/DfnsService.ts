@@ -261,12 +261,24 @@ class DfnsService {
   }
 
   public async getIdentity(walletAddress: string) {
-    const response = await Parse.Cloud.run("dfnsGetIdentity", {
-      identityOwner: walletAddress,
-    });
-    if (response?.identity) {
-      return response.identity;
+    const maxRetries = 3,
+      delay = 1000;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await Parse.Cloud.run("dfnsGetIdentity", {
+          identityOwner: walletAddress,
+        });
+        if (response?.identity) {
+          return response.identity; // Return identity if found
+        }
+      } catch (error: any) {
+        console.error(`Attempt ${attempt} failed: ${error.message}`);
+      }
+      // Wait for 1 second before retrying (if not the last attempt)
+      if (attempt < maxRetries) await new Promise((res) => setTimeout(res, delay));
     }
+    console.error("Max retry attempts reached. Failed to fetch identity.");
+    return null; // Return null if all retries fail
   }
 
   public async initiateAddIdentity(ownerAddress: string, identity: any, walletId: string, dfnsToken: string) {
@@ -284,10 +296,10 @@ class DfnsService {
 
       console.log("AddIdentity initiation response:", initiateResponse);
 
-      return { initiateResponse, error: null };
+      return { addIdentityInitResponse: initiateResponse, addIdentityInitError: null };
     } catch (error: any) {
       console.error("Error initiating AddIdentity:", error);
-      return { initiateResponse: null, error: error.message };
+      return { addIdentityInitResponse: null, addIdentityInitError: error.message };
     }
   }
 
@@ -312,10 +324,10 @@ class DfnsService {
 
       console.log("AddIdentity completed:", completeResponse);
 
-      return { completeResponse, error: null };
+      return { addIdentityCompleteResponse: completeResponse, addIdentityCompleteError: null };
     } catch (error: any) {
       console.error("Error completing AddIdentity:", error);
-      return { completeResponse: null, error: error.message };
+      return { addIdentityCompleteResponse: null, addIdentityCompleteError: error.message };
     }
   }
 

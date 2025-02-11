@@ -66,22 +66,22 @@ function CreateClaimTopic({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              setTimeout(async () => {
-                await service.updateClaimTopic({
-                  topic: String(hiddenName),
-                  displayName: trimmedDisplayName,
-                });
-                navigate("/topics");
-              }, 2000);
+              // Update the claim topic
+              await service.updateClaimTopic({
+                topic: String(hiddenName),
+                displayName: trimmedDisplayName,
+              });
+              // Navigate to topics after everything is successfully executed
+              navigate("/topics");
             })(),
             {
-              pending: "Creating Claim Topic...",
-              success: `Successfully created Claim Topic ${hiddenName}`,
-              error: `An error occurred while creating Claim Topic ${hiddenName}`,
+              pending: "Creating Compliance Rule...",
+              success: `Successfully created Compliance Rule ${hiddenName}`,
+              error: `An error occurred while Creating Compliance Rule ${hiddenName}`,
             }
           )
           .catch((error) => {
-            console.error("Error after attempting to create claim topic:", error);
+            console.error("Error after attempting to create compliance rule:", error);
           });
       } else if (walletPreference === WalletPreference.PRIVATE) {
         // Handle PRIVATE wallet preference

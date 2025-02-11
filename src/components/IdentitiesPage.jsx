@@ -141,42 +141,48 @@ const IdentitiesPage = ({ service }) => {
 
   const handleRemoveIdentity = async (event, action, record) => {
     if (walletPreference === WalletPreference.MANAGED) {
+      const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       const identities = [record.identityAddress];
       for (const identity of identities) {
-        await toast
-          .promise(
+        try {
+          await toast.promise(
             (async () => {
-              // Initiate remove identity
-              const { initiateResponse, error: initError } = await DfnsService.initiateRemoveIdentity(identity, user.walletId, dfnsToken);
-              if (initError) throw new Error(initError);
+              // Step 1: Initiate Remove Identity
+              const { initiateResponse, error: removeInitError } = await DfnsService.initiateRemoveIdentity(identity, user.walletId, dfnsToken);
+              if (removeInitError) throw new Error(removeInitError);
 
-              // Complete  remove identity
-              const { completeResponse, error: completeError } = await DfnsService.completeRemoveIdentity(
+              // Step 2: Complete Remove Identity
+              const { completeResponse, error: removeCompleteError } = await DfnsService.completeRemoveIdentity(
                 user.walletId,
                 dfnsToken,
                 initiateResponse.challenge,
                 initiateResponse.requestBody
               );
-              if (completeError) throw new Error(completeError);
+              if (removeCompleteError) throw new Error(removeCompleteError);
 
-              setTimeout(async () => {
-                // Initiate Unregister identity
-                const { initiateResponse, error: initError } = await DfnsService.initiateUnregisterIdentity(identity, user.walletId, dfnsToken);
-                if (initError) throw new Error(initError);
+              // Step 3: Delay before initiating Unregister Identity
+              await delay(2000);
 
-                // Complete  Unregister identity
-                const { completeResponse, error: completeError } = await DfnsService.completeUnregisterIdentity(
-                  user.walletId,
-                  dfnsToken,
-                  initiateResponse.challenge,
-                  initiateResponse.requestBody
-                );
-                if (completeError) throw new Error(completeError);
+              // Step 4: Initiate Unregister Identity
+              const { initiateResponse: unregisterInitResponse, error: unregisterInitError } = await DfnsService.initiateUnregisterIdentity(
+                identity,
+                user.walletId,
+                dfnsToken
+              );
+              if (unregisterInitError) throw new Error(unregisterInitError);
 
-                setTimeout(() => {
-                  setRefreshTrigger((prev) => !prev);
-                }, 1000);
-              }, 2000);
+              // Step 5: Complete Unregister Identity
+              const { completeResponse: unregisterCompleteResponse, error: unregisterCompleteError } = await DfnsService.completeUnregisterIdentity(
+                user.walletId,
+                dfnsToken,
+                unregisterInitResponse.challenge,
+                unregisterInitResponse.requestBody
+              );
+              if (unregisterCompleteError) throw new Error(unregisterCompleteError);
+
+              // Step 6: Delay before refreshing state
+              await delay(2500);
+              setRefreshTrigger((prev) => !prev);
             })(),
             {
               pending: `Removing ${record?.displayName}...`,
@@ -187,10 +193,10 @@ const IdentitiesPage = ({ service }) => {
                 },
               },
             }
-          )
-          .catch((error) => {
-            console.error("Error after attempting to set claim:", error);
-          });
+          );
+        } catch (error) {
+          console.error(`Error removing identity ${identity}:`, error);
+        }
       }
     } else if (walletPreference === WalletPreference.PRIVATE) {
       toast.promise(
