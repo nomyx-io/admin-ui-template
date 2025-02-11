@@ -150,8 +150,27 @@ class BlockchainService {
     return await tx.wait();
   }
 
-  updateClaimTopic(claimTopic) {
-    return ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
+  async updateClaimTopic(claimTopic) {
+    const maxRetries = 3,
+      delay = 1000;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Check if the record exists
+        const existingRecord = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "topic", "desc");
+        if (existingRecord?.length > 0) {
+          // Attempt to update the record
+          await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
+
+          console.log("Record updated successfully!");
+          return; // Exit after successful update
+        }
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed: ${error.message}`);
+      }
+      // Wait for 1 second before retrying (if not the last attempt)
+      if (attempt < maxRetries) await new Promise((res) => setTimeout(res, delay));
+    }
+    console.error("Max retry attempts reached. Failed to update the record.");
   }
 
   async removeClaimTopic(claimTopic) {
@@ -166,7 +185,8 @@ class BlockchainService {
   }
 
   async getNextClaimTopicId() {
-    const result = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "topic", "desc");
+    debugger;
+    const result = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "createdAt", "desc");
     let highestTopicId = result.length > 0 ? Number.parseInt(result[0].attributes.topic) + 1 : 1;
     return highestTopicId;
   }
@@ -335,40 +355,36 @@ class BlockchainService {
   }
 
   async updateIdentity(identity, identityData) {
-    // Check if identityData is null
+    const maxRetries = 3,
+      baseDelay = 4000;
+
     if (!identityData) {
-      //No identity data provided, skipping update.
+      console.warn("No identity data provided, skipping update.");
       return null;
     }
 
-    // Function to perform the update
-    const performUpdate = async () => {
-      try {
-        const result = await ParseClient.updateExistingRecord("Identity", ["address"], [identity], identityData);
-        return result; // Return the result if successful
-      } catch (error) {
-        console.error("Update failed:", error);
-        return null; // Return null if the update fails
-      }
-    };
+    // Retry helper function
+    async function retryWithBackoff(fn, retries, delay) {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const result = await fn();
+          if (result) return result; // Return if successful
+        } catch (error) {
+          console.error(`Attempt ${attempt} failed:`, error);
+        }
 
-    // Polling logic: Try up to 3 times with a 4-second delay between each attempt
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      const result = await performUpdate();
-
-      if (result) {
-        //Update successful
-        return result; // Return the result if successful
+        if (attempt < retries) {
+          const waitTime = delay * attempt; // Exponential backoff
+          console.log(`Retrying in ${waitTime / 1000} seconds...`);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+        }
       }
-
-      // If not the last attempt, wait for 4 seconds before trying again
-      if (attempt < 3) {
-        //Waiting 4 seconds before next attempt...
-        await new Promise((resolve) => setTimeout(resolve, 4000));
-      }
+      console.error("Update failed after max retry attempts.");
+      return null;
     }
-    //Update failed after 3 attempts.
-    return null; // Return null if all attempts fail
+
+    // Perform the update with retry
+    return retryWithBackoff(() => ParseClient.updateExistingRecord("Identity", ["address"], [identity], identityData), maxRetries, baseDelay);
   }
 
   async createParseIdentity(identity, identityData) {
@@ -527,7 +543,23 @@ class BlockchainService {
   }
 
   async updateTrustedIssuer(data) {
-    return await ParseClient.updateExistingRecord("TrustedIssuer", ["issuer"], [data.issuer], data);
+    if (!data || !data.issuer) {
+      console.warn("Invalid data provided, skipping update.");
+      return null;
+    }
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await ParseClient.updateExistingRecord("TrustedIssuer", ["issuer"], [data.issuer], data);
+        return result; // Return if successful
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed:`, error);
+        if (attempt < 3) {
+          await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+        }
+      }
+    }
+    console.error("Update failed after 3 attempts.");
+    return null; // Return null if all attempts fail
   }
 
   async removeTrustedIssuer(trustedIssuer) {

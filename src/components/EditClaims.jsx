@@ -85,6 +85,7 @@ const EditClaims = ({ service }) => {
       // After successfully removing claims, check if there are claims to add
       if (claimsToAdd.length > 0) {
         if (walletPreference === WalletPreference.MANAGED) {
+          const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
           await toast
             .promise(
               (async () => {
@@ -97,6 +98,7 @@ const EditClaims = ({ service }) => {
                 );
                 if (initError) throw new Error(initError);
 
+                await delay(2000);
                 // Complete set claim
                 const { completeResponse, error: completeError } = await DfnsService.completeSetClaims(
                   user.walletId,
@@ -113,10 +115,9 @@ const EditClaims = ({ service }) => {
                     },
                   ],
                 };
-                setTimeout(() => {
-                  //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
-                  navigate("/identities");
-                }, 2000);
+                await delay(4000);
+                //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
+                navigate("/identities");
               })(),
               {
                 pending: "Adding new claims...",

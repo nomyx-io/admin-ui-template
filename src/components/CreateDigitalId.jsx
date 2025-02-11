@@ -81,59 +81,54 @@ function CreateDigitalId({ service }) {
                 initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
+              // Step 3: Get identity details
+              const identity = await DfnsService.getIdentity(walletAddress);
 
-              setTimeout(async () => {
-                // Step 3: Get identity details
-                const identity = await DfnsService.getIdentity(walletAddress);
+              // Step 4: Initiate add identity
+              const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
+                walletAddress,
+                identity,
+                user.walletId,
+                dfnsToken
+              );
+              if (addIdentityInitError) throw new Error(addIdentityInitError);
 
-                // Step 4: Initiate add identity
-                const { initiateResponse, error: initError } = await DfnsService.initiateAddIdentity(
-                  walletAddress,
-                  identity,
-                  user.walletId,
-                  dfnsToken
-                );
-                if (initError) throw new Error(initError);
+              // Step 5: Complete add identity
+              const { addIdentityCompleteResponse, error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
+                user.walletId,
+                dfnsToken,
+                addIdentityInitResponse.challenge,
+                addIdentityInitResponse.requestBody
+              );
+              if (addIdentityCompleteError) throw new Error(addIdentityCompleteError);
 
-                // Step 5: Complete add identity
-                const { completeResponse, error: completeError } = await DfnsService.completeAddIdentity(
-                  user.walletId,
-                  dfnsToken,
-                  initiateResponse.challenge,
-                  initiateResponse.requestBody
-                );
-                if (completeError) throw new Error(completeError);
+              // Step 6: Update identity
+              await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
+                displayName: trimmedDisplayName,
+                walletAddress: walletAddress.toLocaleLowerCase(),
+                accountNumber: trimmedAccountNumber,
+              });
 
-                // Step 6: Update identity
-                setTimeout(async () => {
-                  await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
-                    displayName: trimmedDisplayName,
-                    walletAddress: walletAddress.toLocaleLowerCase(),
-                    accountNumber: trimmedAccountNumber,
-                  });
-
-                  // Step 7: Approve user if needed
-                  if (searchParams.has("walletAddress")) {
-                    const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
-                    if (userExists) {
-                      await toast.promise(
-                        service.approveUser(walletAddress.toLocaleLowerCase()), // Directly pass the promise without awaiting it here
-                        {
-                          pending: "Approving user...",
-                          success: "User approved successfully",
-                          error: {
-                            render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
-                          },
-                        }
-                      );
-                    } else {
-                      // Handle the case where the user doesn't exist
-                      toast.error(`User with wallet address ${walletAddress} does not exist.`);
+              // Step 7: Approve user if needed
+              if (searchParams.has("walletAddress")) {
+                const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
+                if (userExists) {
+                  await toast.promise(
+                    service.approveUser(walletAddress.toLocaleLowerCase()), // Directly pass the promise without awaiting it here
+                    {
+                      pending: "Approving user...",
+                      success: "User approved successfully",
+                      error: {
+                        render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
+                      },
                     }
-                  }
-                  navigate("/identities");
-                }, 6000);
-              }, 4000);
+                  );
+                } else {
+                  // Handle the case where the user doesn't exist
+                  toast.error(`User with wallet address ${walletAddress} does not exist.`);
+                }
+              }
+              navigate("/identities");
 
               //return completeResponse;
             })(),

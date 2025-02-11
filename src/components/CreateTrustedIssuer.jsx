@@ -114,16 +114,13 @@ function CreateTrustedIssuer({ service }) {
                 initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
-
               //return completeResponse;
-              setTimeout(async () => {
-                await service.updateTrustedIssuer({
-                  verifierName: trimmedVerifierName,
-                  issuer: walletAddress,
-                  claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-                });
-                navigate("/issuers");
-              }, 4000);
+              await service.updateTrustedIssuer({
+                verifierName: trimmedVerifierName,
+                issuer: walletAddress,
+                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
+              });
+              navigate("/issuers");
             })(),
             {
               pending: "Adding Trusted Issuer...",
@@ -183,6 +180,7 @@ function CreateTrustedIssuer({ service }) {
     try {
       if (walletPreference === WalletPreference.MANAGED) {
         // Handle MANAGED wallet preference using DFNSService
+        const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         toast
           .promise(
             (async () => {
@@ -204,7 +202,8 @@ function CreateTrustedIssuer({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              return completeResponse;
+              await delay(2000);
+              navigate("/issuers");
             })(),
             {
               pending: "Updating Trusted Issuer...",
@@ -216,9 +215,6 @@ function CreateTrustedIssuer({ service }) {
               },
             }
           )
-          .then(() => {
-            navigate("/issuers");
-          })
           .catch((error) => {
             console.error("Error after attempting to update Trusted Issuer:", error);
           });
