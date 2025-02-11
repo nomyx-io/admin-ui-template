@@ -115,7 +115,7 @@ const EditClaims = ({ service }) => {
                     },
                   ],
                 };
-                await delay(3000);
+                await delay(4000);
                 //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
                 navigate("/identities");
               })(),
