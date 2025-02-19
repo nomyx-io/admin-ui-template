@@ -15,6 +15,7 @@ import { publicProvider } from "wagmi/providers/public";
 import ClaimTopicsPage from "./components/ClaimTopicsPage.jsx";
 import CreateClaimTopic from "./components/CreateClaimTopic.jsx";
 import CreateDigitalId from "./components/CreateDigitalId.jsx";
+import CreatePassword from "./components/CreatePasswordPage.jsx";
 import CreateTrustedIssuer from "./components/CreateTrustedIssuer.jsx";
 import DigitalIdentityDetailView from "./components/DigitalIdentityDetailPage.jsx";
 import EditClaims from "./components/EditClaims.jsx";
@@ -410,6 +411,8 @@ function App() {
                       />
                     }
                   />
+                  <Route path="/create-password/:token" element={<CreatePassword service={blockchainService} />} />
+
                   <Route
                     path="/topics"
                     element={
