@@ -348,10 +348,24 @@ class BlockchainService {
     }
   }
 
-  async getIdentity(address) {
+  async getIdentity(address, retries = 5, delay = 1000) {
     const contract = this.identityFactoryService.connect(this.signer);
-    const tx = await contract.getIdentity(address);
-    return tx;
+
+    for (let attempt = 0; attempt < retries; attempt++) {
+      const tx = await contract.getIdentity(address);
+
+      if (tx && tx !== "0x0000000000000000000000000000000000000000") {
+        // Ensure valid identity
+        console.log(`✅ Identity found: ${tx}`);
+        return tx;
+      }
+
+      console.warn(`🔄 Identity not found yet, retrying... Attempt ${attempt + 1}/${retries}`);
+      await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
+    }
+
+    console.error("❌ Identity retrieval failed after multiple attempts.");
+    throw new Error("Identity not found");
   }
 
   async updateIdentity(identity, identityData) {
