@@ -114,6 +114,11 @@ function CreateTrustedIssuer({ service }) {
                 initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
+              
+              console.log("Waiting for backend update...");
+              await new Promise((resolve) => setTimeout(resolve, 4000)); // 4-second delay
+              console.log("Backend update delay complete.");
+              
               //return completeResponse;
               await service.updateTrustedIssuer({
                 verifierName: trimmedVerifierName,
