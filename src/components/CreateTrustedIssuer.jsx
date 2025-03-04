@@ -114,7 +114,7 @@ function CreateTrustedIssuer({ service }) {
                 initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
-              await new Promise((resolve) => setTimeout(resolve, 4000)); // 4-second delay
+              await new Promise((resolve) => setTimeout(resolve, 6000)); // 4-second delay
               //return completeResponse;
               await service.updateTrustedIssuer({
                 verifierName: trimmedVerifierName,
