@@ -43,7 +43,12 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
             </li>
             <li>
               <span>
-                <a href={process.env.MINTIFY_UI_URL} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center">
+                <a
+                  href={process.env.REACT_APP_MINTIFY_UI_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline flex items-center"
+                >
                   Mint
                   <span className="text-[#7F56D9]">↗</span>
                 </a>
