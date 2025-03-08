@@ -33,6 +33,7 @@ import { RoleContext } from "./context/RoleContext";
 import BlockchainService from "./services/BlockchainService.js";
 import parseInitialize from "./services/parseInitialize";
 import { generateRandomString } from "./utils";
+import AutoLogout from "./utils/AutoLogout";
 import { WalletPreference } from "./utils/Constants.js";
 
 const localhost: Chain = {
@@ -275,12 +276,14 @@ function App() {
   const onLogin = async (email: string, password: string) => {
     const { token, roles, walletPreference, user, dfnsToken } = await getToken({ email, password });
 
+    const expirationTime = Date.now() + 60 * 30 * 1000; // 30m logout
     if (roles.length > 0) {
       setRole([...roles]);
       setUser(user);
       setDfnsToken(dfnsToken);
       setWalletPreference(walletPreference);
       localStorage.setItem("sessionToken", token);
+      localStorage.setItem("tokenExpiration", expirationTime.toString());
       setIsConnected(true);
       // Initialize blockchainService if required for standard login
       // If standard login doesn't require blockchainService, you can skip this
@@ -372,6 +375,7 @@ function App() {
             </div>
           )}
           <Router>
+            <AutoLogout />
             {/* Navigation Bar (Only visible when logged in) */}
             {role.length > 0 && (
               <div className={`topnav p-0`}>
