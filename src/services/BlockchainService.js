@@ -152,7 +152,7 @@ class BlockchainService {
 
   async updateClaimTopic(claimTopic) {
     const maxRetries = 3,
-      delay = 1000;
+      delay = 2000;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // Check if the record exists
