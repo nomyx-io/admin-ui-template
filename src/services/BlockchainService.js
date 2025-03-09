@@ -17,15 +17,29 @@ class BlockchainService {
   mintAbi = MinterFacet.default.abi;
 
   constructor(provider, contractAddress, identityRegistryAddress) {
-    // this.provider = new ethers.providers.JsonRpcProvider(provider);
     this.provider = provider;
-    this.signer = this.provider.getSigner();
 
-    this.claimTopicRegistryService = new ethers.Contract(contractAddress, this.claimTopicsAbi, this.provider);
-    this.identityRegistryService = new ethers.Contract(contractAddress, this.identityRegistryAbi, this.provider);
-    this.trustedIssuersRegistryService = new ethers.Contract(contractAddress, this.trustedIssuersRegistryAbi, this.provider);
-    this.identityFactoryService = new ethers.Contract(identityRegistryAddress, this.identityFactoryAbi, this.provider);
-    this.mintService = new ethers.Contract(contractAddress, this.mintAbi, this.provider);
+    // ✅ Check if provider is Web3Provider (Wallet) or JsonRpcProvider (RPC Fallback)
+    if (provider instanceof ethers.providers.Web3Provider) {
+      console.log("🔹 Web3 Wallet Detected, setting signer...");
+      this.signer = provider.getSigner();
+    } else {
+      console.log("⚠️ Using Read-Only RPC Provider (No signer)");
+      this.signer = null; // Read-only mode
+    }
+
+    console.log("blockchain service provider: ", this.provider);
+    console.log("blockchain service signer: ", this.signer);
+
+    // ✅ Use the best available provider for contracts (signer for transactions, provider for reads)
+    const contractProvider = this.signer || this.provider;
+
+    // ✅ Initialize smart contracts
+    this.claimTopicRegistryService = new ethers.Contract(contractAddress, this.claimTopicsAbi, contractProvider);
+    this.identityRegistryService = new ethers.Contract(contractAddress, this.identityRegistryAbi, contractProvider);
+    this.trustedIssuersRegistryService = new ethers.Contract(contractAddress, this.trustedIssuersRegistryAbi, contractProvider);
+    this.identityFactoryService = new ethers.Contract(identityRegistryAddress, this.identityFactoryAbi, contractProvider);
+    this.mintService = new ethers.Contract(contractAddress, this.mintAbi, contractProvider);
 
     // Mint Registry
     this.mint = this.mint.bind(this);
