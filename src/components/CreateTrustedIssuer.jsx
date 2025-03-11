@@ -203,7 +203,7 @@ function CreateTrustedIssuer({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              await delay(4000);
+              await delay(6000);
               navigate("/issuers");
             })(),
             {
