@@ -267,6 +267,7 @@ function App() {
     setForceLogout(false);
     setIsConnected(false);
     localStorage.removeItem("sessionToken");
+    localStorage.removeItem("tokenExpiration");
     setBlockchainService(null);
 
     toast.success("Logged out successfully.");
@@ -313,6 +314,7 @@ function App() {
       } else {
         // Token is invalid or roles are empty
         localStorage.removeItem("sessionToken");
+        localStorage.removeItem("tokenExpiration");
         setForceLogout(true);
       }
     }
@@ -353,6 +355,7 @@ function App() {
     setForceLogout(false);
     setIsConnected(false);
     localStorage.removeItem("sessionToken");
+    localStorage.removeItem("tokenExpiration");
     setBlockchainService(null);
   };
 
