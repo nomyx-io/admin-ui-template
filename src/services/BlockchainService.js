@@ -17,15 +17,29 @@ class BlockchainService {
   mintAbi = MinterFacet.default.abi;
 
   constructor(provider, contractAddress, identityRegistryAddress) {
-    // this.provider = new ethers.providers.JsonRpcProvider(provider);
     this.provider = provider;
-    this.signer = this.provider.getSigner();
 
-    this.claimTopicRegistryService = new ethers.Contract(contractAddress, this.claimTopicsAbi, this.provider);
-    this.identityRegistryService = new ethers.Contract(contractAddress, this.identityRegistryAbi, this.provider);
-    this.trustedIssuersRegistryService = new ethers.Contract(contractAddress, this.trustedIssuersRegistryAbi, this.provider);
-    this.identityFactoryService = new ethers.Contract(identityRegistryAddress, this.identityFactoryAbi, this.provider);
-    this.mintService = new ethers.Contract(contractAddress, this.mintAbi, this.provider);
+    // ✅ Check if provider is Web3Provider (Wallet) or JsonRpcProvider (RPC Fallback)
+    if (provider instanceof ethers.providers.Web3Provider) {
+      console.log("🔹 Web3 Wallet Detected, setting signer...");
+      this.signer = provider.getSigner();
+    } else {
+      console.log("⚠️ Using Read-Only RPC Provider (No signer)");
+      this.signer = null; // Read-only mode
+    }
+
+    console.log("blockchain service provider: ", this.provider);
+    console.log("blockchain service signer: ", this.signer);
+
+    // ✅ Use the best available provider for contracts (signer for transactions, provider for reads)
+    const contractProvider = this.signer || this.provider;
+
+    // ✅ Initialize smart contracts
+    this.claimTopicRegistryService = new ethers.Contract(contractAddress, this.claimTopicsAbi, contractProvider);
+    this.identityRegistryService = new ethers.Contract(contractAddress, this.identityRegistryAbi, contractProvider);
+    this.trustedIssuersRegistryService = new ethers.Contract(contractAddress, this.trustedIssuersRegistryAbi, contractProvider);
+    this.identityFactoryService = new ethers.Contract(identityRegistryAddress, this.identityFactoryAbi, contractProvider);
+    this.mintService = new ethers.Contract(contractAddress, this.mintAbi, contractProvider);
 
     // Mint Registry
     this.mint = this.mint.bind(this);
@@ -152,7 +166,7 @@ class BlockchainService {
 
   async updateClaimTopic(claimTopic) {
     const maxRetries = 3,
-      delay = 1000;
+      delay = 2000;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // Check if the record exists
@@ -558,21 +572,58 @@ class BlockchainService {
 
   async updateTrustedIssuer(data) {
     if (!data || !data.issuer) {
-      console.warn("Invalid data provided, skipping update.");
+      console.warn("🚨 Invalid data provided, skipping update.");
       return null;
     }
-    for (let attempt = 1; attempt <= 3; attempt++) {
+
+    // ✅ Normalize issuer address to lowercase
+    const normalizedIssuer = data.issuer.toLowerCase();
+
+    console.log(`🔄 Starting updateTrustedIssuer for issuer: ${normalizedIssuer}`, data);
+
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      console.log(`🔍 Attempt ${attempt}: Checking if TrustedIssuer exists via ParseClient...`);
+
       try {
-        const result = await ParseClient.updateExistingRecord("TrustedIssuer", ["issuer"], [data.issuer], data);
-        return result; // Return if successful
-      } catch (error) {
-        console.error(`Attempt ${attempt} failed:`, error);
-        if (attempt < 3) {
-          await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+        // ✅ Query using the lowercase version
+        const existingIssuer = await ParseClient.getRecord("TrustedIssuer", ["issuer"], [normalizedIssuer]);
+
+        if (!existingIssuer) {
+          console.warn(`⚠️ Attempt ${attempt}: TrustedIssuer '${normalizedIssuer}' not found yet.`);
+
+          if (attempt < 10) {
+            const waitTime = attempt * 2000; // Exponential backoff: 2s, 4s, 6s...
+            console.log(`⏳ Waiting ${waitTime / 1000}s before retrying...`);
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
+            continue; // Retry
+          } else {
+            console.error(`❌ Giving up after ${attempt} attempts: TrustedIssuer '${normalizedIssuer}' never appeared.`);
+            return null;
+          }
         }
+
+        console.log(`✅ TrustedIssuer found on attempt ${attempt}, proceeding with update...`);
+        console.log("🔹 Existing TrustedIssuer Data:", existingIssuer);
+
+        // ✅ Ensure the stored issuer address is also in lowercase
+        const updateData = { ...data, issuer: normalizedIssuer };
+
+        // ✅ Update using ParseClient
+        console.log(`🚀 Attempting update with data:`, updateData);
+        const result = await ParseClient.updateExistingRecord("TrustedIssuer", ["issuer"], [normalizedIssuer], updateData);
+
+        console.log(`🎉 Update successful for issuer '${normalizedIssuer}':`, result);
+        return result; // Return success
+      } catch (error) {
+        console.error(`❌ Error on attempt ${attempt}:`, error);
+
+        const waitTime = Math.min(attempt * 2000, 10000); // Cap wait time at 10s
+        console.log(`⏳ Retrying in ${waitTime / 1000}s...`);
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
     }
-    console.error("Update failed after 3 attempts.");
+
+    console.error(`❌ Update failed after 10 attempts for issuer '${normalizedIssuer}'.`);
     return null; // Return null if all attempts fail
   }
 

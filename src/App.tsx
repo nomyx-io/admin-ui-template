@@ -33,6 +33,7 @@ import { RoleContext } from "./context/RoleContext";
 import BlockchainService from "./services/BlockchainService.js";
 import parseInitialize from "./services/parseInitialize";
 import { generateRandomString } from "./utils";
+import AutoLogout from "./utils/AutoLogout";
 import { WalletPreference } from "./utils/Constants.js";
 
 const localhost: Chain = {
@@ -173,7 +174,8 @@ function App() {
   };
 
   // Abstracted function to initialize BlockchainService
-  const initializeBlockchainService = (provider: ethers.providers.Web3Provider) => {
+  const initializeBlockchainService = (provider: ethers.providers.Provider) => {
+    console.log("Initializing BlockchainService...");
     const _blockchainService = new BlockchainService(
       provider,
       process.env.REACT_APP_HARDHAT_CONTRACT_ADDRESS || "",
@@ -266,6 +268,7 @@ function App() {
     setForceLogout(false);
     setIsConnected(false);
     localStorage.removeItem("sessionToken");
+    localStorage.removeItem("tokenExpiration");
     setBlockchainService(null);
 
     toast.success("Logged out successfully.");
@@ -275,19 +278,24 @@ function App() {
   const onLogin = async (email: string, password: string) => {
     const { token, roles, walletPreference, user, dfnsToken } = await getToken({ email, password });
 
+    const expirationTime = Date.now() + 60 * 30 * 1000; // 30m logout
     if (roles.length > 0) {
       setRole([...roles]);
       setUser(user);
       setDfnsToken(dfnsToken);
       setWalletPreference(walletPreference);
       localStorage.setItem("sessionToken", token);
+      localStorage.setItem("tokenExpiration", expirationTime.toString());
       setIsConnected(true);
-      // Initialize blockchainService if required for standard login
-      // If standard login doesn't require blockchainService, you can skip this
-      if ((window as any).ethereum) {
-        const provider = new ethers.providers.Web3Provider((window as any).ethereum);
-        initializeBlockchainService(provider);
+      const provider = await setupProvider();
+      if (!provider) {
+        console.error("❌ Failed to initialize provider.");
+        toast.error("Could not initialize provider. Please try again.");
+        return;
       }
+
+      console.log("✅ Provider initialized:", provider);
+      initializeBlockchainService(provider);
 
       // Initialize Parse
       parseInitialize();
@@ -296,6 +304,38 @@ function App() {
       setForceLogout(true);
     }
   };
+
+  async function setupProvider(): Promise<ethers.providers.Provider | null> {
+    let provider: ethers.providers.Provider | null = null;
+
+    console.log("🔍 Checking for wallet provider...");
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      try {
+        console.log("🟢 Requesting wallet connection...");
+        await (window as any).ethereum.request({ method: "eth_requestAccounts" });
+
+        console.log("🟢 Wallet connected! Using Web3 provider...");
+        provider = new ethers.providers.Web3Provider((window as any).ethereum);
+      } catch (error) {
+        console.error("❌ Wallet connection error:", error);
+      }
+    }
+
+    // ✅ Fallback to RPC provider if no wallet is detected
+    if (!provider) {
+      const rpcUrl = process.env.REACT_APP_RPC_URL;
+      if (rpcUrl) {
+        console.log("⚠️ No wallet detected. Using RPC provider instead:", rpcUrl);
+        provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+      } else {
+        console.error("❌ No provider available! Please connect a wallet or set an RPC URL.");
+        return null;
+      }
+    }
+
+    console.log("✅ Provider successfully initialized:", provider);
+    return provider;
+  }
 
   const restoreSession = async () => {
     const token = localStorage.getItem("sessionToken");
@@ -310,6 +350,7 @@ function App() {
       } else {
         // Token is invalid or roles are empty
         localStorage.removeItem("sessionToken");
+        localStorage.removeItem("tokenExpiration");
         setForceLogout(true);
       }
     }
@@ -350,6 +391,7 @@ function App() {
     setForceLogout(false);
     setIsConnected(false);
     localStorage.removeItem("sessionToken");
+    localStorage.removeItem("tokenExpiration");
     setBlockchainService(null);
   };
 
@@ -372,6 +414,7 @@ function App() {
             </div>
           )}
           <Router>
+            <AutoLogout />
             {/* Navigation Bar (Only visible when logged in) */}
             {role.length > 0 && (
               <div className={`topnav p-0`}>
