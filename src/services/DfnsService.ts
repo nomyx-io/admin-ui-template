@@ -25,7 +25,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("AddClaimTopic initiation response:", initiateResponse);
+      //AddClaimTopic initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -53,7 +53,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("AddClaimTopic completed:", completeResponse);
+      // AddClaimTopic completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -75,7 +75,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("AddTrustedIssuer initiation response:", initiateResponse);
+      // AddTrustedIssuer initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -103,7 +103,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("AddTrustedIssuer completed:", completeResponse);
+      // AddTrustedIssuer completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -124,7 +124,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("RemoveTrustedIssuer initiation response:", initiateResponse);
+      // RemoveTrustedIssuer initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -152,7 +152,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("RemoveTrustedIssuer completed:", completeResponse);
+      // RemoveTrustedIssuer completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -174,7 +174,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("UpdateIssuerClaimTopics initiation response:", initiateResponse);
+      // UpdateIssuerClaimTopics initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -202,7 +202,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("UpdateIssuerClaimTopics completed:", completeResponse);
+      // UpdateIssuerClaimTopics completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -223,7 +223,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("CreateIdentity initiation response:", initiateResponse);
+      // CreateIdentity initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -251,7 +251,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("CreateIdentity completed:", completeResponse);
+      // CreateIdentity completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -294,7 +294,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("AddIdentity initiation response:", initiateResponse);
+      // AddIdentity initiation response:", initiateResponse;
 
       return { addIdentityInitResponse: initiateResponse, addIdentityInitError: null };
     } catch (error: any) {
@@ -322,7 +322,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("AddIdentity completed:", completeResponse);
+      // AddIdentity completed:", completeResponse;
 
       return { addIdentityCompleteResponse: completeResponse, addIdentityCompleteError: null };
     } catch (error: any) {
@@ -344,7 +344,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("SetClaims initiation response:", initiateResponse);
+      // SetClaims initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -372,7 +372,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("SetClaims completed:", completeResponse);
+      // SetClaims completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -395,7 +395,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("AddClaim initiation response:", initiateResponse);
+      // AddClaim initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -423,7 +423,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("AddClaim completed:", completeResponse);
+      // AddClaim completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -445,7 +445,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("RemoveClaim initiation response:", initiateResponse);
+      // RemoveClaim initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -473,7 +473,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("RemoveClaim completed:", completeResponse);
+      // RemoveClaim completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -494,7 +494,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("GemforceMint initiation response:", initiateResponse);
+      // GemforceMint initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -522,7 +522,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("GemforceMint completed:", completeResponse);
+      // GemforceMint completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -543,7 +543,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("RemoveIdentity initiation response:", initiateResponse);
+      // RemoveIdentity initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -571,7 +571,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("RemoveIdentity completed:", completeResponse);
+      //RemoveIdentity completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
@@ -592,7 +592,7 @@ class DfnsService {
         dfns_token: dfnsToken,
       });
 
-      console.log("UnregisterIdentity initiation response:", initiateResponse);
+      // UnregisterIdentity initiation response:", initiateResponse;
 
       return { initiateResponse, error: null };
     } catch (error: any) {
@@ -620,7 +620,7 @@ class DfnsService {
         requestBody,
       });
 
-      console.log("UnregisterIdentity completed:", completeResponse);
+      // UnregisterIdentity completed:", completeResponse;
 
       return { completeResponse, error: null };
     } catch (error: any) {
