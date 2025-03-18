@@ -119,7 +119,6 @@ const IdentitiesPage = ({ service }) => {
       .promise(
         async () => {
           const deleted = await service.softRemoveUser(identityAddress);
-          //console.log('deleted: ', deleted);
           return deleted; // Return the deleted status
         },
         {

@@ -59,9 +59,7 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
   };
 
   const handleConnect = async ({ address, connector, isReconnected }) => {
-    console.log("Connected with address: ", address);
     if (!isConnectTriggered) {
-      console.log("Connect Triggered");
       setIsConnectTriggered(true);
       await onConnect(address, connector);
     }

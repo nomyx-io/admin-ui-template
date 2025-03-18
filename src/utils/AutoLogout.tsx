@@ -13,7 +13,7 @@ const AutoLogout = () => {
       const tokenExpString = localStorage.getItem("tokenExpiration");
 
       if (tokenExpString) {
-        console.log("✅ TokenExpiration detected. Starting AutoLogout.");
+        // "TokenExpiration detected. Starting AutoLogout.");
         clearInterval(waitForToken);
         setWaitingForToken(false);
         checkExpiration();
@@ -24,30 +24,30 @@ const AutoLogout = () => {
   }, []);
 
   const checkExpiration = () => {
-    //console.log("🔍 Running checkExpiration...");
+    //Running checkExpiration...;
 
     const tokenExpString = localStorage.getItem("tokenExpiration");
 
     if (!tokenExpString) {
-      console.warn("⚠️ No token expiration found. Skipping logout timer.");
+      // No token expiration found. Skipping logout timer.");
       return;
     }
 
     const tokenExp = Number(tokenExpString);
     if (isNaN(tokenExp)) {
-      console.error("🚨 Invalid tokenExpiration format! Clearing session...");
+      //Invalid tokenExpiration format! Clearing session...");
       handleLogout();
       return;
     }
 
     setExpirationTime(tokenExp);
-    //console.log(`✅ AutoLogout initialized - Token expires at: ${new Date(tokenExp).toLocaleTimeString()} (${tokenExp})`);
+    //AutoLogout initialized - Token expires at: ${new Date(tokenExp).toLocaleTimeString()} (${tokenExp})`);
 
     const timeRemaining = tokenExp - Date.now();
-    console.log(`⏳ Time remaining: ${Math.max(Math.round(timeRemaining / 1000), 0)}s`);
+    //`Time remaining: ${Math.max(Math.round(timeRemaining / 1000), 0)}s`);
 
     if (timeRemaining <= 0) {
-      console.log("🚨 Token expired! Logging out...");
+      // Token expired! Logging out...");
       handleLogout();
       return;
     }
@@ -57,11 +57,11 @@ const AutoLogout = () => {
 
   const handleLogout = () => {
     if (hasLoggedOut) {
-      console.warn("🚫 Logout already triggered. Skipping...");
+      // Logout already triggered. Skipping...";
       return;
     }
 
-    console.log("🚨 Logging out...");
+    //Logging out...;
     setHasLoggedOut(true);
     disconnect();
 
@@ -69,13 +69,12 @@ const AutoLogout = () => {
     localStorage.removeItem("tokenExpiration");
 
     setTimeout(() => {
-      console.log("🔄 Redirecting to /login...");
+      //Redirecting to /login...;
       window.location.href = "/login";
     }, 500);
   };
 
   if (waitingForToken) {
-    console.log("⏳ Waiting for tokenExpiration...");
     return null; // Don't start countdown yet
   }
 

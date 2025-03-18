@@ -153,7 +153,6 @@ function CreateDigitalId({ service }) {
 
               // Step 2: Get identity details
               const identity = await service.getIdentity(walletAddress);
-              console.log("gotten identity; ", identity);
               // Step 3: Add identity
               await service.addIdentity(walletAddress, identity);
 
