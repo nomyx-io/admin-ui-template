@@ -24,8 +24,11 @@ class BlockchainService {
       console.log("🔹 Web3 Wallet Detected, setting signer...");
       this.signer = provider.getSigner();
     } else {
-      console.log("⚠️ Using Read-Only RPC Provider (No signer)");
-      this.signer = null; // Read-only mode
+      if (provider instanceof ethers.providers.StaticJsonRpcProvider) {
+        this.signer = null; // Read-only mode
+        provider.polling = false;
+        provider._pollingInterval = Infinity;
+      }
     }
 
     console.log("blockchain service provider: ", this.provider);
