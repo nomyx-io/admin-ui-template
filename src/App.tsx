@@ -148,7 +148,8 @@ function App() {
   const [forceLogout, setForceLogout] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true); // New state for initialization
-
+  //let provider: ethers.providers.Provider | null = null;
+  let [provider, setProvider] = useState<ethers.providers.Provider | null>(null);
   // Define the getToken function
   const getToken = async (request: any) => {
     try {
@@ -287,7 +288,7 @@ function App() {
       localStorage.setItem("sessionToken", token);
       localStorage.setItem("tokenExpiration", expirationTime.toString());
       setIsConnected(true);
-      const provider = await setupProvider();
+      //const provider = await setupProvider();
       if (!provider) {
         console.error("❌ Failed to initialize provider.");
         toast.error("Could not initialize provider. Please try again.");
@@ -305,9 +306,12 @@ function App() {
     }
   };
 
-  async function setupProvider(): Promise<ethers.providers.Provider | null> {
-    let provider: ethers.providers.Provider | null = null;
+  useEffect(() => {
+    setupProvider().then(setProvider);
+  }, []);
 
+  async function setupProvider(): Promise<ethers.providers.Provider | null> {
+    //let provider: ethers.providers.Provider | null = null;
     console.log("🔍 Checking for wallet provider...");
     if (typeof window !== "undefined" && (window as any).ethereum) {
       try {
@@ -326,7 +330,11 @@ function App() {
       const rpcUrl = process.env.REACT_APP_RPC_URL;
       if (rpcUrl) {
         console.log("⚠️ No wallet detected. Using RPC provider instead:", rpcUrl);
-        provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+        provider = await new ethers.providers.StaticJsonRpcProvider(rpcUrl);
+        if (provider instanceof ethers.providers.StaticJsonRpcProvider) {
+          provider.polling = false;
+          provider._pollingInterval = Infinity;
+        }
       } else {
         console.error("❌ No provider available! Please connect a wallet or set an RPC URL.");
         return null;
