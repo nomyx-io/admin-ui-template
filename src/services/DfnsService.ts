@@ -14,7 +14,7 @@ class DfnsService {
   public async getInitialState() {}
 
   public async initiateAddClaimTopic(claimTopic: number, walletId: string, dfnsToken: string) {
-    if (!walletId || !claimTopic || !dfnsToken) {
+    if (!walletId || (!claimTopic && claimTopic !== 0) || !dfnsToken) {
       throw new Error("Missing required parameters for AddClaimTopic.");
     }
 
