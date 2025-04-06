@@ -103,7 +103,7 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
 
           <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">
             {/* The heading at the top */}
-            <h1 className="text-right font-bold text-xl mb-4 w-full mt-8 mr-4">CARBON CREDIT MANAGER</h1>
+            {/* <h1 className="text-right font-bold text-xl mb-4 w-full mt-8 mr-4">CARBON CREDIT MANAGER</h1> */}
             {/* The container that will hold the button in the middle */}
 
             <div className="flex-grow flex items-center justify-center w-full">
