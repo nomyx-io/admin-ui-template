@@ -227,6 +227,33 @@ button.ant-btn-primary:not([disabled]), [type='button'].ant-btn-primary:not([dis
   font-weight: 500 !important;
 }
 .login-radio-button.ant-radio-button-wrapper-checked {
-  background: #3f206b !important;
-  border-color: #3f206b !important;
+  background: rgb(37 99 235) !important;
+  border-color: rgb(37 99 235) !important;
+}
+
+.signup-input {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Tailwind's default 'shadow' */
+  background-color: var(--color-nomyxDark2); /* Replace with actual color code if needed */
+  color: #FFF !important; /* Replace with actual color code if needed */
+  border-color: var(--color-nomyxGray1);
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 0.125rem; /* rounded-sm = 2px */
+  width: 100%;
+  padding: 0.5rem 0.75rem; /* py-2 px-3 */
+  line-height: 1.25; /* leading-tight */
+  appearance: none;
+  outline: none;
+}
+
+/* Focus state */
+.signup-input:focus {
+  border-color: #3b82f6; /* Tailwind blue-500 */
+  box-shadow: 0 0 0 2px #3b82f6; /* ring-2 + ring-blue-500 */
+}
+.ant-input-affix-wrapper .anticon.ant-input-password-icon {
+  color: #FFF !important;
+}
+.signup-card .ant-input-affix-wrapper >input.ant-input {
+  color: #FFF !important;
 }
