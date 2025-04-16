@@ -2,7 +2,7 @@ import React from "react";
 
 import { Row, Col, Card, Typography } from "antd";
 
-import NomyxLogo from "../assets/nomyx.svg";
+import NomyxLogo from "../assets/nomyx_logo_light.png";
 
 const { Paragraph } = Typography;
 
@@ -12,7 +12,7 @@ const Home = () => {
       <header className="table-header" style={{ position: "relative" }}>
         <h1>Welcome to NomyxID</h1>
         <h2>Decentralized Identity Management</h2>
-        <img src={NomyxLogo} alt="Nomyx Logo" style={{ position: "absolute", top: 0, right: 10, width: "30%" }} />
+        <img src={NomyxLogo} alt="Nomyx Logo" style={{ position: "absolute", top: "-2rem", right: 10, width: "15%" }} />
       </header>
       <Row justify="center" gutter={[16, 16]}>
         <Col span={24}>
