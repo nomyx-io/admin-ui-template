@@ -250,6 +250,7 @@ button.ant-btn-primary:not([disabled]), [type='button'].ant-btn-primary:not([dis
 .signup-input:focus {
   border-color: #3b82f6; /* Tailwind blue-500 */
   box-shadow: 0 0 0 2px #3b82f6; /* ring-2 + ring-blue-500 */
+  background-color: #000 !important;
 }
 .ant-input-affix-wrapper .anticon.ant-input-password-icon {
   color: #FFF !important;
