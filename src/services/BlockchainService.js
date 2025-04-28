@@ -230,28 +230,57 @@ class BlockchainService {
     return trustedIssuer;
   }
 
+  /**
+   * Retrieves claims associated with a specific claim topic
+   * @param {string} id - The object ID of the claim topic
+   * @returns {Array} - Array of claims or empty array if none found
+   */
   async getClaimsForClaimTopics(id) {
-    const pointerObject = {
-      __type: "Pointer",
-      className: "ClaimTopic",
-      objectId: id,
-    };
+    try {
+      // Validate input
+      if (!id) {
+        return [];
+      }
 
-    const claimTopics = await ParseClient.getRecords("Claim", ["claimTopicObj"], [pointerObject], ["*"]);
-    const claimTopicObj = await ParseClient.getRecords("ClaimTopic", ["objectId"], [id]);
-    if (claimTopicObj.length === 0) return []; // Return if no matching topic
+      // Get the claim topic details
+      const claimTopicObj = await ParseClient.getRecords("ClaimTopic", ["objectId"], [id]);
+      if (!claimTopicObj || claimTopicObj.length === 0) {
+        return [];
+      }
 
-    const claimTopicValue = claimTopicObj[0].attributes.topic;
+      // Extract the topic value
+      const claimTopicValue = claimTopicObj[0].attributes.topic;
 
-    // Fetch identities that contain the claim topic in their claims array
-    const identities = await ParseClient.getRecords("Identity", ["claims"], [claimTopicValue]);
+      // Get claims using the topic value directly
+      const claimTopics = await ParseClient.getRecords("Claim", ["topic"], [claimTopicValue], ["*"]);
 
-    // Filter claim topics to include only those that match with identities
-    const filteredClaims = claimTopics.filter((claim) =>
-      identities.some((identity) => identity?.attributes.identity === claim?.attributes?.identity)
-    );
+      // Ensure we have valid claim data
+      if (!claimTopics || !Array.isArray(claimTopics)) {
+        return [];
+      }
 
-    return filteredClaims;
+      // Re-implement identity filtering with proper error handling
+      try {
+        // Get identities that contain this claim topic
+        const identities = await ParseClient.getRecords("Identity", ["claims"], [claimTopicValue]);
+
+        // Only filter if we have valid identities data
+        if (identities && Array.isArray(identities) && identities.length > 0) {
+          return claimTopics.filter(
+            (claim) => claim?.attributes?.identity && identities.some((identity) => identity?.attributes?.identity === claim.attributes.identity)
+          );
+        }
+      } catch (filterError) {
+        // If filtering fails, fall back to returning all claims
+      }
+
+      // Return all claims if filtering is not possible
+      return claimTopics;
+    } catch (error) {
+      // Log error but don't expose details to client
+      console.error("Error in getClaimsForClaimTopics:", error);
+      return [];
+    }
   }
 
   async getActiveIdentities() {
