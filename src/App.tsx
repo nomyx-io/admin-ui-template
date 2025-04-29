@@ -75,6 +75,25 @@ const baseSep: Chain = {
   },
 };
 
+const optSep: Chain = {
+  id: 11155420,
+  network: "optimism",
+  name: "Optimism Sepolia",
+  nativeCurrency: {
+    name: "OP Sepolia",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [process.env.REACT_APP_NETWORK_OPTIMISM_SEPOLIA || ""],
+    },
+    public: {
+      http: [process.env.REACT_APP_NETWORK_OPTIMISM_SEPOLIA || ""],
+    },
+  },
+};
+
 const base: Chain = {
   id: 8453,
   network: "base",
@@ -95,7 +114,7 @@ const base: Chain = {
 };
 
 const { chains, publicClient } = configureChains(
-  [base, baseSep, localhost], // mainnet, polygon, optimism, arbitrum, zora,
+  [base, baseSep, localhost, optSep], // mainnet, polygon, optimism, arbitrum, zora,
   [alchemyProvider({ apiKey: "CSgNtTJ6_Clrf1zNjVp2j1ppfLE2-aVX" }), publicProvider()]
 );
 
