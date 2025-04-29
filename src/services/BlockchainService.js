@@ -202,7 +202,6 @@ class BlockchainService {
   }
 
   async getNextClaimTopicId() {
-    debugger;
     const result = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "createdAt", "desc");
     let highestTopicId = result.length > 0 ? Number.parseInt(result[0].attributes.topic) + 1 : 1;
     return highestTopicId;
