@@ -320,7 +320,7 @@ function App() {
       // Initialize Parse
       parseInitialize();
     } else {
-      toast.error("Sorry, you are not authorized!");
+      toast.error("Incorrect username / password");
       setForceLogout(true);
     }
   };
