@@ -233,7 +233,7 @@ button.ant-btn-primary:not([disabled]), [type='button'].ant-btn-primary:not([dis
 
 .signup-input {
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Tailwind's default 'shadow' */
-  background-color: var(--color-nomyxDark2); /* Replace with actual color code if needed */
+  background-color: rgba(0, 0, 0, 0.5) !important;
   color: #FFF !important; /* Replace with actual color code if needed */
   border-color: var(--color-nomyxGray1);
   border-width: 1px;
