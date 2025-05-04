@@ -337,7 +337,7 @@ class BlockchainService {
         }
       }
 
-      return identities;
+      return identities || [];
     } catch (error) {
       console.error("Error fetching active identities or claims:", error);
       throw error;
