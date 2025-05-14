@@ -62,141 +62,146 @@ function CreateDigitalId({ service }) {
     if (!validateDigitalID(trimmedDisplayName, walletAddress, trimmedAccountNumber)) {
       return; // Early return if validation fails
     }
+    // check if current user is registered as the trusted issuer
+    const isTrustedIssuer = await service.isTrustedIssuer(user?.walletAddress);
+    if (isTrustedIssuer) {
+      try {
+        if (walletPreference === WalletPreference.MANAGED) {
+          // Handle MANAGED wallet preference using DFNSService
+          toast
+            .promise(
+              (async () => {
+                // Step 1: Initiate creating identity
+                const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
+                if (initError) throw new Error(initError);
 
-    try {
-      if (walletPreference === WalletPreference.MANAGED) {
-        // Handle MANAGED wallet preference using DFNSService
-        toast
-          .promise(
-            (async () => {
-              // Step 1: Initiate creating identity
-              const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
-              if (initError) throw new Error(initError);
+                // Step 2: Complete creating identity
+                const { completeResponse, error: completeError } = await DfnsService.completeCreateIdentity(
+                  user.walletId,
+                  dfnsToken,
+                  initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                  initiateResponse.requestBody
+                );
+                if (completeError) throw new Error(completeError);
+                // Step 3: Get identity details
+                const identity = await DfnsService.getIdentity(walletAddress);
 
-              // Step 2: Complete creating identity
-              const { completeResponse, error: completeError } = await DfnsService.completeCreateIdentity(
-                user.walletId,
-                dfnsToken,
-                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
-                initiateResponse.requestBody
-              );
-              if (completeError) throw new Error(completeError);
-              // Step 3: Get identity details
-              const identity = await DfnsService.getIdentity(walletAddress);
+                // Step 4: Initiate add identity
+                const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
+                  walletAddress,
+                  identity,
+                  user.walletId,
+                  dfnsToken
+                );
+                if (addIdentityInitError) throw new Error(addIdentityInitError);
 
-              // Step 4: Initiate add identity
-              const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
-                walletAddress,
-                identity,
-                user.walletId,
-                dfnsToken
-              );
-              if (addIdentityInitError) throw new Error(addIdentityInitError);
+                // Step 5: Complete add identity
+                const { addIdentityCompleteResponse, error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
+                  user.walletId,
+                  dfnsToken,
+                  addIdentityInitResponse.challenge,
+                  addIdentityInitResponse.requestBody
+                );
+                if (addIdentityCompleteError) throw new Error(addIdentityCompleteError);
 
-              // Step 5: Complete add identity
-              const { addIdentityCompleteResponse, error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
-                user.walletId,
-                dfnsToken,
-                addIdentityInitResponse.challenge,
-                addIdentityInitResponse.requestBody
-              );
-              if (addIdentityCompleteError) throw new Error(addIdentityCompleteError);
-
-              // Step 6: Update identity
-              await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
-                displayName: trimmedDisplayName,
-                walletAddress: walletAddress.toLocaleLowerCase(),
-                accountNumber: trimmedAccountNumber,
-              });
-
-              // Step 7: Approve user if needed
-              if (searchParams.has("walletAddress")) {
-                const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
-                if (userExists) {
-                  await toast.promise(
-                    service.approveUser(walletAddress.toLocaleLowerCase()), // Directly pass the promise without awaiting it here
-                    {
-                      pending: "Approving user...",
-                      success: "User approved successfully",
-                      error: {
-                        render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
-                      },
-                    }
-                  );
-                } else {
-                  // Handle the case where the user doesn't exist
-                  toast.error(`User with wallet address ${walletAddress} does not exist.`);
-                }
-              }
-              navigate("/identities");
-
-              //return completeResponse;
-            })(),
-            {
-              pending: "Creating Digital Identity...",
-              success: "Digital Identity created successfully",
-              error: {
-                render: ({ data }) => <div>{data?.reason || "An error occurred while creating Digital Identity"}</div>,
-              },
-            }
-          )
-          .catch((error) => {
-            console.error("Error after attempting to create Digital ID:", error);
-          });
-      } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
-        toast
-          .promise(
-            (async () => {
-              // Step 1: Create identity
-              await service.createIdentity(walletAddress);
-
-              // Step 2: Get identity details
-              const identity = await service.getIdentity(walletAddress);
-              console.log("gotten identity; ", identity);
-              // Step 3: Add identity
-              await service.addIdentity(walletAddress, identity);
-
-              // Step 4: Update identity
-              try {
+                // Step 6: Update identity
                 await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
                   displayName: trimmedDisplayName,
                   walletAddress: walletAddress.toLocaleLowerCase(),
                   accountNumber: trimmedAccountNumber,
                 });
-              } catch (error) {
-                // Handle the error gracefully and continue
-                console.error("Error updating identity:", error);
-              }
 
-              // Step 5: Approve user if needed
-              if (searchParams.has("walletAddress")) {
-                const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
-                if (userExists) {
-                  await service.approveUser(walletAddress.toLocaleLowerCase());
-                } else {
-                  // Handle the case where the user doesn't exist
-                  toast.error(`User with wallet address ${walletAddress} does not exist.`);
+                // Step 7: Approve user if needed
+                if (searchParams.has("walletAddress")) {
+                  const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
+                  if (userExists) {
+                    await toast.promise(
+                      service.approveUser(walletAddress.toLocaleLowerCase()), // Directly pass the promise without awaiting it here
+                      {
+                        pending: "Approving user...",
+                        success: "User approved successfully",
+                        error: {
+                          render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
+                        },
+                      }
+                    );
+                  } else {
+                    // Handle the case where the user doesn't exist
+                    toast.error(`User with wallet address ${walletAddress} does not exist.`);
+                  }
                 }
+                navigate("/identities");
+
+                //return completeResponse;
+              })(),
+              {
+                pending: "Creating Digital Identity...",
+                success: "Digital Identity created successfully",
+                error: {
+                  render: ({ data }) => <div>{data?.reason || "An error occurred while creating Digital Identity"}</div>,
+                },
               }
-            })(),
-            {
-              pending: "Creating Digital Identity...",
-              success: "Digital Identity created successfully",
-              error: {
-                render: ({ data }) => <div>{data?.reason || "An error occurred while creating Digital Identity"}</div>,
-              },
-            }
-          )
-          .then(() => {
-            navigate("/identities");
-          })
-          .catch((error) => {
-            console.error("Error after attempting to create Digital ID:", error);
-          });
+            )
+            .catch((error) => {
+              console.error("Error after attempting to create Digital ID:", error);
+            });
+        } else if (walletPreference === WalletPreference.PRIVATE) {
+          // Handle PRIVATE wallet preference
+          toast
+            .promise(
+              (async () => {
+                // Step 1: Create identity
+                await service.createIdentity(walletAddress);
+
+                // Step 2: Get identity details
+                const identity = await service.getIdentity(walletAddress);
+                console.log("gotten identity; ", identity);
+                // Step 3: Add identity
+                await service.addIdentity(walletAddress, identity);
+
+                // Step 4: Update identity
+                try {
+                  await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
+                    displayName: trimmedDisplayName,
+                    walletAddress: walletAddress.toLocaleLowerCase(),
+                    accountNumber: trimmedAccountNumber,
+                  });
+                } catch (error) {
+                  // Handle the error gracefully and continue
+                  console.error("Error updating identity:", error);
+                }
+
+                // Step 5: Approve user if needed
+                if (searchParams.has("walletAddress")) {
+                  const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
+                  if (userExists) {
+                    await service.approveUser(walletAddress.toLocaleLowerCase());
+                  } else {
+                    // Handle the case where the user doesn't exist
+                    toast.error(`User with wallet address ${walletAddress} does not exist.`);
+                  }
+                }
+              })(),
+              {
+                pending: "Creating Digital Identity...",
+                success: "Digital Identity created successfully",
+                error: {
+                  render: ({ data }) => <div>{data?.reason || "An error occurred while creating Digital Identity"}</div>,
+                },
+              }
+            )
+            .then(() => {
+              navigate("/identities");
+            })
+            .catch((error) => {
+              console.error("Error after attempting to create Digital ID:", error);
+            });
+        }
+      } catch (error) {
+        toast.error("Error: " + error.message || error);
       }
-    } catch (error) {
-      toast.error("Error: " + error.message || error);
+    } else {
+      toast.error("Only a Trusted Issuer can create the identity.");
     }
   };
 
