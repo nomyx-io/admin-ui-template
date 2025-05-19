@@ -60,7 +60,8 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
 
   const handleConnect = async ({ address, connector, isReconnected }) => {
     console.log("Connected with address: ", address);
-    if (!isConnectTriggered) {
+    // Only proceed with connection if user has selected wallet login
+    if (loginPreference === LoginPreference.WALLET && !isConnectTriggered) {
       console.log("Connect Triggered");
       setIsConnectTriggered(true);
       await onConnect(address, connector);
@@ -73,6 +74,7 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
     navigate("/", { replace: true }); // Redirect to root path upon disconnect
   };
 
+  // Set up account handlers at the top level as required by wagmi
   useAccount({
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,
