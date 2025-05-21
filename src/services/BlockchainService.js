@@ -681,7 +681,15 @@ class BlockchainService {
   }
 
   async isTrustedIssuer(issuer) {
-    return await this.trustedIssuersRegistryService.isTrustedIssuer(issuer);
+    try {
+      // Use provider for read-only operations when signer is not available
+      const contractProvider = this.signer || this.provider;
+      const contract = this.trustedIssuersRegistryService.connect(contractProvider);
+      return await contract.isTrustedIssuer(issuer);
+    } catch (error) {
+      console.error("Error checking trusted issuer:", error);
+      return false;
+    }
   }
 
   async getTrustedIssuerClaimTopics(trustedIssuer) {
