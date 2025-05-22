@@ -19,6 +19,7 @@ class BlockchainService {
   constructor(provider, contractAddress, identityRegistryAddress) {
     this.provider = provider;
     this.contractAddress = contractAddress;
+    this.dedicatedProvider = new ethers.providers.JsonRpcProvider(process.env.REACT_APP_RPC_URL);
 
     // ✅ Check if provider is Web3Provider (Wallet) or JsonRpcProvider (RPC Fallback)
     if (provider instanceof ethers.providers.Web3Provider) {
