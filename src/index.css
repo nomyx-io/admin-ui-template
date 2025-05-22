@@ -257,3 +257,7 @@ button.ant-btn-primary:not([disabled]), [type='button'].ant-btn-primary:not([dis
 .signup-card .ant-input-affix-wrapper >input.ant-input {
   color: #FFF !important;
 }
+
+.password-card .ant-input-affix-wrapper >input.ant-input {
+  color: #FFF !important;
+}
