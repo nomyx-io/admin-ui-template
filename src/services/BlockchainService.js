@@ -17,9 +17,11 @@ class BlockchainService {
   mintAbi = MinterFacet.default.abi;
 
   constructor(provider, contractAddress, identityRegistryAddress) {
+    this.contractAddress = contractAddress;
     this.provider = provider;
 
-    // ✅ Check if provider is Web3Provider (Wallet) or JsonRpcProvider (RPC Fallback)
+    this.dedicatedProvider = new ethers.providers.JsonRpcProvider(process.env.REACT_APP_RPC_URL);
+
     if (provider instanceof ethers.providers.Web3Provider) {
       console.log("🔹 Web3 Wallet Detected, setting signer...");
       this.signer = provider.getSigner();
@@ -677,8 +679,32 @@ class BlockchainService {
     return trustedIssuer;
   }
 
+  //temporary fix: the idea is to update this service (and App) to use dedicated provider for getters
   async isTrustedIssuer(issuer) {
-    return await this.trustedIssuersRegistryService.isTrustedIssuer(issuer);
+    if (!this.contractAddress) {
+      console.error("contractAddress is undefined in isTrustedIssuer");
+      throw new Error("Missing contract address for trusted issuer check");
+    }
+
+    if (!this.trustedIssuersRegistryAbi) {
+      console.error("trustedIssuersRegistryAbi is undefined");
+      throw new Error("Missing ABI for trusted issuer contract");
+    }
+
+    if (!this.dedicatedProvider) {
+      console.error("dedicatedProvider is undefined");
+      throw new Error("Missing dedicated provider for read-only contract call");
+    }
+
+    try {
+      const contract = new ethers.Contract(this.contractAddress, this.trustedIssuersRegistryAbi, this.dedicatedProvider);
+      const result = await contract.isTrustedIssuer(issuer);
+      console.log("isTrustedIssuer result:", result);
+      return result;
+    } catch (err) {
+      console.error("Error calling isTrustedIssuer:", err);
+      throw err;
+    }
   }
 
   async getTrustedIssuerClaimTopics(trustedIssuer) {
