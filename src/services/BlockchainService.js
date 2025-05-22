@@ -680,15 +680,37 @@ class BlockchainService {
     return trustedIssuer;
   }
 
+  //temporary fix: the idea is to update this service (and App) to use dedicated provider for getters
   async isTrustedIssuer(issuer) {
+    console.log(":mag: Checking trusted issuer...");
+    console.log("  ▶ Issuer:", issuer);
+    console.log("  ▶ Contract Address:", this.contractAddress);
+    console.log("  ▶ ABI:", this.trustedIssuersRegistryAbi ? "Loaded" : "Missing");
+    console.log("  ▶ Provider:", this.dedicatedProvider ? "OK" : "Missing");
+
+    if (!this.contractAddress) {
+      console.error("contractAddress is undefined in isTrustedIssuer");
+      throw new Error("Missing contract address for trusted issuer check");
+    }
+
+    if (!this.trustedIssuersRegistryAbi) {
+      console.error("trustedIssuersRegistryAbi is undefined");
+      throw new Error("Missing ABI for trusted issuer contract");
+    }
+
+    if (!this.dedicatedProvider) {
+      console.error("dedicatedProvider is undefined");
+      throw new Error("Missing dedicated provider for read-only contract call");
+    }
+
     try {
-      // Use provider for read-only operations when signer is not available
-      const contractProvider = this.signer || this.provider;
-      const contract = this.trustedIssuersRegistryService.connect(contractProvider);
-      return await contract.isTrustedIssuer(issuer);
-    } catch (error) {
-      console.error("Error checking trusted issuer:", error);
-      return false;
+      const contract = new ethers.Contract(this.contractAddress, this.trustedIssuersRegistryAbi, this.dedicatedProvider);
+      const result = await contract.isTrustedIssuer(issuer);
+      console.log("isTrustedIssuer result:", result);
+      return result;
+    } catch (err) {
+      console.error("Error calling isTrustedIssuer:", err);
+      throw err;
     }
   }
 
