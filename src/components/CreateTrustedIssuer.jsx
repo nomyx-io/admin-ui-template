@@ -29,8 +29,8 @@ function CreateTrustedIssuer({ service }) {
         const issuerData = await service?.getTrustedIssuersByObjectId(id);
         setVerifierName(issuerData?.attributes?.verifierName || "");
         setWalletAddress(issuerData?.attributes?.issuer || "");
-        let newArr = [];
-        setTargetKeys(newArr || "");
+        const selectedClaimTopics = issuerData?.attributes.claimTopics?.map((t) => t.topic);
+        setTargetKeys(selectedClaimTopics);
         let data = [];
 
         if (result) {
