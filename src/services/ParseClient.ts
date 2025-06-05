@@ -3,8 +3,9 @@ import Parse from "parse";
 class ParseClient {
   private static instance: ParseClient;
 
-  constuctor() {
+  constructor() {
     console.log("ParseClient constructor");
+    this.initialize();
   }
 
   // Singleton getInstance method

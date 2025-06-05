@@ -12,6 +12,7 @@ import { configureChains, createConfig, WagmiConfig, Chain } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 
+import AddressBookPage from "./components/AddressBookPage.jsx";
 import ClaimTopicsPage from "./components/ClaimTopicsPage.jsx";
 import CreateClaimTopic from "./components/CreateClaimTopic.jsx";
 import CreateDigitalId from "./components/CreateDigitalId.jsx";
@@ -27,6 +28,7 @@ import Login from "./components/LoginPage.jsx";
 import MintPage from "./components/MintPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
+import TransactionHistoryPage from "./components/TransactionHistoryPage.jsx";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
 import { RoleContext } from "./context/RoleContext";
@@ -113,8 +115,27 @@ const base: Chain = {
   },
 };
 
+const plumeTest: Chain = {
+  id: 98867, // Same as OP Sepolia (used by Plume)
+  network: "plumeTest",
+  name: "Plume Testnet",
+  nativeCurrency: {
+    name: "Plume ETH",
+    symbol: "PLUMEETH",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [process.env.REACT_APP_NETWORK_PLUME_TEST || "https://testnet-rpc.plumenetwork.xyz"],
+    },
+    public: {
+      http: [process.env.REACT_APP_NETWORK_PLUME_TEST || "https://testnet-rpc.plumenetwork.xyz"],
+    },
+  },
+};
+
 const { chains, publicClient } = configureChains(
-  [base, baseSep, localhost, optSep], // mainnet, polygon, optimism, arbitrum, zora,
+  [base, baseSep, localhost, optSep, plumeTest], // mainnet, polygon, optimism, arbitrum, zora,
   [alchemyProvider({ apiKey: "CSgNtTJ6_Clrf1zNjVp2j1ppfLE2-aVX" }), publicProvider()]
 );
 
@@ -649,6 +670,34 @@ function App() {
                       <Protected role={"TrustedIssuer"} roles={role}>
                         {blockchainService ? (
                           <MintPage service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="/address-book"
+                    element={
+                      <Protected role={"CentralAuthority"} roles={role}>
+                        {blockchainService ? (
+                          <AddressBookPage service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="/transactions"
+                    element={
+                      <Protected role={"CentralAuthority"} roles={role}>
+                        {blockchainService ? (
+                          <TransactionHistoryPage service={blockchainService} />
                         ) : (
                           <div className="flex justify-center items-center h-full">
                             <Spin tip="Initializing service..." />

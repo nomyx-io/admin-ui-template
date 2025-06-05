@@ -12,9 +12,16 @@ enum NomyxEvent {
   IdentityCountryUpdated = "IdentityCountryUpdated",
   WalletLinked = "WalletLinked",
   WalletUnlinked = "WalletUnlinked",
+  // New events for Address Book and Transactions
+  AddressBookEntryAdded = "AddressBookEntryAdded",
+  AddressBookEntryUpdated = "AddressBookEntryUpdated",
+  AddressBookEntryRemoved = "AddressBookEntryRemoved",
+  TransactionRecorded = "TransactionRecorded",
+  TransactionStatusUpdated = "TransactionStatusUpdated",
 }
 
 enum NomyxAction {
+  // Existing actions
   CreateClaimTopic,
   ViewClaimTopic,
   CreateTrustedIssuer,
@@ -28,6 +35,22 @@ enum NomyxAction {
   RemoveUser,
   EditClaims,
   AddClaims,
+
+  // New Address Book actions
+  CreateAddressBookEntry,
+  ViewAddressBookEntry,
+  EditAddressBookEntry,
+  DeleteAddressBookEntry,
+
+  // New Transaction History actions
+  ViewTransaction,
+  ExportTransaction,
+  ExportAllTransactions,
+
+  // New utility actions
+  ClearFilters,
+  RefreshData,
+  ImportData,
 }
 
 enum WalletPreference {
