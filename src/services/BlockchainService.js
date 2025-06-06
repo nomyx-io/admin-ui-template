@@ -714,6 +714,10 @@ class BlockchainService {
   async hasClaimTopic(issuer, claimTopic) {
     return await this.trustedIssuersRegistryService.hasClaimTopic(issuer, claimTopic);
   }
+
+  async createAddressBookEntry({ name, walletAddress, email, isInternal, createdBy }) {
+    return await ParseClient.run("createAddressBookEntry", { name, walletAddress, email, isInternal, createdBy });
+  }
 }
 
 export default BlockchainService;
