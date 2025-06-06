@@ -85,11 +85,11 @@ const AddressBookPage = ({ service }) => {
     { label: "Name", name: "name" },
     { label: "Email", name: "email" },
     { label: "Wallet Address", name: "walletAddress", width: "300px" },
-    { label: "Type", name: "walletType" },
+    // { label: "Type", name: "walletType" },
     { label: "Internal", name: "isInternal", render: (record) => (record.isInternal ? "Yes" : "No") },
     { label: "Associated User", name: "userName" },
-    { label: "Tags", name: "tags" },
-    { label: "Last Used", name: "lastUsed" },
+    // { label: "Tags", name: "tags" },
+    // { label: "Last Used", name: "lastUsed" },
     { label: "Created By", name: "createdBy" },
     { label: "Created", name: "createdAt" },
   ];
@@ -134,7 +134,7 @@ const AddressBookPage = ({ service }) => {
             title="Address Book"
             description="Manage saved wallet addresses for internal and external users"
             columns={columns}
-            actions={actions}
+            // actions={actions}
             globalActions={globalActions}
             search={true}
             data={addressBookEntries}

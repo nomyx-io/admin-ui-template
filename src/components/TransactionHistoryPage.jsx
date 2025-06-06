@@ -146,16 +146,16 @@ const TransactionHistoryPage = ({ service }) => {
     { label: "User", name: "userName" },
     { label: "Email", name: "userEmail" },
     { label: "Amount", name: "amount", render: (record) => `${record.amount} ${record.token}` },
-    { label: "Type", name: "transactionType" },
-    { label: "Status", name: "status" },
+    // { label: "Type", name: "transactionType" },
+    // { label: "Status", name: "status" },
     { label: "From", name: "fromAddress", width: "200px" },
     { label: "To", name: "toAddress", width: "200px" },
     { label: "Recipient", name: "toUserName" },
     { label: "Fee", name: "fee", render: (record) => `${record.fee} ${record.token}` },
     { label: "Timestamp", name: "timestamp" },
     { label: "Tx Hash", name: "transactionHash", width: "150px" },
-    { label: "Bridge ID", name: "bridgeTransactionId" },
-    { label: "KYC ID", name: "kycInquiryId" },
+    // { label: "Bridge ID", name: "bridgeTransactionId" },
+    // { label: "KYC ID", name: "kycInquiryId" },
   ];
 
   const actions = [
@@ -164,7 +164,7 @@ const TransactionHistoryPage = ({ service }) => {
   ];
 
   const globalActions = [
-    { label: "Export All", name: NomyxAction.ExportAllTransactions },
+    // { label: "Export All", name: NomyxAction.ExportAllTransactions },
     { label: "Clear Filters", name: NomyxAction.ClearFilters },
   ];
 
@@ -197,7 +197,7 @@ const TransactionHistoryPage = ({ service }) => {
           <RangePicker value={filters.dateRange} onChange={(dates) => handleFilterChange("dateRange", dates)} className="w-full" />
         </div>
 
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Type</label>
           <Select
             value={filters.transactionType}
@@ -227,7 +227,7 @@ const TransactionHistoryPage = ({ service }) => {
             <Option value="Failed">Failed</Option>
             <Option value="Cancelled">Cancelled</Option>
           </Select>
-        </div>
+        </div> */}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
@@ -274,7 +274,7 @@ const TransactionHistoryPage = ({ service }) => {
               title="Transaction History"
               description="Complete ledger of all transactions with filtering capabilities"
               columns={columns}
-              actions={actions}
+              //   actions={actions}
               globalActions={globalActions}
               search={false} // We have custom search in filters
               data={transactions}
