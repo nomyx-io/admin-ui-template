@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Transfer } from "antd";
@@ -12,45 +12,136 @@ import { WalletPreference } from "../utils/Constants";
 
 function CreateTrustedIssuer({ service }) {
   const navigate = useNavigate();
-  const [verifierName, setVerifierName] = React.useState("");
-  const [walletAddress, setWalletAddress] = React.useState("");
-  const [claimTopics, setClaimTopics] = React.useState([]);
-  const [targetKeys, setTargetKeys] = React.useState([]);
-  const [selectedKeys, setSelectedKeys] = React.useState([]);
+  const [verifierName, setVerifierName] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [claimTopics, setClaimTopics] = useState([]);
+  const [targetKeys, setTargetKeys] = useState([]);
+  const [selectedKeys, setSelectedKeys] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const location = useLocation();
 
   const { walletPreference, user, dfnsToken } = React.useContext(RoleContext);
 
   let id = location.pathname.split("/")[2];
-  useEffect(() => {
-    (async function () {
-      if (service.getClaimTopics && service.getTrustedIssuersByObjectId) {
-        const result = await service.getClaimTopics();
-        const issuerData = await service?.getTrustedIssuersByObjectId(id);
-        setVerifierName(issuerData?.attributes?.verifierName || "");
-        setWalletAddress(issuerData?.attributes?.issuer || "");
-        let newArr = [];
-        setTargetKeys(newArr || "");
-        let data = [];
+  const isCreateMode = id === "create";
 
-        if (result) {
-          result.forEach((item) => {
-            data.push({
+  useEffect(() => {
+    let isMounted = true;
+    let loadingTimeout;
+
+    const loadData = async () => {
+      if (!service?.getClaimTopics || (!isCreateMode && !service?.getTrustedIssuersByObjectId)) {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        if (isMounted) {
+          setIsLoading(true);
+        }
+
+        // Always fetch claim topics
+        const claimTopicsResult = await service.getClaimTopics();
+
+        let issuerData = null;
+        if (!isCreateMode) {
+          issuerData = await service.getTrustedIssuersByObjectId(id);
+        }
+
+        // Update state immediately, don't wait
+        if (isMounted) {
+          // Set claim topics
+          if (claimTopicsResult) {
+            const formattedClaimTopics = claimTopicsResult.map((item) => ({
               key: item.attributes?.topic,
               displayName: item.attributes?.displayName,
               id: item.id,
               topic: item.attributes?.topic,
+            }));
+            setClaimTopics(formattedClaimTopics);
+          }
+
+          // Set issuer data if in edit mode
+          if (!isCreateMode && issuerData) {
+            // Try multiple ways to extract verifier name
+            let rawVerifierName = issuerData?.attributes?.verifierName;
+
+            // If it's a Parse object, try the .get() method
+            if (!rawVerifierName && issuerData?.get) {
+              rawVerifierName = issuerData.get("verifierName");
+            }
+
+            // Try direct property access
+            if (!rawVerifierName && issuerData?.verifierName) {
+              rawVerifierName = issuerData.verifierName;
+            }
+
+            const finalVerifierName = rawVerifierName || "";
+            setVerifierName(finalVerifierName);
+
+            // Extract wallet address
+            let rawWalletAddress = issuerData?.attributes?.issuer;
+            if (!rawWalletAddress && issuerData?.get) {
+              rawWalletAddress = issuerData.get("issuer");
+            }
+            if (!rawWalletAddress && issuerData?.issuer) {
+              rawWalletAddress = issuerData.issuer;
+            }
+
+            const finalWalletAddress = rawWalletAddress || "";
+            setWalletAddress(finalWalletAddress);
+
+            // Extract claim topics
+            let existingClaimTopics = issuerData?.attributes?.claimTopics;
+            if (!existingClaimTopics && issuerData?.get) {
+              existingClaimTopics = issuerData.get("claimTopics");
+            }
+            if (!existingClaimTopics && issuerData?.claimTopics) {
+              existingClaimTopics = issuerData.claimTopics;
+            }
+            existingClaimTopics = existingClaimTopics || [];
+
+            const existingTopicKeys = existingClaimTopics.map((claim) => {
+              return typeof claim === "object" ? claim.topic : claim;
             });
-          });
-          setClaimTopics(data);
+
+            setTargetKeys(existingTopicKeys);
+          } else if (isCreateMode) {
+            setVerifierName("");
+            setWalletAddress("");
+            setTargetKeys([]);
+          }
+
+          setDataLoaded(true);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+        if (isMounted) {
+          setIsLoading(false);
+          toast.error("Failed to load data. Please refresh the page.");
         }
       }
-    })();
+    };
+
+    loadData();
+
+    // Cleanup function
+    return () => {
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+      isMounted = false;
+    };
   }, [service, id]);
 
   const onChange = (nextTargetKeys, direction, moveKeys) => {
     setTargetKeys(nextTargetKeys);
   };
+
   const onSelectChange = (sourceSelectedKeys, targetSelectedKeys) => {
     setSelectedKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
   };
@@ -92,12 +183,16 @@ function CreateTrustedIssuer({ service }) {
     }
 
     try {
+      const updateData = {
+        verifierName: trimmedVerifierName,
+        issuer: walletAddress,
+        claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })),
+      };
+
       if (walletPreference === WalletPreference.MANAGED) {
-        // Handle MANAGED wallet preference using DFNSService
         toast
           .promise(
             (async () => {
-              // Initiate adding the trusted issuer
               const { initiateResponse, error: initError } = await DfnsService.initiateAddTrustedIssuer(
                 walletAddress,
                 targetKeys,
@@ -106,21 +201,17 @@ function CreateTrustedIssuer({ service }) {
               );
               if (initError) throw new Error(initError);
 
-              // Complete adding the trusted issuer
               const { completeResponse, error: completeError } = await DfnsService.completeAddTrustedIssuer(
                 user.walletId,
                 dfnsToken,
-                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                initiateResponse.challenge,
                 initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
-              await new Promise((resolve) => setTimeout(resolve, 6000)); // 4-second delay
-              //return completeResponse;
-              await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
-                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              });
+
+              await new Promise((resolve) => setTimeout(resolve, 6000));
+
+              const result = await service.updateTrustedIssuer(updateData);
               navigate("/issuers");
             })(),
             {
@@ -134,19 +225,14 @@ function CreateTrustedIssuer({ service }) {
             }
           )
           .catch((error) => {
-            console.error("Error after attempting to add Trusted Issuer:", error);
+            console.error("Error in saveTrustedIssuer (MANAGED):", error);
           });
       } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
         toast
           .promise(
             (async () => {
               await service.addTrustedIssuer(walletAddress, targetKeys);
-              await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
-                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              });
+              const result = await service.updateTrustedIssuer(updateData);
             })(),
             {
               pending: "Adding Trusted Issuer...",
@@ -162,7 +248,7 @@ function CreateTrustedIssuer({ service }) {
             navigate("/issuers");
           })
           .catch((error) => {
-            console.error("Error after attempting to add Trusted Issuer:", error);
+            console.error("Error in saveTrustedIssuer (PRIVATE):", error);
           });
       }
     } catch (error) {
@@ -179,13 +265,17 @@ function CreateTrustedIssuer({ service }) {
     }
 
     try {
+      const updateData = {
+        verifierName: trimmedVerifierName,
+        issuer: walletAddress,
+        claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })),
+      };
+
       if (walletPreference === WalletPreference.MANAGED) {
-        // Handle MANAGED wallet preference using DFNSService
         const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         toast
           .promise(
             (async () => {
-              // Initiate updating the trusted issuer
               const { initiateResponse, error: initError } = await DfnsService.initiateUpdateTrustedIssuer(
                 walletAddress,
                 targetKeys,
@@ -194,16 +284,17 @@ function CreateTrustedIssuer({ service }) {
               );
               if (initError) throw new Error(initError);
 
-              // Complete updating the trusted issuer
               const { completeResponse, error: completeError } = await DfnsService.completeUpdateTrustedIssuer(
                 user.walletId,
                 dfnsToken,
-                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                initiateResponse.challenge,
                 initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
 
               await delay(6000);
+
+              const result = await service.updateTrustedIssuer(updateData);
               navigate("/issuers");
             })(),
             {
@@ -217,10 +308,9 @@ function CreateTrustedIssuer({ service }) {
             }
           )
           .catch((error) => {
-            console.error("Error after attempting to update Trusted Issuer:", error);
+            console.error("Error in updateTrustedIssuer (MANAGED):", error);
           });
       } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
         toast
           .promise(
             (async () => {
@@ -228,12 +318,9 @@ function CreateTrustedIssuer({ service }) {
                 topic,
                 timestamp: Date.now(),
               }));
+
               await service.updateIssuerClaimTopics(walletAddress, targetKeys);
-              await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
-                claimTopics: keysWithTimestamps,
-              });
+              const result = await service.updateTrustedIssuer(updateData);
             })(),
             {
               pending: "Updating Trusted Issuer...",
@@ -249,7 +336,7 @@ function CreateTrustedIssuer({ service }) {
             navigate("/issuers");
           })
           .catch((error) => {
-            console.error("Error after attempting to update Trusted Issuer:", error);
+            console.error("Error in updateTrustedIssuer (PRIVATE):", error);
           });
       }
     } catch (error) {
@@ -257,6 +344,15 @@ function CreateTrustedIssuer({ service }) {
       toast.error("An unexpected error occurred. Please try again.");
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -270,11 +366,11 @@ function CreateTrustedIssuer({ service }) {
             title: <Link to={"/issuers"}>Trusted Issuer</Link>,
           },
           {
-            title: id === "create" ? "Add" : "Update",
+            title: isCreateMode ? "Add" : "Update",
           },
         ]}
       />
-      <p className="text-xl p-6">Create Trusted Issuer</p>
+      <p className="text-xl p-6">{isCreateMode ? "Create" : "Update"} Trusted Issuer</p>
       <hr></hr>
       <div className="p-6 mt-2">
         <div>
@@ -301,7 +397,12 @@ function CreateTrustedIssuer({ service }) {
               className="border w-full p-2 rounded-lg text-xl"
               placeholder="Wallet Address"
               type="text"
-              onChange={(e) => (id === "create" ? setWalletAddress(e.target.value.trim()) : "")}
+              onChange={(e) => {
+                if (isCreateMode) {
+                  setWalletAddress(e.target.value.trim());
+                }
+              }}
+              disabled={!isCreateMode}
             />
           </div>
           <p className="my-4">Manage Compliance Rule IDs</p>
@@ -325,10 +426,11 @@ function CreateTrustedIssuer({ service }) {
           />
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
-          {id === "create" ? (
+          {isCreateMode ? (
             <Button
               className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
               onClick={saveTrustedIssuer}
+              disabled={!dataLoaded}
             >
               Create Trusted Issuer
             </Button>
@@ -336,6 +438,7 @@ function CreateTrustedIssuer({ service }) {
             <Button
               className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
               onClick={updateTrustedIssuer}
+              disabled={!dataLoaded}
             >
               Update Trusted Issuer
             </Button>
