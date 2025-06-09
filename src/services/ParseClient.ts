@@ -697,6 +697,16 @@ class ParseClient {
       return { result: null, error: error.message };
     }
   }
+
+  async getRegisteredUsers() {
+    const users = await this.getRecords(
+      "_User",
+      ["walletAddress"], // Where fields
+      [{ $exists: true }], // Where values
+      ["*"] // Include all fields
+    );
+    return users;
+  }
 }
 
 // Instantiate and export the singleton instance
