@@ -167,7 +167,7 @@ const Home = () => {
 
   const onEmailChange = (value) => {
     setEmail(value);
-    const matchedUser = registeredUsers.find((u) => u.get("email") === value);
+    const matchedUser = registeredUsers?.find((u) => u.get("email") === value);
 
     if (matchedUser) {
       setSelectedUser(matchedUser);
