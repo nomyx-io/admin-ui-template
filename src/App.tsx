@@ -132,7 +132,7 @@ const wagmiConfig = createConfig({
 
 const validateToken = async (token: string) => {
   try {
-    const response = await axios.get(`${process.env.REACT_APP_PARSE_SERVER_URL}/auth/validate`, {
+    const response = await axios.get(`${process.env.REACT_APP_PARSE_SERVER_URL}/legacy-auth/validate`, {
       headers: {
         "x-parse-session-token": token,
       },
@@ -172,7 +172,7 @@ function App() {
   // Define the getToken function
   const getToken = async (request: any) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_PARSE_SERVER_URL}/auth/login`, request);
+      const response = await axios.post(`${process.env.REACT_APP_PARSE_SERVER_URL}/legacy-auth/login`, request);
       const data = response.data;
       return {
         walletPreference: data?.user?.walletPreference,
@@ -265,7 +265,7 @@ function App() {
       if (token) {
         // Invalidate the session token on the server
         await axios.post(
-          `${process.env.REACT_APP_PARSE_SERVER_URL}/auth/logout`,
+          `${process.env.REACT_APP_PARSE_SERVER_URL}/legacy-auth/logout`,
           {},
           {
             headers: {
