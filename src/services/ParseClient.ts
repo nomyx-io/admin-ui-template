@@ -699,13 +699,13 @@ class ParseClient {
   }
 
   async getRegisteredUsers() {
-    const users = await this.getRecords(
-      "_User",
-      ["walletAddress"], // Where fields
-      [{ $exists: true }], // Where values
-      ["*"] // Include all fields
-    );
-    return users;
+    try {
+      const users = await Parse.Cloud.run("getRegisteredUsers");
+      return users;
+    } catch (error) {
+      console.error("getRegisteredUsers: Error fetching users with walletAddress", error);
+      return [];
+    }
   }
 }
 

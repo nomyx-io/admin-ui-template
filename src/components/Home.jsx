@@ -167,16 +167,16 @@ const Home = () => {
 
   const onEmailChange = (value) => {
     setEmail(value);
-    const matchedUser = registeredUsers?.find((u) => u.get("email") === value);
+    const matchedUser = registeredUsers?.find((u) => u.email === value);
 
     if (matchedUser) {
       setSelectedUser(matchedUser);
-      setFirstname(matchedUser.get("firstName") || "");
-      setLastname(matchedUser.get("lastName") || "");
-      setNewOwnerAddress(matchedUser.get("walletAddress") || "");
-      setWalletPreference(matchedUser.get("walletPreference") ?? 0);
-      setWalletId(matchedUser.get("walletId") || "");
-      setPersonaReferenceId(matchedUser.get("personaReferenceId") || "");
+      setFirstname(matchedUser.firstName || "");
+      setLastname(matchedUser.lastName || "");
+      setNewOwnerAddress(matchedUser.walletAddress || "");
+      setWalletPreference(matchedUser.walletPreference ?? 0);
+      setWalletId(matchedUser.walletId || "");
+      setPersonaReferenceId(matchedUser.personaReferenceId || "");
     } else {
       setSelectedUser(null);
       setFirstname("");
@@ -268,7 +268,7 @@ const Home = () => {
             <AutoComplete
               value={email}
               onChange={onEmailChange}
-              options={registeredUsers?.map((u) => ({ value: u.get("email") }))}
+              options={registeredUsers?.map((u) => ({ value: u.email }))}
               placeholder="Enter email"
               className="w-full"
               filterOption={(inputValue, option) => option?.value.toLowerCase().includes(inputValue.toLowerCase())}
