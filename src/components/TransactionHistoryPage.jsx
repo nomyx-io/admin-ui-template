@@ -44,30 +44,37 @@ const TransactionHistoryPage = ({ service }) => {
         return;
       }
 
-      let formattedTransactions = transactionRecords.map((transaction) => ({
-        id: transaction.id,
-        amount: transaction.get("amount") || 0,
-        token: transaction.get("token") || "ETH",
-        timestamp: transaction.get("timestamp")
-          ? transaction.get("timestamp").toISOString().split("T")[0] + " " + transaction.get("timestamp").toISOString().split("T")[1].split(".")[0]
-          : "",
-        transactionHash: transaction.get("transactionHash") || "",
-        fromAddress: transaction.get("fromAddress") || "",
-        toAddress: transaction.get("toAddress") || "",
-        status: transaction.get("status") || "Unknown",
-        transactionType: transaction.get("transactionType") || "Transfer",
-        fee: transaction.get("fee") || 0,
-        userName: transaction.get("user")?.get("username") || "Unknown User",
-        userEmail: transaction.get("user")?.get("email") || "",
-        toUserName: transaction.get("toUser")?.get("username") || "External",
-        bridgeTransactionId: transaction.get("bridgeTransactionId") || "",
-        kycInquiryId: transaction.get("kycInquiryId") || "",
-        gasUsed: transaction.get("gasUsed") || 0,
-        gasPrice: transaction.get("gasPrice") || "0",
-        blockNumber: transaction.get("blockNumber") || 0,
-        networkId: transaction.get("networkId") || "",
-        userId: transaction.get("user")?.id || "",
-      }));
+      const formattedTransactions = transactionRecords.map((transaction) => {
+        const userPointer = transaction.get("user");
+        const firstName = userPointer?.get("firstName") ?? "";
+        const lastName = userPointer?.get("lastName") ?? "";
+        const userName = firstName || lastName ? `${firstName} ${lastName}`.trim() : "Unknown User";
+
+        return {
+          id: transaction.id,
+          amount: transaction.get("amount") || 0,
+          token: transaction.get("token") || "ETH",
+          timestamp: transaction.get("timestamp")
+            ? transaction.get("timestamp").toISOString().split("T")[0] + " " + transaction.get("timestamp").toISOString().split("T")[1].split(".")[0]
+            : "",
+          transactionHash: transaction.get("transactionHash") || "",
+          fromAddress: transaction.get("fromAddress") || "",
+          toAddress: transaction.get("toAddress") || "",
+          status: transaction.get("status") || "Unknown",
+          transactionType: transaction.get("transactionType") || "Transfer",
+          fee: transaction.get("fee") || 0,
+          userName,
+          userEmail: transaction.get("user")?.get("email") || "",
+          toUserName: transaction.get("toUser")?.get("username") || "External",
+          bridgeTransactionId: transaction.get("bridgeTransactionId") || "",
+          kycInquiryId: transaction.get("kycInquiryId") || "",
+          gasUsed: transaction.get("gasUsed") || 0,
+          gasPrice: transaction.get("gasPrice") || "0",
+          blockNumber: transaction.get("blockNumber") || 0,
+          networkId: transaction.get("networkId") || "",
+          userId: transaction.get("user")?.id || "",
+        };
+      });
 
       // Apply filters
       if (filters.dateRange && filters.dateRange.length === 2) {

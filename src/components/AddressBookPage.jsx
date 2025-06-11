@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 import { Tabs } from "antd";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
@@ -10,6 +11,7 @@ import { NomyxAction } from "../utils/Constants";
 const { TabPane } = Tabs;
 
 const AddressBookPage = ({ service }) => {
+  const navigate = useNavigate();
   const [addressBookEntries, setAddressBookEntries] = useState([]);
   const [activeTab, setActiveTab] = useState("AddressBook");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
@@ -34,22 +36,28 @@ const AddressBookPage = ({ service }) => {
         return;
       }
 
-      const formattedEntries = entries.map((entry) => ({
-        id: entry.id,
-        name: entry.get("name") || "",
-        email: entry.get("email") || "",
-        walletAddress: entry.get("walletAddress") || "",
-        walletType: entry.get("walletType") || "Unknown",
-        isInternal: entry.get("isInternal") || false,
-        notes: entry.get("notes") || "",
-        tags: entry.get("tags") || "",
-        userName: entry.get("user")?.get("username") || "No User",
-        userEmail: entry.get("user")?.get("email") || "",
-        userId: entry.get("user")?.id || "",
-        createdBy: entry.get("createdBy")?.get("username") || "System",
-        lastUsed: entry.get("lastUsed") ? entry.get("lastUsed").toISOString().split("T")[0] : "Never",
-        createdAt: entry.get("createdAt") ? entry.get("createdAt").toISOString().split("T")[0] : "",
-      }));
+      const formattedEntries = entries.map((entry) => {
+        const createdByUser = entry.get("createdBy");
+        const firstName = createdByUser?.get("firstName") ?? "";
+        const lastName = createdByUser?.get("lastName") ?? "";
+        const createdBy = firstName || lastName ? `${firstName} ${lastName}`.trim() : "System";
+        return {
+          id: entry.id,
+          name: entry.get("name") || "",
+          email: entry.get("email") || "",
+          walletAddress: entry.get("walletAddress") || "",
+          walletType: entry.get("walletType") || "Unknown",
+          isInternal: entry.get("isInternal") || false,
+          notes: entry.get("notes") || "",
+          tags: entry.get("tags") || "",
+          userName: entry.get("user")?.get("username") || "No User",
+          userEmail: entry.get("user")?.get("email") || "",
+          userId: entry.get("user")?.id || "",
+          createdBy,
+          lastUsed: entry.get("lastUsed") ? entry.get("lastUsed").toISOString().split("T")[0] : "Never",
+          createdAt: entry.get("createdAt") ? entry.get("createdAt").toISOString().split("T")[0] : "",
+        };
+      });
 
       console.log(`Fetched ${formattedEntries.length} AddressBook entries`);
       setAddressBookEntries(formattedEntries);
@@ -87,7 +95,6 @@ const AddressBookPage = ({ service }) => {
     { label: "Wallet Address", name: "walletAddress", width: "300px" },
     // { label: "Type", name: "walletType" },
     { label: "Internal", name: "isInternal", render: (record) => (record.isInternal ? "Yes" : "No") },
-    { label: "Associated User", name: "userName" },
     // { label: "Tags", name: "tags" },
     // { label: "Last Used", name: "lastUsed" },
     { label: "Created By", name: "createdBy" },
@@ -109,7 +116,7 @@ const AddressBookPage = ({ service }) => {
   const handleAction = async (event, action, record) => {
     switch (action) {
       case NomyxAction.CreateAddressBookEntry:
-        toast.info("Create Address Book Entry - To be implemented");
+        navigate("/address-book/create");
         break;
       case NomyxAction.ViewAddressBookEntry:
         toast.info(`Viewing entry for ${record.name} - To be implemented`);
