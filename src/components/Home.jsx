@@ -82,7 +82,7 @@ const Home = () => {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!selectedUser && !emailRegex.test(email)) {
       toast.error("Invalid email format");
       return false;
     }
@@ -109,11 +109,12 @@ const Home = () => {
       await toast.promise(
         (async () => {
           try {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const { result: updateResult, error: updateError } = await parseClient.createOwnerRecord(
               newOwnerAddress.trim(),
               firstname.trim(),
               lastname.trim(),
-              email.trim(),
+              emailRegex.test(email) ? email.trim() : "",
               undefined,
               walletPreference,
               walletId.trim(),
@@ -220,7 +221,7 @@ const Home = () => {
                 <div className="flex justify-end mt-6">
                   <button
                     onClick={showModal}
-                    className="bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-400 hover:text-gray-600 transition-colors hover:opacity-40 text-xs"
+                    className="bg-blue-200 text-white px-4 py-2 rounded-md hover:bg-blue-100 hover:text-gray-600 transition-colors hover:opacity-40 text-xs"
                   >
                     Transfer Ownership
                   </button>
@@ -255,11 +256,11 @@ const Home = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">First Name *</label>
-              <Input value={firstname} onChange={(e) => setFirstname(e.target.value)} disabled={!!selectedUser} />
+              <Input value={firstname} onChange={(e) => setFirstname(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Last Name *</label>
-              <Input value={lastname} onChange={(e) => setLastname(e.target.value)} disabled={!!selectedUser} />
+              <Input value={lastname} onChange={(e) => setLastname(e.target.value)} />
             </div>
           </div>
 
@@ -286,7 +287,7 @@ const Home = () => {
               <select
                 value={walletPreference}
                 onChange={(e) => setWalletPreference(Number(e.target.value))}
-                disabled={!!selectedUser}
+                disabled={!!selectedUser && !selectedUser.walletPreference}
                 className="w-full border"
               >
                 <option value={0}>Managed (0)</option>
@@ -295,13 +296,17 @@ const Home = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Wallet ID *</label>
-              <Input value={walletId} onChange={(e) => setWalletId(e.target.value)} disabled={!!selectedUser} />
+              <Input value={walletId} onChange={(e) => setWalletId(e.target.value)} disabled={!!selectedUser && !!selectedUser.walletId} />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">Persona Reference ID</label>
-            <Input value={personaReferenceId} onChange={(e) => setPersonaReferenceId(e.target.value)} disabled={!!selectedUser} />
+            <Input
+              value={personaReferenceId}
+              onChange={(e) => setPersonaReferenceId(e.target.value)}
+              disabled={!!selectedUser && !!selectedUser.personaReferenceId}
+            />
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
