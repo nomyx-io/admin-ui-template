@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
+import { Breadcrumb, Button, Input, Select } from "antd";
 import { Transfer } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -12,8 +12,9 @@ import { WalletPreference } from "../utils/Constants";
 
 function CreateTrustedIssuer({ service }) {
   const navigate = useNavigate();
-  const [verifierName, setVerifierName] = React.useState("");
+  const [selectedUser, setSelectedUser] = React.useState(null);
   const [walletAddress, setWalletAddress] = React.useState("");
+  const [users, setUsers] = React.useState([]);
   const [claimTopics, setClaimTopics] = React.useState([]);
   const [targetKeys, setTargetKeys] = React.useState([]);
   const [selectedKeys, setSelectedKeys] = React.useState([]);
@@ -22,13 +23,41 @@ function CreateTrustedIssuer({ service }) {
   const { walletPreference, user, dfnsToken } = React.useContext(RoleContext);
 
   let id = location.pathname.split("/")[2];
+
+  // Fetch users from Parse
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const Parse = require("parse");
+        const query = new Parse.Query("_User");
+        query.select(["firstName", "lastName", "walletAddress"]);
+        const results = await query.find();
+        const userData = results.map((user) => ({
+          value: user.get("walletAddress"),
+          label: `${user.get("firstName")} ${user.get("lastName")}`,
+        }));
+        setUsers(userData);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        toast.error("Failed to load users list");
+      }
+    };
+    fetchUsers();
+  }, []);
+
   useEffect(() => {
     (async function () {
       if (service.getClaimTopics && service.getTrustedIssuersByObjectId) {
         const result = await service.getClaimTopics();
         const issuerData = await service?.getTrustedIssuersByObjectId(id);
-        setVerifierName(issuerData?.attributes?.verifierName || "");
-        setWalletAddress(issuerData?.attributes?.issuer || "");
+        if (issuerData) {
+          const issuer = issuerData.attributes?.issuer || "";
+          setSelectedUser({
+            label: issuerData.attributes?.verifierName || "",
+            value: issuer,
+          });
+          setWalletAddress(issuer);
+        }
         let newArr = [];
         setTargetKeys(newArr || "");
         let data = [];
@@ -55,24 +84,9 @@ function CreateTrustedIssuer({ service }) {
     setSelectedKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
   };
 
-  function validateTrustedIssuer(verifierName, walletAddress, targetKeys) {
-    if (verifierName?.trim() === "") {
-      toast.error("Trusted Issuer display Name is required");
-      return false;
-    }
-
-    if (!isAlphanumericAndSpace(verifierName)) {
-      toast.error("Trusted Issuer display Name must contain only alphanumeric characters");
-      return false;
-    }
-
-    if (walletAddress === "") {
-      toast.error("Trusted Issuer Wallet is required");
-      return false;
-    }
-
-    if (!isEthereumAddress(walletAddress)) {
-      toast.error("Invalid Ethereum Wallet Address in Trusted Issuer Wallet Address");
+  function validateTrustedIssuer(selectedUser, targetKeys) {
+    if (!selectedUser) {
+      toast.error("Please select a Trusted Issuer");
       return false;
     }
 
@@ -81,13 +95,11 @@ function CreateTrustedIssuer({ service }) {
       return false;
     }
 
-    return true;
+    return true && isEthereumAddress(selectedUser.value);
   }
 
   const saveTrustedIssuer = async () => {
-    const trimmedVerifierName = verifierName.trim();
-
-    if (!validateTrustedIssuer(trimmedVerifierName, walletAddress, targetKeys)) {
+    if (!validateTrustedIssuer(selectedUser, targetKeys)) {
       return;
     }
 
@@ -99,7 +111,7 @@ function CreateTrustedIssuer({ service }) {
             (async () => {
               // Initiate adding the trusted issuer
               const { initiateResponse, error: initError } = await DfnsService.initiateAddTrustedIssuer(
-                walletAddress,
+                selectedUser.value,
                 targetKeys,
                 user.walletId,
                 dfnsToken
@@ -117,18 +129,18 @@ function CreateTrustedIssuer({ service }) {
               await new Promise((resolve) => setTimeout(resolve, 6000)); // 4-second delay
               //return completeResponse;
               await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
+                verifierName: selectedUser.label,
+                issuer: selectedUser.value,
                 claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
               });
               navigate("/issuers");
             })(),
             {
               pending: "Adding Trusted Issuer...",
-              success: `Successfully Added Trusted Issuer ${walletAddress}`,
+              success: `Successfully Added Trusted Issuer ${selectedUser.label}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${walletAddress}`}</div>;
+                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${selectedUser.label}`}</div>;
                 },
               },
             }
@@ -141,19 +153,19 @@ function CreateTrustedIssuer({ service }) {
         toast
           .promise(
             (async () => {
-              await service.addTrustedIssuer(walletAddress, targetKeys);
+              await service.addTrustedIssuer(selectedUser.value, targetKeys);
               await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
+                verifierName: selectedUser.label,
+                issuer: selectedUser.value,
                 claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
               });
             })(),
             {
               pending: "Adding Trusted Issuer...",
-              success: `Successfully Added Trusted Issuer ${walletAddress}`,
+              success: `Successfully Added Trusted Issuer ${selectedUser.label}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${walletAddress}`}</div>;
+                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${selectedUser.label}`}</div>;
                 },
               },
             }
@@ -172,9 +184,7 @@ function CreateTrustedIssuer({ service }) {
   };
 
   const updateTrustedIssuer = async () => {
-    const trimmedVerifierName = verifierName.trim();
-
-    if (!validateTrustedIssuer(trimmedVerifierName, walletAddress, targetKeys)) {
+    if (!validateTrustedIssuer(selectedUser, targetKeys)) {
       return;
     }
 
@@ -187,7 +197,7 @@ function CreateTrustedIssuer({ service }) {
             (async () => {
               // Initiate updating the trusted issuer
               const { initiateResponse, error: initError } = await DfnsService.initiateUpdateTrustedIssuer(
-                walletAddress,
+                selectedUser.value,
                 targetKeys,
                 user.walletId,
                 dfnsToken
@@ -208,10 +218,10 @@ function CreateTrustedIssuer({ service }) {
             })(),
             {
               pending: "Updating Trusted Issuer...",
-              success: `Successfully Updated Trusted Issuer ${walletAddress}`,
+              success: `Successfully Updated Trusted Issuer ${selectedUser.label}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while updating Trusted Issuer ${walletAddress}`}</div>;
+                  return <div>{data?.reason || `An error occurred while updating Trusted Issuer ${selectedUser.label}`}</div>;
                 },
               },
             }
@@ -228,19 +238,19 @@ function CreateTrustedIssuer({ service }) {
                 topic,
                 timestamp: Date.now(),
               }));
-              await service.updateIssuerClaimTopics(walletAddress, targetKeys);
+              await service.updateIssuerClaimTopics(selectedUser.value, targetKeys);
               await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
+                verifierName: selectedUser.label,
+                issuer: selectedUser.value,
                 claimTopics: keysWithTimestamps,
               });
             })(),
             {
               pending: "Updating Trusted Issuer...",
-              success: `Successfully Updated Trusted Issuer ${walletAddress}`,
+              success: `Successfully Updated Trusted Issuer ${selectedUser.label}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while updating Trusted Issuer ${walletAddress}`}</div>;
+                  return <div>{data?.reason || `An error occurred while updating Trusted Issuer ${selectedUser.label}`}</div>;
                 },
               },
             }
@@ -277,31 +287,43 @@ function CreateTrustedIssuer({ service }) {
       <p className="text-xl p-6">Create Trusted Issuer</p>
       <hr></hr>
       <div className="p-6 mt-2">
-        <div>
-          <label htmlFor="trustedIssuerName">Trusted Issuer display name *</label>
-          <div className="mt-3 relative w-full flex border rounded-lg">
-            <Input
-              id="trustedIssuerName"
-              value={verifierName}
-              className="border w-full p-2 rounded-lg text-xl"
-              placeholder="ID Verifier Name"
-              type="text"
-              maxLength={32}
-              onChange={(e) => setVerifierName(e.target.value)}
-            />
-            <p className="absolute right-5 top-3">{verifierName.length}/32</p>
+        <div className="mb-6">
+          <label htmlFor="trustedIssuer">Trusted Issuer display name *</label>
+          <div className="mt-3">
+            {id === "create" ? (
+              <Select
+                id="trustedIssuer"
+                className="w-full text-xl"
+                placeholder="Select a user"
+                options={users}
+                onChange={(value, option) => {
+                  setSelectedUser(option);
+                  setWalletAddress(option.value);
+                }}
+                disabled={id !== "create"}
+              />
+            ) : (
+              <Input
+                id="trustedIssuer"
+                value={selectedUser?.label || ""}
+                className="border w-full p-2 rounded-lg text-xl"
+                placeholder="Trusted Issuer"
+                type="text"
+                disabled
+              />
+            )}
           </div>
         </div>
-        <div className="mt-10 mb-6">
-          <label htmlFor="trustedIssuerWallet">Trusted Issuer Wallet *</label>
-          <div className="mt-3 relative w-full flex border rounded-lg">
+        <div className="mb-6">
+          <label htmlFor="trustedIssuerWallet">Wallet Address</label>
+          <div className="mt-3">
             <Input
               id="trustedIssuerWallet"
               value={walletAddress}
               className="border w-full p-2 rounded-lg text-xl"
               placeholder="Wallet Address"
               type="text"
-              onChange={(e) => (id === "create" ? setWalletAddress(e.target.value.trim()) : "")}
+              disabled
             />
           </div>
           <p className="my-4">Manage Compliance Rule IDs</p>
