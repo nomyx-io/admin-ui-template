@@ -51,6 +51,11 @@ enum NomyxAction {
   ClearFilters,
   RefreshData,
   ImportData,
+
+  //Functions Claims
+  SetFunctionClaims,
+  UpdateFunctionClaims,
+  DeleteFunctionClaims,
 }
 
 enum WalletPreference {

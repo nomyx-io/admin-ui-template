@@ -628,6 +628,63 @@ class DfnsService {
       return { completeResponse: null, error: error.message };
     }
   }
+
+  public async initiateSetFunctionClaimRequirements(
+    functionId: string,
+    requiredClaimTopics: number[],
+    description: string,
+    walletId: string,
+    dfnsToken: string
+  ) {
+    if (!functionId || !requiredClaimTopics?.length || !description || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for setFunctionClaimRequirements initiation.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsSetFunctionClaimsInit", {
+        functionId,
+        requiredClaimTopics,
+        description,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("setFunctionClaimRequirements initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating setFunctionClaimRequirements:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeSetFunctionClaimRequirements(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing setFunctionClaimRequirements.");
+    }
+
+    try {
+      const webauthn = new WebAuthnSigner();
+      const assertion = await webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsSetFunctionClaimsComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("setFunctionClaimRequirements completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing setFunctionClaimRequirements:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
 }
 
 export default DfnsService.instance;
