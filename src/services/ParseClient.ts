@@ -655,6 +655,59 @@ class ParseClient {
       return { challenge: null, error: error.message };
     }
   }
+
+  /**
+   * Update the current user's owner record
+   * @param address - Ethereum address
+   * @param firstname - First name
+   * @param lastname - Last name
+   * @param email - Email address
+   * @param password - Password (optional)
+   * @param walletpreference - Wallet preference (0 = MANAGED, 1 = PRIVATE)
+   * @param walletid - Wallet ID
+   * @param personareferenceid - Persona reference ID
+   * @returns {Promise<any>}
+   */
+  public async createOwnerRecord(
+    address: string,
+    firstname?: string,
+    lastname?: string,
+    email?: string,
+    password?: string,
+    walletpreference?: number,
+    walletid?: string,
+    personareferenceid?: string
+  ): Promise<any> {
+    try {
+      const params: any = { address };
+
+      // Only include optional parameters if they are provided
+      if (firstname) params.firstname = firstname;
+      if (lastname) params.lastname = lastname;
+      if (email) params.email = email;
+      if (password) params.password = password;
+      if (walletpreference !== undefined && walletpreference !== null) params.walletpreference = walletpreference;
+      if (walletid) params.walletid = walletid;
+      if (personareferenceid) params.personareferenceid = personareferenceid;
+
+      const result = await Parse.Cloud.run("createOwnerRecord", params);
+      console.log("Owner record updated successfully:", result);
+      return { result, error: null };
+    } catch (error: any) {
+      console.error("Error updating owner record:", error);
+      return { result: null, error: error.message };
+    }
+  }
+
+  async getRegisteredUsers() {
+    try {
+      const users = await Parse.Cloud.run("getRegisteredUsers");
+      return users;
+    } catch (error) {
+      console.error("getRegisteredUsers: Error fetching users with walletAddress", error);
+      return [];
+    }
+  }
 }
 
 // Instantiate and export the singleton instance
