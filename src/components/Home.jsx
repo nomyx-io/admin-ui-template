@@ -1,6 +1,6 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 
-import { Row, Col, Card, Typography, Button, Modal, Input } from "antd";
+import { Row, Col, Card, Typography, Modal, Input, AutoComplete } from "antd";
 import { toast } from "react-toastify";
 
 import NomyxLogo from "../assets/nomyx_logo_light.png";
@@ -13,6 +13,9 @@ const { Paragraph } = Typography;
 
 const Home = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+
   const [newOwnerAddress, setNewOwnerAddress] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
@@ -23,6 +26,18 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
 
   const { user, dfnsToken } = useContext(RoleContext);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await parseClient.getRegisteredUsers();
+        setRegisteredUsers(users);
+      } catch (error) {
+        console.error("Failed to fetch registered users:", error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const showModal = () => {
     setIsModalVisible(true);
@@ -37,6 +52,7 @@ const Home = () => {
     setWalletPreference(0);
     setWalletId("");
     setPersonaReferenceId("");
+    setSelectedUser(null);
   };
 
   const validateInputs = () => {
@@ -66,7 +82,7 @@ const Home = () => {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!selectedUser && !emailRegex.test(email)) {
       toast.error("Invalid email format");
       return false;
     }
@@ -80,9 +96,7 @@ const Home = () => {
   };
 
   const handleTransferOwnership = async () => {
-    if (!validateInputs()) {
-      return;
-    }
+    if (!validateInputs()) return;
 
     if (!user?.walletId || !dfnsToken) {
       toast.error("User wallet or token not available");
@@ -94,14 +108,14 @@ const Home = () => {
     try {
       await toast.promise(
         (async () => {
-          // Step 1: Create a User record for the new owner
           try {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const { result: updateResult, error: updateError } = await parseClient.createOwnerRecord(
               newOwnerAddress.trim(),
               firstname.trim(),
               lastname.trim(),
-              email.trim(),
-              undefined, // password - not setting password here
+              emailRegex.test(email) ? email.trim() : "",
+              undefined,
               walletPreference,
               walletId.trim(),
               personaReferenceId.trim() || undefined
@@ -109,32 +123,28 @@ const Home = () => {
 
             if (updateError) {
               console.warn("Failed to update new owner record:", updateError);
-              toast.warn("Ownership transferred successfully, but failed to update user record");
+              toast.warn("Ownership transferred, but failed to update user record");
             } else {
-              console.log("New owner record updated successfully:", updateResult);
+              console.log("New owner record updated:", updateResult);
             }
           } catch (recordError) {
             console.warn("Error updating owner record:", recordError);
-            toast.warn("Ownership transferred successfully, but record update failed");
+            toast.warn("Ownership transferred, but record update failed");
           }
 
-          // Step 2: Initiate transfer ownership
           const { initiateResponse, error: initError } = await DfnsService.initiateTransferOwnership(
             newOwnerAddress.trim(),
             user.walletId,
             dfnsToken
           );
-
           if (initError) throw new Error(`Failed to initiate transfer: ${initError}`);
 
-          // Step 3: Complete transfer ownership
           const { completeResponse, error: completeError } = await DfnsService.completeTransferOwnership(
             user.walletId,
             dfnsToken,
             initiateResponse.challenge,
             initiateResponse.requestBody
           );
-
           if (completeError) throw new Error(`Failed to complete transfer: ${completeError}`);
 
           return { completeResponse };
@@ -143,24 +153,39 @@ const Home = () => {
           pending: "Transferring ownership...",
           success: "Ownership transferred successfully",
           error: {
-            render: ({ data }) => <div>{data?.message || "An error occurred during ownership transfer"}</div>,
+            render: ({ data }) => <div>{data?.message || "Error during ownership transfer"}</div>,
           },
         }
       );
 
-      // Reset form and close modal on success
-      setNewOwnerAddress("");
+      handleCancel();
+    } catch (error) {
+      console.error("Transfer error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onEmailChange = (value) => {
+    setEmail(value);
+    const matchedUser = registeredUsers?.find((u) => u.email === value);
+
+    if (matchedUser) {
+      setSelectedUser(matchedUser);
+      setFirstname(matchedUser.firstName || "");
+      setLastname(matchedUser.lastName || "");
+      setNewOwnerAddress(matchedUser.walletAddress || "");
+      setWalletPreference(matchedUser.walletPreference ?? 0);
+      setWalletId(matchedUser.walletId || "");
+      setPersonaReferenceId(matchedUser.personaReferenceId || "");
+    } else {
+      setSelectedUser(null);
       setFirstname("");
       setLastname("");
-      setEmail("");
+      setNewOwnerAddress("");
       setWalletPreference(0);
       setWalletId("");
       setPersonaReferenceId("");
-      setIsModalVisible(false);
-    } catch (error) {
-      console.error("Error during ownership transfer process:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -193,12 +218,10 @@ const Home = () => {
                   approach leverages the power of blockchain technology to provide immutable and transparent records, enhancing trust and authenticity
                   in digital transactions.
                 </Paragraph>
-
                 <div className="flex justify-end mt-6">
                   <button
                     onClick={showModal}
-                    className="bg-gray-100 text-gray-400 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-gray-600 transition-colors opacity-30 hover:opacity-60 text-xs"
-                    title="Emergency Transfer Ownership"
+                    className="bg-blue-200 text-white px-4 py-2 rounded-md hover:bg-blue-100 hover:text-gray-600 transition-colors hover:opacity-40 text-xs"
                   >
                     Transfer Ownership
                   </button>
@@ -215,108 +238,80 @@ const Home = () => {
         onCancel={handleCancel}
         width={600}
         footer={[
-          <button key="cancel" onClick={handleCancel} className="bg-black text-white px-4 py-2 rounded-md mr-2 hover:bg-gray-800 transition-colors">
+          <button key="cancel" onClick={handleCancel} className="bg-black text-white px-4 py-2 rounded-md mr-2">
             Cancel
           </button>,
           <button
             key="confirm"
             onClick={handleTransferOwnership}
             disabled={loading}
-            className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-black text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Processing..." : "Confirm Transfer"}
           </button>,
         ]}
+        maskClosable={false}
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="firstname" className="block text-sm font-medium mb-2">
-                First Name *
-              </label>
-              <Input
-                id="firstname"
-                value={firstname}
-                onChange={(e) => setFirstname(e.target.value)}
-                placeholder="Enter first name"
-                className="w-full"
-              />
+              <label className="block text-sm font-medium mb-2">First Name *</label>
+              <Input value={firstname} onChange={(e) => setFirstname(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="lastname" className="block text-sm font-medium mb-2">
-                Last Name *
-              </label>
-              <Input id="lastname" value={lastname} onChange={(e) => setLastname(e.target.value)} placeholder="Enter last name" className="w-full" />
+              <label className="block text-sm font-medium mb-2">Last Name *</label>
+              <Input value={lastname} onChange={(e) => setLastname(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2">
-              Email *
-            </label>
-            <Input
-              id="email"
-              type="email"
+            <label className="block text-sm font-medium mb-2">Email *</label>
+            <AutoComplete
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter email address"
+              onChange={onEmailChange}
+              options={registeredUsers?.map((u) => ({ value: u.email }))}
+              placeholder="Enter email"
               className="w-full"
+              filterOption={(inputValue, option) => option?.value.toLowerCase().includes(inputValue.toLowerCase())}
             />
           </div>
 
           <div>
-            <label htmlFor="newOwnerAddress" className="block text-sm font-medium mb-2">
-              New Owner Address *
-            </label>
-            <Input
-              id="newOwnerAddress"
-              value={newOwnerAddress}
-              onChange={(e) => setNewOwnerAddress(e.target.value)}
-              placeholder="Enter new owner Ethereum address"
-              className="w-full"
-            />
+            <label className="block text-sm font-medium mb-2">New Owner Address *</label>
+            <Input value={newOwnerAddress} onChange={(e) => setNewOwnerAddress(e.target.value)} disabled={!!selectedUser} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="walletPreference" className="block text-sm font-medium mb-2">
-                Wallet Preference *
-              </label>
+              <label className="block text-sm font-medium mb-2">Wallet Preference *</label>
               <select
-                id="walletPreference"
                 value={walletPreference}
-                onChange={(e) => setWalletPreference(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setWalletPreference(Number(e.target.value))}
+                disabled={!!selectedUser && !selectedUser.walletPreference}
+                className="w-full border"
               >
                 <option value={0}>Managed (0)</option>
                 <option value={1}>Private (1)</option>
               </select>
             </div>
             <div>
-              <label htmlFor="walletId" className="block text-sm font-medium mb-2">
-                Wallet ID *
-              </label>
-              <Input id="walletId" value={walletId} onChange={(e) => setWalletId(e.target.value)} placeholder="Enter wallet ID" className="w-full" />
+              <label className="block text-sm font-medium mb-2">Wallet ID *</label>
+              <Input value={walletId} onChange={(e) => setWalletId(e.target.value)} disabled={!!selectedUser && !!selectedUser.walletId} />
             </div>
           </div>
 
           <div>
-            <label htmlFor="personaReferenceId" className="block text-sm font-medium mb-2">
-              Persona Reference ID
-            </label>
+            <label className="block text-sm font-medium mb-2">Persona Reference ID</label>
             <Input
-              id="personaReferenceId"
               value={personaReferenceId}
               onChange={(e) => setPersonaReferenceId(e.target.value)}
-              placeholder="Enter persona reference ID (optional)"
-              className="w-full"
+              disabled={!!selectedUser && !!selectedUser.personaReferenceId}
             />
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
             <p className="text-sm text-yellow-800">
-              <strong>Warning:</strong> This action will permanently transfer ownership of the contract to the specified address. This action cannot
-              be undone. Please ensure all information is correct.
+              <strong>Warning:</strong> This action will permanently transfer ownership. This cannot be undone.
             </p>
           </div>
         </div>

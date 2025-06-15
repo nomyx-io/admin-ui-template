@@ -697,6 +697,16 @@ class ParseClient {
       return { result: null, error: error.message };
     }
   }
+
+  async getRegisteredUsers() {
+    try {
+      const users = await Parse.Cloud.run("getRegisteredUsers");
+      return users;
+    } catch (error) {
+      console.error("getRegisteredUsers: Error fetching users with walletAddress", error);
+      return [];
+    }
+  }
 }
 
 // Instantiate and export the singleton instance
