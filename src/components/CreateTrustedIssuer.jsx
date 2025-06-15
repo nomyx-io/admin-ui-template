@@ -136,7 +136,7 @@ function CreateTrustedIssuer({ service }) {
       }
       isMounted = false;
     };
-  }, [service, id]);
+  }, [service, id, isCreateMode]);
 
   const onChange = (nextTargetKeys, direction, moveKeys) => {
     setTargetKeys(nextTargetKeys);

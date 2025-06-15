@@ -29,6 +29,28 @@ const IdentitiesPage = ({ service }) => {
     return "An unknown error occurred";
   };
 
+  function getTemplateNameById(inquiryTemplateId) {
+    const templateMap = {};
+
+    if (process.env.REACT_APP_PERSONA_KYB_TEMPLATEID) {
+      templateMap[process.env.REACT_APP_PERSONA_KYB_TEMPLATEID] = "KYB";
+    }
+
+    if (process.env.REACT_APP_PERSONA_KYC_TEMPLATEID) {
+      templateMap[process.env.REACT_APP_PERSONA_KYC_TEMPLATEID] = "KYC";
+    }
+
+    if (process.env.REACT_APP_PERSONA_ACCREDITED_INVESTOR_TEMPLATEID) {
+      templateMap[process.env.REACT_APP_PERSONA_ACCREDITED_INVESTOR_TEMPLATEID] = "Accredited US Investor";
+    }
+
+    if (process.env.REACT_APP_PERSONA_QUALIFIED_INVESTOR_TEMPLATEID) {
+      templateMap[process.env.REACT_APP_PERSONA_QUALIFIED_INVESTOR_TEMPLATEID] = "EU Qualified Investor";
+    }
+
+    return templateMap[inquiryTemplateId] || null;
+  }
+
   const fetchData = useCallback(
     async (tab) => {
       try {
@@ -57,6 +79,17 @@ const IdentitiesPage = ({ service }) => {
                 identidyObj.id = identity.id;
                 identidyObj.pepMatched = identity?.pepMatched || false;
                 identidyObj.watchlistMatched = identity?.watchlistMatched || false;
+                // Parse the JSON string
+                const json = identity?.personaVerificationData ? JSON.parse(identity?.personaVerificationData) : {};
+                // Safely access the inquiry-template ID
+                const inquiryTemplateId =
+                  json?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
+                  json?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id;
+                if (inquiryTemplateId) {
+                  identidyObj.recommended_compliance_rules = getTemplateNameById(inquiryTemplateId);
+                } else {
+                  identidyObj.recommended_compliance_rules = "";
+                }
               } else {
                 // Default empty values if attributes are missing
                 identidyObj.claims = "";
@@ -66,6 +99,7 @@ const IdentitiesPage = ({ service }) => {
                 identidyObj.id = "";
                 identidyObj.pepMatched = false;
                 identidyObj.watchlistMatched = false;
+                identidyObj.recommended_compliance_rules = "";
               }
               return identidyObj;
             });
@@ -102,6 +136,7 @@ const IdentitiesPage = ({ service }) => {
                 watchlistMatched: identity.attributes.watchlistMatched,
                 type: identityType || "", // Type of identity
                 status: status || "", // Status of identity
+                recommended_compliance_rules: templateId ? getTemplateNameById(templateId) : "",
                 ...identity, // Include other identity attributes as is
               };
             });
@@ -277,6 +312,7 @@ const IdentitiesPage = ({ service }) => {
     { label: "Identity", name: "displayName" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
+    { label: "Recommended Compliance Rules", name: "recommended_compliance_rules" },
     { label: "Flagged?", name: "flagged_account" },
     { label: "Type", name: "type" },
     { label: "Status", name: "status" },
