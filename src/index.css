@@ -257,6 +257,7 @@ button.ant-btn-primary:not([disabled]), [type='button'].ant-btn-primary:not([dis
 .signup-card .ant-input-affix-wrapper >input.ant-input {
   color: #FFF !important;
 }
+
 select {
   box-sizing: border-box;
     margin: 0;
@@ -272,4 +273,7 @@ select {
     min-width: 0;
     border-radius: 6px;
     transition: all 0.2s;
+
+.password-card .ant-input-affix-wrapper >input.ant-input {
+  color: #FFF !important;
 }
