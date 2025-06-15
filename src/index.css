@@ -273,6 +273,7 @@ select {
     min-width: 0;
     border-radius: 6px;
     transition: all 0.2s;
+}
 
 .password-card .ant-input-affix-wrapper >input.ant-input {
   color: #FFF !important;
