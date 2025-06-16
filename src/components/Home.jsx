@@ -272,7 +272,10 @@ const Home = () => {
               options={registeredUsers?.map((u) => ({ value: u.email }))}
               placeholder="Enter email"
               className="w-full"
-              filterOption={(inputValue, option) => option?.value.toLowerCase().includes(inputValue.toLowerCase())}
+              filterOption={(inputValue, option) => {
+                const val = option?.value;
+                return typeof val === "string" && val.toLowerCase().includes(inputValue.toLowerCase());
+              }}
             />
           </div>
 
