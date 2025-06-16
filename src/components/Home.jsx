@@ -31,11 +31,13 @@ const Home = () => {
     const fetchUsers = async () => {
       try {
         const users = await parseClient.getRegisteredUsers();
-        setRegisteredUsers(users);
+        const filteredUsers = users.filter((user) => !!user.email); // filters out null/undefined/empty emails
+        setRegisteredUsers(filteredUsers);
       } catch (error) {
         console.error("Failed to fetch registered users:", error);
       }
     };
+
     fetchUsers();
   }, []);
 
@@ -84,11 +86,6 @@ const Home = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!selectedUser && !emailRegex.test(email)) {
       toast.error("Invalid email format");
-      return false;
-    }
-
-    if (!walletId.trim()) {
-      toast.error("Wallet ID is required");
       return false;
     }
 
@@ -298,7 +295,7 @@ const Home = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Wallet ID *</label>
+              <label className="block text-sm font-medium mb-2">Wallet ID</label>
               <Input value={walletId} onChange={(e) => setWalletId(e.target.value)} disabled={!!selectedUser && !!selectedUser.walletId} />
             </div>
           </div>
