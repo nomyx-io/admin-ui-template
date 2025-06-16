@@ -642,11 +642,11 @@ class DfnsService {
 
     try {
       const initiateResponse = await Parse.Cloud.run("dfnsSetFunctionClaimsInit", {
+        dfns_token: dfnsToken,
+        walletId,
         functionId,
         requiredClaimTopics,
         description,
-        walletId,
-        dfns_token: dfnsToken,
       });
 
       console.log("setFunctionClaimRequirements initiation response:", initiateResponse);

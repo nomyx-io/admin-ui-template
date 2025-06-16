@@ -2,13 +2,14 @@ import React, { useEffect } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Transfer } from "antd";
+import { ethers } from "ethers";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, isEthereumAddress, awaitTimeout } from "../utils";
-import { WalletPreference } from "../utils/Constants";
+import { WalletPreference, PAYMENT_ROUTES } from "../utils/Constants";
 
 function SetFunctionClaims({ service }) {
   const navigate = useNavigate();
@@ -21,14 +22,18 @@ function SetFunctionClaims({ service }) {
 
   const { walletPreference, user, dfnsToken } = React.useContext(RoleContext);
 
-  let id = location.pathname.split("/")[2];
+  useEffect(() => {
+    const routeFunctionName = location.pathname.split("/")[2];
+    setFunctionaName(routeFunctionName || "");
+  }, [location.pathname]);
+
   useEffect(() => {
     (async function () {
-      if (service.getClaimTopics && service.getTrustedIssuersByObjectId) {
+      if (service.getClaimTopics) {
         const result = await service.getClaimTopics();
-        const issuerData = await service?.getTrustedIssuersByObjectId(id);
-        setFunctionaName(issuerData?.attributes?.functionaName || "");
-        setDescription(issuerData?.attributes?.issuer || "");
+        //   const issuerData = await service?.getTrustedIssuersByObjectId(routeFunctionName);
+        //   setFunctionaName(issuerData?.attributes?.functionaName || "");
+        //   setDescription(issuerData?.attributes?.issuer || "");
         let newArr = [];
         setTargetKeys(newArr || "");
         let data = [];
@@ -46,7 +51,7 @@ function SetFunctionClaims({ service }) {
         }
       }
     })();
-  }, [service, id]);
+  }, [service]);
 
   const onChange = (nextTargetKeys, direction, moveKeys) => {
     setTargetKeys(nextTargetKeys);
@@ -55,14 +60,9 @@ function SetFunctionClaims({ service }) {
     setSelectedKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
   };
 
-  function validateTrustedIssuer(functionaName, description, targetKeys) {
+  function validateSetFunctionRules(functionaName, description, targetKeys) {
     if (functionaName?.trim() === "") {
       toast.error("Function Name is required");
-      return false;
-    }
-
-    if (description === "") {
-      toast.error("Description is required");
       return false;
     }
 
@@ -74,10 +74,11 @@ function SetFunctionClaims({ service }) {
     return true;
   }
 
-  const saveTrustedIssuer = async () => {
+  const setFunctionClaims = async () => {
     const trimmedFunctionName = functionaName.trim();
-
-    if (!validateTrustedIssuer(trimmedFunctionName, description, targetKeys)) {
+    const functionId = ethers.utils.formatBytes32String(trimmedFunctionName);
+    const selectedClaims = targetKeys.map(Number);
+    if (!validateSetFunctionRules(trimmedFunctionName, description, targetKeys)) {
       return;
     }
 
@@ -88,16 +89,17 @@ function SetFunctionClaims({ service }) {
           .promise(
             (async () => {
               // Initiate adding the trusted issuer
-              const { initiateResponse, error: initError } = await DfnsService.initiateAddTrustedIssuer(
+              const { initiateResponse, error: initError } = await DfnsService.initiateSetFunctionClaimRequirements(
+                functionId,
+                selectedClaims,
                 description,
-                targetKeys,
                 user.walletId,
                 dfnsToken
               );
               if (initError) throw new Error(initError);
 
               // Complete adding the trusted issuer
-              const { completeResponse, error: completeError } = await DfnsService.completeAddTrustedIssuer(
+              const { completeResponse, error: completeError } = await DfnsService.completeSetFunctionClaimRequirements(
                 user.walletId,
                 dfnsToken,
                 initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
@@ -106,144 +108,57 @@ function SetFunctionClaims({ service }) {
               if (completeError) throw new Error(completeError);
               await new Promise((resolve) => setTimeout(resolve, 6000)); // 4-second delay
               //return completeResponse;
-              await service.updateTrustedIssuer({
-                functionaName: trimmedFunctionName,
-                description: description,
-                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              });
-              navigate("/issuers");
+              //   await service.updateTrustedIssuer({
+              //     functionaName: trimmedFunctionName,
+              //     description: description,
+              //     claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
+              //   });
+              navigate("/admin");
             })(),
             {
-              pending: "Setting Function Claims...",
-              success: `Successfully Set Function Claims ${functionaName}`,
+              pending: "Setting Function Rules...",
+              success: `Successfully Set Function Rules ${functionaName}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while setting Function Claims ${functionaName}`}</div>;
+                  return <div>{data?.reason || `An error occurred while setting Function Rules ${functionaName}`}</div>;
                 },
               },
             }
           )
           .catch((error) => {
-            console.error("Error after attempting to set Function Claims:", error);
+            console.error("Error after attempting to set Function Rules:", error);
           });
       } else if (walletPreference === WalletPreference.PRIVATE) {
         // Handle PRIVATE wallet preference
         toast
           .promise(
             (async () => {
-              await service.addTrustedIssuer(description, targetKeys);
-              await service.updateTrustedIssuer({
-                functionaName: trimmedFunctionName,
-                description: description,
-                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              });
+              await service.setFunctionClaims(functionaName, description, targetKeys);
+              //   await service.updateTrustedIssuer({
+              //     functionaName: trimmedFunctionName,
+              //     description: description,
+              //     claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
+              //   });
             })(),
             {
-              pending: "Setting Function Claims...",
-              success: `Successfully Set Function Claims ${functionaName}`,
+              pending: "Setting Function Rules...",
+              success: `Successfully Set Function Rules ${functionaName}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while setting Function Claims ${functionaName}`}</div>;
+                  return <div>{data?.reason || `An error occurred while setting Function Rules ${functionaName}`}</div>;
                 },
               },
             }
           )
           .then(() => {
-            navigate("/issuers");
+            navigate("/admin");
           })
           .catch((error) => {
             console.error("Error after attempting to set Function Claims:", error);
           });
       }
     } catch (error) {
-      console.error("Unexpected error during saveTrustedIssuer:", error);
-      toast.error("An unexpected error occurred. Please try again.");
-    }
-  };
-
-  const updateTrustedIssuer = async () => {
-    const trimmedFunctionName = functionaName.trim();
-
-    if (!validateTrustedIssuer(trimmedFunctionName, description, targetKeys)) {
-      return;
-    }
-
-    try {
-      if (walletPreference === WalletPreference.MANAGED) {
-        // Handle MANAGED wallet preference using DFNSService
-        const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-        toast
-          .promise(
-            (async () => {
-              // Initiate updating the trusted issuer
-              const { initiateResponse, error: initError } = await DfnsService.initiateUpdateTrustedIssuer(
-                description,
-                targetKeys,
-                user.walletId,
-                dfnsToken
-              );
-              if (initError) throw new Error(initError);
-
-              // Complete updating the trusted issuer
-              const { completeResponse, error: completeError } = await DfnsService.completeUpdateTrustedIssuer(
-                user.walletId,
-                dfnsToken,
-                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
-                initiateResponse.requestBody
-              );
-              if (completeError) throw new Error(completeError);
-
-              await delay(6000);
-              navigate("/issuers");
-            })(),
-            {
-              pending: "Updating Trusted Issuer...",
-              success: `Successfully Updated Trusted Issuer ${functionaName}`,
-              error: {
-                render({ data }) {
-                  return <div>{data?.reason || `An error occurred while updating Trusted Issuer ${functionaName}`}</div>;
-                },
-              },
-            }
-          )
-          .catch((error) => {
-            console.error("Error after attempting to update Trusted Issuer:", error);
-          });
-      } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
-        toast
-          .promise(
-            (async () => {
-              const keysWithTimestamps = targetKeys.map((topic) => ({
-                topic,
-                timestamp: Date.now(),
-              }));
-              await service.updateIssuerClaimTopics(description, targetKeys);
-              await service.updateTrustedIssuer({
-                functionaName: trimmedFunctionName,
-                description: description,
-                claimTopics: keysWithTimestamps,
-              });
-            })(),
-            {
-              pending: "Updating Trusted Issuer...",
-              success: `Successfully Updated Trusted Issuer ${functionaName}`,
-              error: {
-                render({ data }) {
-                  return <div>{data?.reason || `An error occurred while updating Trusted Issuer ${functionaName}`}</div>;
-                },
-              },
-            }
-          )
-          .then(() => {
-            navigate("/issuers");
-          })
-          .catch((error) => {
-            console.error("Error after attempting to update Trusted Issuer:", error);
-          });
-      }
-    } catch (error) {
-      console.error("Unexpected error during updateTrustedIssuer:", error);
+      console.error("Unexpected error during setFunctionClaims:", error);
       toast.error("An unexpected error occurred. Please try again.");
     }
   };
@@ -257,14 +172,14 @@ function SetFunctionClaims({ service }) {
             title: <Link to={"/"}>Home</Link>,
           },
           {
-            title: <Link to={"/admin"}>Function Claims</Link>,
+            title: <Link to={"/admin"}>Function Rules</Link>,
           },
           {
-            title: id === "create" ? "Add" : "Update",
+            title: "Update",
           },
         ]}
       />
-      <p className="text-xl p-6">Set Function Claims</p>
+      <p className="text-xl p-6">Set Function Rules</p>
       <hr></hr>
       <div className="p-6 mt-2">
         <div>
@@ -272,26 +187,26 @@ function SetFunctionClaims({ service }) {
           <div className="mt-3 relative w-full flex border rounded-lg">
             <Input
               id="functionaName"
-              value={functionaName}
+              value={PAYMENT_ROUTES?.filter((t) => t.value == functionaName)[0]?.label}
               className="border w-full p-2 rounded-lg text-xl"
               placeholder="Function Name"
               type="text"
               maxLength={32}
               onChange={(e) => setFunctionaName(e.target.value)}
+              disabled={true}
             />
-            <p className="absolute right-5 top-3">{functionaName.length}/32</p>
           </div>
         </div>
         <div className="mt-10 mb-6">
-          <label htmlFor="trustedIssuerWallet">Description *</label>
+          <label htmlFor="description">Description</label>
           <div className="mt-3 relative w-full flex border rounded-lg">
             <Input
-              id="trustedIssuerWallet"
+              id="description"
               value={description}
               className="border w-full p-2 rounded-lg text-xl"
               placeholder="Description"
               type="text"
-              onChange={(e) => (id === "create" ? setDescription(e.target.value.trim()) : "")}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
           <p className="my-4">Manage Compliance Rule IDs</p>
@@ -315,21 +230,12 @@ function SetFunctionClaims({ service }) {
           />
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
-          {id === "create" ? (
-            <Button
-              className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
-              onClick={saveTrustedIssuer}
-            >
-              Set Function Claims
-            </Button>
-          ) : (
-            <Button
-              className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
-              onClick={updateTrustedIssuer}
-            >
-              Update Function Claims
-            </Button>
-          )}
+          <Button
+            className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
+            onClick={setFunctionClaims}
+          >
+            Set Function Rules
+          </Button>
         </div>
       </div>
     </div>

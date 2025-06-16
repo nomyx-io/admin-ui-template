@@ -738,7 +738,7 @@ function App() {
                     }
                   />
                   <Route
-                    path="/admin/create"
+                    path="/function-claims/:functionName/"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
                         {blockchainService ? (

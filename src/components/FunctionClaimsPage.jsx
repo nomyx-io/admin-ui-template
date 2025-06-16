@@ -1,34 +1,28 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
+import { ethers } from "ethers";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
-import { NomyxAction, WalletPreference } from "../utils/Constants";
+import { NomyxAction, WalletPreference, PAYMENT_ROUTES } from "../utils/Constants";
 
 const FunctionClaimsPage = ({ service }) => {
   const navigate = useNavigate();
-  const [trustedIssuers, setTrustedIssuers] = useState([]);
+  const [functionRules, setFunctionRules] = useState([]);
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const fetchData = useCallback(async () => {
-    const issuers = service.getTrustedIssuers && (await service.getTrustedIssuers());
-    let data = [];
-    if (issuers) {
-      issuers.forEach((item) => {
-        const claimTopicsString = item.attributes.claimTopics?.map((obj) => obj["topic"]).join(",") || "N/A";
-        data.push({
-          id: item.id,
-          claimTopics: claimTopicsString,
-          address: item.attributes.issuer,
-          trustedIssuer: item.attributes.verifierName,
-        });
-      });
-      setTrustedIssuers(data);
-    }
-  }, [service]);
+    const data = PAYMENT_ROUTES.map((route) => ({
+      functionName: route.value,
+      functionLabel: route.label,
+      claimTopics: "",
+    }));
+
+    setFunctionRules(data);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -38,19 +32,26 @@ const FunctionClaimsPage = ({ service }) => {
   //   await service.addTrustedIssuer(issuer, claimTopics);
   // };
 
-  const removeFunctionClaims = async (issuer) => {
+  const removeFunctionClaims = async (functionName) => {
+    const functionId = ethers.utils.formatBytes32String(functionName);
     try {
       if (walletPreference === WalletPreference.MANAGED) {
         // Handle MANAGED wallet preference using DFNSService
         toast
           .promise(
             (async () => {
-              // Initiate removal of the trusted issuer
-              const { initiateResponse, error: initError } = await DfnsService.initiateRemoveTrustedIssuer(issuer, user.walletId, dfnsToken);
+              // Initiate removal of the function rules
+              const { initiateResponse, error: initError } = await DfnsService.initiateSetFunctionClaimRequirements(
+                functionId,
+                [],
+                "",
+                user.walletId,
+                dfnsToken
+              );
               if (initError) throw new Error(initError);
 
-              // Complete removal of the trusted issuer
-              const { completeResponse, error: completeError } = await DfnsService.completeRemoveTrustedIssuer(
+              // Complete removal of the function rules
+              const { completeResponse, error: completeError } = await DfnsService.completeSetFunctionClaimRequirements(
                 user.walletId,
                 dfnsToken,
                 initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
@@ -62,38 +63,38 @@ const FunctionClaimsPage = ({ service }) => {
               setTimeout(fetchData, 3000);
             })(),
             {
-              pending: "Removing Trusted Issuer...",
-              success: `Successfully Removed Trusted Issuer ${issuer}`,
+              pending: "Removing Function Rules...",
+              success: `Successfully Removed Function Rules ${functionName}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while removing Trusted Issuer ${issuer}`}</div>;
+                  return <div>{data?.reason || `An error occurred while removing Function Rules ${functionName}`}</div>;
                 },
               },
             }
           )
           .catch((error) => {
-            console.error("Error after attempting to remove Trusted Issuer:", error);
+            console.error("Error after attempting to remove Function Rules:", error);
           });
       } else if (walletPreference === WalletPreference.PRIVATE) {
         // Handle PRIVATE wallet preference
         toast
           .promise(
             (async () => {
-              await service.removeTrustedIssuer(issuer);
+              await service.setFunctionClaims(functionName, "", []);
               fetchData();
             })(),
             {
-              pending: "Removing Trusted Issuer...",
-              success: `Successfully Removed Trusted Issuer ${issuer}`,
+              pending: "Removing Function Rules...",
+              success: `Successfully Removed Function Rules ${functionName}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while removing Trusted Issuer ${issuer}`}</div>;
+                  return <div>{data?.reason || `An error occurred while removing Function Rules ${functionName}`}</div>;
                 },
               },
             }
           )
           .catch((error) => {
-            console.error("Error after attempting to remove Trusted Issuer:", error);
+            console.error("Error after attempting to remove Function Rules:", error);
           });
       }
     } catch (error) {
@@ -103,19 +104,19 @@ const FunctionClaimsPage = ({ service }) => {
   };
 
   const columns = [
-    { label: "Function", name: "trustedIssuer", width: "25%" },
+    { label: "Function", name: "functionLabel", width: "25%" },
     { label: "Compliance Rules", name: "claimTopics", width: "30%" },
   ];
 
   const actions = [
-    { label: "Update Function Claims", name: NomyxAction.UpdateFunctionClaims },
+    { label: "Update Function Rules", name: NomyxAction.UpdateFunctionClaims },
     {
       label: "Remove",
       name: NomyxAction.DeleteFunctionClaims,
-      confirmation: "Are you sure you want to remove this Function Claim?",
+      confirmation: "Are you sure you want to remove this Function Rules?",
     },
   ];
-  const globalActions = [{ label: "Set Function Claims", name: NomyxAction.SetFunctionClaims }];
+  //   const globalActions = [{ label: "Set Function Claims", name: NomyxAction.SetFunctionClaims }];
 
   const search = true;
 
@@ -125,10 +126,10 @@ const FunctionClaimsPage = ({ service }) => {
         navigate("create");
         break;
       case NomyxAction.UpdateFunctionClaims:
-        navigate("/function-claims/" + record.id);
+        navigate("/function-claims/" + record.functionName);
         break;
       case NomyxAction.DeleteFunctionClaims:
-        removeFunctionClaims(record.address);
+        removeFunctionClaims(record.functionName);
         break;
       default:
         console.log("Unknown action: " + name);
@@ -143,9 +144,8 @@ const FunctionClaimsPage = ({ service }) => {
         description="Function Claims"
         columns={columns}
         actions={actions}
-        globalActions={globalActions}
         search={search}
-        data={trustedIssuers}
+        data={functionRules}
         pageSize={10}
         onAction={handleAction}
         onGlobalAction={handleAction}
