@@ -64,6 +64,11 @@ function SetFunctionClaims({ service }) {
       return false;
     }
 
+    if (description?.trim() === "") {
+      toast.error("Description is required");
+      return false;
+    }
+
     if (targetKeys.length < 1) {
       toast.error("Assign Atleast 1 Compliance Rule");
       return false;
@@ -74,9 +79,10 @@ function SetFunctionClaims({ service }) {
 
   const setFunctionClaims = async () => {
     const trimmedFunctionName = functionaName.trim();
+    const trimmedDescription = description.trim();
     const functionId = ethers.utils.formatBytes32String(trimmedFunctionName);
     const selectedClaims = targetKeys.map(Number);
-    if (!validateSetFunctionRules(trimmedFunctionName, description, targetKeys)) {
+    if (!validateSetFunctionRules(trimmedFunctionName, trimmedDescription, targetKeys)) {
       return;
     }
 
@@ -90,7 +96,7 @@ function SetFunctionClaims({ service }) {
               const { initiateResponse, error: initError } = await DfnsService.initiateSetFunctionClaimRequirements(
                 functionId,
                 selectedClaims,
-                description,
+                trimmedDescription,
                 user.walletId,
                 dfnsToken
               );
@@ -125,7 +131,7 @@ function SetFunctionClaims({ service }) {
         toast
           .promise(
             (async () => {
-              await service.setFunctionClaims(functionaName, description, targetKeys);
+              await service.setFunctionClaims(functionaName, trimmedDescription, targetKeys);
             })(),
             {
               pending: "Setting Function Rules...",
@@ -185,15 +191,16 @@ function SetFunctionClaims({ service }) {
           </div>
         </div>
         <div className="mt-10 mb-6">
-          <label htmlFor="description">Description</label>
+          <label htmlFor="description">Description *</label>
           <div className="mt-3 relative w-full flex border rounded-lg">
             <Input
               id="description"
               value={description}
               className="border w-full p-2 rounded-lg text-xl"
-              placeholder="Description"
+              placeholder="Please enter a simple compliance description"
               type="text"
               onChange={(e) => setDescription(e.target.value)}
+              required
             />
           </div>
           <p className="my-4">Manage Compliance Rule IDs</p>

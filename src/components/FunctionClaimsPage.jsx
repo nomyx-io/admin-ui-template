@@ -21,10 +21,29 @@ const FunctionClaimsPage = ({ service }) => {
       const data = PAYMENT_ROUTES.map((route) => {
         const matchedClaim = functionClaims?.find((t) => t?.attributes?.functionId === route.value);
 
+        // Sort compliance rules if they exist
+        let sortedClaimTopics = "";
+        if (matchedClaim?.attributes?.requiredClaimTopics) {
+          const claimTopicsArray = matchedClaim.attributes.requiredClaimTopics.map((obj) => obj);
+          // Sort the array (assuming they are strings or numbers)
+          claimTopicsArray.sort((a, b) => {
+            // Handle different data types
+            if (typeof a === "string" && typeof b === "string") {
+              return a.localeCompare(b);
+            }
+            if (typeof a === "number" && typeof b === "number") {
+              return a - b;
+            }
+            // Convert to string and compare if mixed types
+            return String(a).localeCompare(String(b));
+          });
+          sortedClaimTopics = claimTopicsArray.join(",");
+        }
+
         return {
           functionName: route.value,
           functionLabel: route.label,
-          claimTopics: matchedClaim?.attributes?.requiredClaimTopics?.map((obj) => obj).join(",") || "" || "",
+          claimTopics: sortedClaimTopics,
         };
       });
 
