@@ -8,7 +8,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import logoDark from "../assets/nomyx_logo_dark.png";
-import logoLight from "../assets/nomyx_logo_light.png";
 
 const { Content } = Layout;
 
@@ -32,6 +31,12 @@ const CreatePassword = ({ service }) => {
 
   const handleFormSubmit = async () => {
     try {
+      const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
+      if (!isPasswordValid) {
+        toast.error("Please meet all password requirements.");
+        return;
+      }
+
       toast.promise(
         async () => {
           const response = await Parse.Cloud.run("resetPassword", {
@@ -67,41 +72,46 @@ const CreatePassword = ({ service }) => {
       }}
     >
       <div className="flex flex-1 flex-col lg:flex-row">
-        {/* Left Section */}
+        {/* Left Section - Custom Gradient Background and Logo */}
         <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-4 md:px-6 my-10">
           <div className="w-full max-w-2xl">
-            <img src={logoLight} alt="Logo" width={630} height={240} priority className="block dark:hidden" />
-            <img src={logoDark} alt="Logo" width={630} height={240} priority className="hidden dark:block" />
+            <img src={logoDark} alt="Logo" width={630} height={240} priority />
           </div>
         </div>
 
         {/* Right Section */}
-        <div className="flex-grow flex items-center justify-center w-full">
-          <div className="p-10 max-w-2xl items-center justify-center login-div w-full">
-            <div className="w-full flex flex-col justify-center items-center p-4">
+        <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">
+          <div className="w-full lg:w-3/4 flex items-center justify-center px-4 md:px-6">
+            <div className="bg-nomyxDark1 bg-opacity-90 text-nomyxWhite shadow-lg rounded-lg p-4 max-w-2xl w-full">
+              <div className="w-full flex flex-col justify-center items-center"></div>
               <Card
-                title={<span className="text-black">Create Password</span>}
+                title={<span className="text-white">Create Password</span>}
                 style={{
                   width: "100%",
                   maxWidth: "550px",
-                  border: "1px solid #BBBBBB",
+                  border: "none",
                 }}
-                className="password-card bg-[#3E81C833] shadow-lg rounded-lg wallet-setup-radio-group"
+                className="password-card bg-transparent shadow-lg rounded-lg"
               >
-                <Form layout="vertical" onFinish={handleFormSubmit}>
+                <Form layout="vertical" onFinish={handleFormSubmit} className="w-full">
                   {/* Password Field */}
                   <Form.Item
                     name="password"
-                    label={<span className="text-[#1F1F1F]">Password</span>}
+                    label={<span className="text-gray-400">Password</span>}
                     rules={[{ required: true, message: "Please enter your password!" }]}
                   >
-                    <Input.Password placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="signup-input" />
+                    <Input.Password
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="signup-input placeholder-nomyxGray1 !border-nomyxGray1"
+                    />
                   </Form.Item>
 
                   {/* Confirm Password Field */}
                   <Form.Item
                     name="confirmPassword"
-                    label={<span className="text-[#1F1F1F]">Confirm Password</span>}
+                    label={<span className="text-gray-400">Confirm Password</span>}
                     dependencies={["password"]}
                     rules={[
                       { required: true, message: "Please confirm your password!" },
@@ -119,7 +129,7 @@ const CreatePassword = ({ service }) => {
                       placeholder="Confirm Password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="signup-input"
+                      className="signup-input placeholder-nomyxGray1 !border-nomyxGray1"
                     />
                   </Form.Item>
 
@@ -140,13 +150,13 @@ const CreatePassword = ({ service }) => {
                   </div>
 
                   {/* Submit Button */}
-                  <div className="flex justify-end">
-                    <Form.Item className="m-0">
+                  <Form.Item>
+                    <div className="flex justify-end">
                       <Button type="primary" htmlType="submit" className="signup-button">
                         Submit
                       </Button>
-                    </Form.Item>
-                  </div>
+                    </div>
+                  </Form.Item>
                 </Form>
               </Card>
             </div>

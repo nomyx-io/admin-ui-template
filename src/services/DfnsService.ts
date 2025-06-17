@@ -628,7 +628,7 @@ class DfnsService {
       return { completeResponse: null, error: error.message };
     }
   }
-
+  
   public async initiateSetFunctionClaimRequirements(
     functionId: string,
     requiredClaimTopics: number[],
@@ -682,6 +682,55 @@ class DfnsService {
       return { completeResponse, error: null };
     } catch (error: any) {
       console.error("Error completing setFunctionClaimRequirements:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
+  
+  public async initiateTransferOwnership(newOwnerAddress: string, walletId: string, dfnsToken: string) {
+    if (!newOwnerAddress || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for TransferOwnership.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsInitTransferOwnership", {
+        newOwnerAddress,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("TransferOwnership initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating TransferOwnership:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeTransferOwnership(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing TransferOwnership.");
+    }
+
+    try {
+      const webauthn = new WebAuthnSigner();
+      const assertion = await webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsCompleteTransferOwnership", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("TransferOwnership completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing TransferOwnership:", error);
       return { completeResponse: null, error: error.message };
     }
   }

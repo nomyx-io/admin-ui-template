@@ -27,6 +27,15 @@ const EditClaims = ({ service }) => {
     setSelectedKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
   };
 
+  // Helper function to extract error message
+  const getErrorMessage = (error) => {
+    if (typeof error === "string") return error;
+    if (error?.reason) return error.reason;
+    if (error?.message) return error.message;
+    if (error?.toString) return error.toString();
+    return "An unknown error occurred";
+  };
+
   // Save the selected compliance rules
   const saveClaims = async () => {
     const currentClaims = identity.claims || [];
@@ -44,40 +53,65 @@ const EditClaims = ({ service }) => {
           await toast
             .promise(
               (async () => {
-                // Initiate remove claim
-                const { initiateResponse, error: initError } = await DfnsService.initiateRemoveClaim(
-                  identity.address,
-                  parseInt(claimTopic.topic),
-                  user.walletId,
-                  dfnsToken
-                );
-                if (initError) throw new Error(initError);
+                try {
+                  // Initiate remove claim
+                  const { initiateResponse, error: initError } = await DfnsService.initiateRemoveClaim(
+                    identity.address,
+                    parseInt(claimTopic.topic),
+                    user.walletId,
+                    dfnsToken
+                  );
+                  if (initError) throw new Error(initError);
 
-                // Complete remove claim
-                const { completeResponse, error: completeError } = await DfnsService.completeRemoveClaim(
-                  user.walletId,
-                  dfnsToken,
-                  initiateResponse.challenge,
-                  initiateResponse.requestBody
-                );
-                if (completeError) throw new Error(completeError);
+                  // Complete remove claim
+                  const { completeResponse, error: completeError } = await DfnsService.completeRemoveClaim(
+                    user.walletId,
+                    dfnsToken,
+                    initiateResponse.challenge,
+                    initiateResponse.requestBody
+                  );
+                  if (completeError) throw new Error(completeError);
 
-                return completeResponse;
+                  return completeResponse;
+                } catch (error) {
+                  console.error("Error in remove claim operation:", error);
+                  throw error;
+                }
               })(),
               {
                 pending: `Removing claim ${claimTopic.topic}...`,
                 success: `Successfully removed claim ${claimTopic.topic}`,
-                error: `Error removing claim ${claimTopic.topic}`,
+                error: {
+                  render({ data }) {
+                    const errorMessage = getErrorMessage(data);
+                    return (
+                      <div>
+                        Error removing claim {claimTopic.topic}: {errorMessage}
+                      </div>
+                    );
+                  },
+                },
               }
             )
             .catch((error) => {
               console.error("Error after attempting to remove claim:", error);
+              // Re-throw to prevent continuing with the operation
+              throw error;
             });
         } else if (walletPreference === WalletPreference.PRIVATE) {
           await toast.promise(service.removeClaim(identity.address, claimTopic), {
             pending: `Removing claim ${claimTopic.topic}...`,
             success: `Successfully removed claim ${claimTopic.topic}`,
-            error: `Error removing claim ${claimTopic.topic}`,
+            error: {
+              render({ data }) {
+                const errorMessage = getErrorMessage(data);
+                return (
+                  <div>
+                    Error removing claim {claimTopic.topic}: {errorMessage}
+                  </div>
+                );
+              },
+            },
           });
         }
       }
@@ -89,48 +123,55 @@ const EditClaims = ({ service }) => {
           await toast
             .promise(
               (async () => {
-                // Initiate set claim
-                const { initiateResponse, error: initError } = await DfnsService.initiateSetClaims(
-                  identity.address,
-                  claimsToAdd,
-                  user.walletId,
-                  dfnsToken
-                );
-                if (initError) throw new Error(initError);
+                try {
+                  // Initiate set claim
+                  const { initiateResponse, error: initError } = await DfnsService.initiateSetClaims(
+                    identity.address,
+                    claimsToAdd,
+                    user.walletId,
+                    dfnsToken
+                  );
+                  if (initError) throw new Error(initError);
 
-                await delay(2000);
-                // Complete set claim
-                const { completeResponse, error: completeError } = await DfnsService.completeSetClaims(
-                  user.walletId,
-                  dfnsToken,
-                  initiateResponse.challenge,
-                  initiateResponse.requestBody
-                );
-                if (completeError) throw new Error(completeError);
+                  await delay(2000);
+                  // Complete set claim
+                  const { completeResponse, error: completeError } = await DfnsService.completeSetClaims(
+                    user.walletId,
+                    dfnsToken,
+                    initiateResponse.challenge,
+                    initiateResponse.requestBody
+                  );
+                  if (completeError) throw new Error(completeError);
 
-                let claimResponse = {
-                  events: [
-                    {
-                      transactionHash: completeResponse?.transactionHash,
-                    },
-                  ],
-                };
-                await delay(4000);
-                //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
-                navigate("/identities");
+                  let claimResponse = {
+                    events: [
+                      {
+                        transactionHash: completeResponse?.transactionHash,
+                      },
+                    ],
+                  };
+                  await delay(4000);
+                  //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
+                  navigate("/identities");
+                } catch (error) {
+                  console.error("Error in set claims operation:", error);
+                  throw error;
+                }
               })(),
               {
                 pending: "Adding new claims...",
                 success: `Successfully added new claims`,
                 error: {
                   render({ data }) {
-                    return <div>{data?.reason || data || "Error adding claims"}</div>;
+                    const errorMessage = getErrorMessage(data);
+                    return <div>{errorMessage}</div>;
                   },
                 },
               }
             )
             .catch((error) => {
               console.error("Error after attempting to set claim:", error);
+              // Don't re-throw here as we want to show the error but not crash
             });
         } else if (walletPreference === WalletPreference.PRIVATE) {
           await toast.promise(
@@ -142,6 +183,7 @@ const EditClaims = ({ service }) => {
                 setTargetKeys(updatedIdentity?.claims.map((t) => t.topic) || []);
                 navigate(`/identities/${JSON.stringify({ data: response })}/edit/summary`);
               } catch (error) {
+                console.error("Error in private wallet set claims:", error);
                 throw error;
               }
             },
@@ -150,42 +192,56 @@ const EditClaims = ({ service }) => {
               success: "Successfully added new claims.",
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || data || "Error adding claims"}</div>;
+                  const errorMessage = getErrorMessage(data);
+                  return <div>{errorMessage}</div>;
                 },
               },
             }
           );
         }
       } else {
-        toast.error("No new claims to add.");
+        // Only show if there were no claims to remove either
+        if (claimsToRemove.length === 0) {
+          toast.info("No changes to save.");
+        } else {
+          toast.success("Claims updated successfully.");
+        }
       }
     } catch (error) {
-      toast.error(`Failed to save claims for ${identity.displayName}`);
+      console.error("Error in saveClaims:", error);
+      const errorMessage = getErrorMessage(error);
+      toast.error(`Failed to save claims for ${identity.displayName}: ${errorMessage}`);
     }
   };
 
   // Fetch compliance rules and identity details on component mount
   useEffect(() => {
     (async function () {
-      const result = await service.getClaimTopics();
-      let data = [];
+      try {
+        const result = await service.getClaimTopics();
+        let data = [];
 
-      if (result) {
-        // Map compliance rules to the format required by the Transfer component
-        data = result.map((item) => ({
-          key: item.attributes.topic,
-          displayName: item.attributes.displayName,
-          topic: item.attributes.topic,
-        }));
-        setClaimTopics(data);
+        if (result) {
+          // Map compliance rules to the format required by the Transfer component
+          data = result.map((item) => ({
+            key: item.attributes.topic,
+            displayName: item.attributes.displayName,
+            topic: item.attributes.topic,
+          }));
+          setClaimTopics(data);
+        }
+
+        // Fetch the identity details
+        let identityRecord = await service.getDigitalIdentity(identityId);
+        // Set identity and the initial target keys (current claims)
+        const identityClaims = identityRecord?.claims || [];
+        setIdentity(identityRecord);
+        setTargetKeys(identityClaims.map((t) => t.topic));
+      } catch (error) {
+        console.error("Error loading data:", error);
+        const errorMessage = getErrorMessage(error);
+        toast.error(`Failed to load data: ${errorMessage}`);
       }
-
-      // Fetch the identity details
-      let identityRecord = await service.getDigitalIdentity(identityId);
-      // Set identity and the initial target keys (current claims)
-      const identityClaims = identityRecord?.claims || [];
-      setIdentity(identityRecord);
-      setTargetKeys(identityClaims.map((t) => t.topic));
     })();
   }, [service, identityId]);
 
@@ -236,7 +292,7 @@ const EditClaims = ({ service }) => {
           <label htmlFor="investorName">Investor Name</label>
           <Input
             id="investorName"
-            value={identity?.displayName}
+            value={identity?.displayName || ""}
             className="border w-full p-2 rounded-lg text-xl"
             placeholder="Name"
             type="text"
@@ -248,7 +304,7 @@ const EditClaims = ({ service }) => {
           <label htmlFor="investorAccountNumber">Investor KYC Account Number</label>
           <Input
             id="investorAccountNumber"
-            value={identity?.accountNumber}
+            value={identity?.accountNumber || ""}
             className="border w-full p-2 rounded-lg text-xl"
             placeholder="KYC Account Number"
             type="text"
@@ -259,7 +315,7 @@ const EditClaims = ({ service }) => {
           <label htmlFor="investorWalletAddress">Investor Wallet Address</label>
           <Input
             id="investorWalletAddress"
-            value={identity?.address}
+            value={identity?.address || ""}
             className="border w-full p-2 rounded-lg text-xl"
             placeholder="Wallet Address"
             type="text"
