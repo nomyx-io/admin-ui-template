@@ -92,7 +92,11 @@ class BlockchainService {
     this.isTrustedIssuer = this.isTrustedIssuer.bind(this);
     this.getTrustedIssuerClaimTopics = this.getTrustedIssuerClaimTopics.bind(this);
     this.hasClaimTopic = this.hasClaimTopic.bind(this);
+
+    // Function Compliance
     this.setFunctionClaims = this.setFunctionClaims.bind(this);
+    this.getFunctionCompliances = this.getFunctionCompliances.bind(this);
+    this.getFunctionComplianceByFunctionId = this.getFunctionComplianceByFunctionId.bind(this);
 
     this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicAdded, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicAdded, claimTopic));
     this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicRemoved, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicRemoved, claimTopic));
@@ -728,6 +732,16 @@ class BlockchainService {
     const tx = await contract.setFunctionClaimRequirements(functionId, requiredClaimTopics, description);
     await tx.wait();
     return tx;
+  }
+
+  async getFunctionCompliances() {
+    const functionCompliance = await ParseClient.getRecords("FunctionCompliance", [], [], ["*"]);
+    return functionCompliance;
+  }
+
+  async getFunctionComplianceByFunctionId(functionId) {
+    const functionCompliance = await ParseClient.getFirstRecord("FunctionCompliance", ["functionId"], [functionId]);
+    return functionCompliance;
   }
 }
 

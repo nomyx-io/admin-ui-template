@@ -15,14 +15,24 @@ const FunctionClaimsPage = ({ service }) => {
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const fetchData = useCallback(async () => {
-    const data = PAYMENT_ROUTES.map((route) => ({
-      functionName: route.value,
-      functionLabel: route.label,
-      claimTopics: "",
-    }));
+    try {
+      const functionClaims = service.getFunctionCompliances && (await service.getFunctionCompliances());
 
-    setFunctionRules(data);
-  }, []);
+      const data = PAYMENT_ROUTES.map((route) => {
+        const matchedClaim = functionClaims?.find((t) => t?.attributes?.functionId === route.value);
+
+        return {
+          functionName: route.value,
+          functionLabel: route.label,
+          claimTopics: matchedClaim?.attributes?.requiredClaimTopics?.map((obj) => obj).join(",") || "" || "",
+        };
+      });
+
+      setFunctionRules(data);
+    } catch (error) {
+      console.error("Error fetching function compliance data:", error);
+    }
+  }, [service]);
 
   useEffect(() => {
     fetchData();

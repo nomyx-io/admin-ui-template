@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Breadcrumb, Button, Input } from "antd";
 import { Transfer } from "antd";
 import { ethers } from "ethers";
+import { flushSync } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -23,35 +24,32 @@ function SetFunctionClaims({ service }) {
   const { walletPreference, user, dfnsToken } = React.useContext(RoleContext);
 
   useEffect(() => {
-    const routeFunctionName = location.pathname.split("/")[2];
-    setFunctionaName(routeFunctionName || "");
-  }, [location.pathname]);
+    const routeFunctionName = location.pathname.split("/")[2] || "";
 
-  useEffect(() => {
+    // Set it in state (if needed elsewhere)
+    setFunctionaName(routeFunctionName);
+
+    // Immediately use it in async call
     (async function () {
-      if (service.getClaimTopics) {
+      if (service.getClaimTopics && service.getFunctionComplianceByFunctionId) {
         const result = await service.getClaimTopics();
-        //   const issuerData = await service?.getTrustedIssuersByObjectId(routeFunctionName);
-        //   setFunctionaName(issuerData?.attributes?.functionaName || "");
-        //   setDescription(issuerData?.attributes?.issuer || "");
-        let newArr = [];
-        setTargetKeys(newArr || "");
-        let data = [];
+        const selectedFunction = await service.getFunctionComplianceByFunctionId(routeFunctionName);
+        // setFunctionaName(selectedFunction?.attributes?.functionId || routeFunctionName);
+        setDescription(selectedFunction?.attributes?.description || "");
+        setTargetKeys((selectedFunction?.attributes?.requiredClaimTopics || []).map(String));
 
-        if (result) {
-          result.forEach((item) => {
-            data.push({
-              key: item.attributes?.topic,
-              displayName: item.attributes?.displayName,
-              id: item.id,
-              topic: item.attributes?.topic,
-            });
-          });
-          setClaimTopics(data);
-        }
+        const data = result.map((item) => ({
+          key: item.attributes?.topic,
+          displayName: item.attributes?.displayName,
+          id: item.id,
+          topic: item.attributes?.topic,
+        }));
+        setClaimTopics(data);
+        console.log("description value", description);
+        console.log("targetkeys value", targetKeys);
       }
     })();
-  }, [service]);
+  }, [location.pathname, service]);
 
   const onChange = (nextTargetKeys, direction, moveKeys) => {
     setTargetKeys(nextTargetKeys);
@@ -107,12 +105,6 @@ function SetFunctionClaims({ service }) {
               );
               if (completeError) throw new Error(completeError);
               await new Promise((resolve) => setTimeout(resolve, 6000)); // 4-second delay
-              //return completeResponse;
-              //   await service.updateTrustedIssuer({
-              //     functionaName: trimmedFunctionName,
-              //     description: description,
-              //     claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              //   });
               navigate("/admin");
             })(),
             {
@@ -134,11 +126,6 @@ function SetFunctionClaims({ service }) {
           .promise(
             (async () => {
               await service.setFunctionClaims(functionaName, description, targetKeys);
-              //   await service.updateTrustedIssuer({
-              //     functionaName: trimmedFunctionName,
-              //     description: description,
-              //     claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              //   });
             })(),
             {
               pending: "Setting Function Rules...",

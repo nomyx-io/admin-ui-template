@@ -75,7 +75,7 @@ const IdentitiesPage = ({ service }) => {
                     : "";
 
               const name = personaData?.data?.attributes?.name || "";
-              const status = name.split(".")[1]?.toUpperCase() || "";
+              const status = name.split(".")[1]?.toUpperCase() || identity.attributes.kycId ? "Approved" : "" || "";
 
               return {
                 displayName: `${firstName} ${lastName}`.trim(), // Concatenate first and last names
