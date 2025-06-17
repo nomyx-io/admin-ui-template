@@ -51,6 +51,11 @@ enum NomyxAction {
   ClearFilters,
   RefreshData,
   ImportData,
+
+  //Functions Claims
+  SetFunctionClaims,
+  UpdateFunctionClaims,
+  DeleteFunctionClaims,
 }
 
 enum WalletPreference {
@@ -64,3 +69,22 @@ enum LoginPreference {
 }
 
 export { NomyxEvent, NomyxAction, WalletPreference, LoginPreference };
+
+export const PAYMENT_ROUTES = [
+  {
+    label: "Basic Payment",
+    value: "ROUTE_PAYMENT_BASIC",
+  },
+  {
+    label: "Any Token Payment",
+    value: "ROUTE_PAYMENT_ANY_TOKEN",
+  },
+  {
+    label: "Registered Token Payment",
+    value: "ROUTE_PAYMENT_TOKEN_ONLY",
+  },
+  {
+    label: "Batch Token Payment",
+    value: "BATCH_ROUTE_PAYMENTS",
+  },
+];

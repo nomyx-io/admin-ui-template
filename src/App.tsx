@@ -22,6 +22,7 @@ import CreateTrustedIssuer from "./components/CreateTrustedIssuer.jsx";
 import DigitalIdentityDetailView from "./components/DigitalIdentityDetailPage.jsx";
 import EditClaims from "./components/EditClaims.jsx";
 import EditClaimsSummaryView from "./components/EditClaimsSummaryView.jsx";
+import FunctionClaimsPage from "./components/FunctionClaimsPage.jsx";
 import Home from "./components/Home.jsx";
 import IdentitiesPage from "./components/IdentitiesPage.jsx";
 import Layout from "./components/Layout";
@@ -29,6 +30,7 @@ import Login from "./components/LoginPage.jsx";
 import MintPage from "./components/MintPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
+import SetFunctionClaims from "./components/SetFunctionClaims.jsx";
 import TransactionHistoryPage from "./components/TransactionHistoryPage.jsx";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
@@ -713,6 +715,34 @@ function App() {
                       <Protected role={"CentralAuthority"} roles={role}>
                         {blockchainService ? (
                           <TransactionHistoryPage service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <Protected role={"CentralAuthority"} roles={role}>
+                        {blockchainService ? (
+                          <FunctionClaimsPage service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="/function-claims/:functionName/"
+                    element={
+                      <Protected role={"CentralAuthority"} roles={role}>
+                        {blockchainService ? (
+                          <SetFunctionClaims service={blockchainService} />
                         ) : (
                           <div className="flex justify-center items-center h-full">
                             <Spin tip="Initializing service..." />

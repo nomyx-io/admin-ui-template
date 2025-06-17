@@ -5,6 +5,7 @@ import * as ClaimTopicsRegistry from "../abi/IClaimTopicsRegistry.json";
 import * as IdentityFactory from "../abi/IdentityFactory.json";
 import * as IdentityRegistry from "../abi/IIdentityRegistry.json";
 import * as MinterFacet from "../abi/IMinterFacet.json";
+import * as TransferFacet from "../abi/ITransferFacet.json";
 import * as TrustedIssuersRegistry from "../abi/ITrustedIssuersRegistry.json";
 import ParseClient from "../services/ParseClient"; // Import the singleton instance
 import { NomyxEvent } from "../utils/Constants";
@@ -15,6 +16,7 @@ class BlockchainService {
   trustedIssuersRegistryAbi = TrustedIssuersRegistry.default.abi;
   identityFactoryAbi = IdentityFactory.default.abi;
   mintAbi = MinterFacet.default.abi;
+  transferAbi = TransferFacet.default.abi;
 
   constructor(provider, contractAddress, identityRegistryAddress) {
     this.contractAddress = contractAddress;
@@ -45,6 +47,7 @@ class BlockchainService {
     this.trustedIssuersRegistryService = new ethers.Contract(contractAddress, this.trustedIssuersRegistryAbi, contractProvider);
     this.identityFactoryService = new ethers.Contract(identityRegistryAddress, this.identityFactoryAbi, contractProvider);
     this.mintService = new ethers.Contract(contractAddress, this.mintAbi, contractProvider);
+    this.transferService = new ethers.Contract(contractAddress, this.transferAbi, contractProvider);
 
     // Mint Registry
     this.mint = this.mint.bind(this);
@@ -89,6 +92,11 @@ class BlockchainService {
     this.isTrustedIssuer = this.isTrustedIssuer.bind(this);
     this.getTrustedIssuerClaimTopics = this.getTrustedIssuerClaimTopics.bind(this);
     this.hasClaimTopic = this.hasClaimTopic.bind(this);
+
+    // Function Compliance
+    this.setFunctionClaims = this.setFunctionClaims.bind(this);
+    this.getFunctionCompliances = this.getFunctionCompliances.bind(this);
+    this.getFunctionComplianceByFunctionId = this.getFunctionComplianceByFunctionId.bind(this);
 
     this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicAdded, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicAdded, claimTopic));
     this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicRemoved, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicRemoved, claimTopic));
@@ -720,6 +728,23 @@ class BlockchainService {
 
   async createAddressBookEntry({ name, walletAddress, email, isInternal, createdBy }) {
     return await ParseClient.run("createAddressBookEntry", { name, walletAddress, email, isInternal, createdBy });
+  }
+
+  async setFunctionClaims(functionId, requiredClaimTopics, description) {
+    const contract = this.transferService.connect(this.signer);
+    const tx = await contract.setFunctionClaimRequirements(functionId, requiredClaimTopics, description);
+    await tx.wait();
+    return tx;
+  }
+
+  async getFunctionCompliances() {
+    const functionCompliance = await ParseClient.getRecords("FunctionCompliance", [], [], ["*"]);
+    return functionCompliance;
+  }
+
+  async getFunctionComplianceByFunctionId(functionId) {
+    const functionCompliance = await ParseClient.getFirstRecord("FunctionCompliance", ["functionId"], [functionId]);
+    return functionCompliance;
   }
 }
 

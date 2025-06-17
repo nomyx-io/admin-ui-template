@@ -74,6 +74,11 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
                 Transaction History
               </Link>
             </li>
+            <li>
+              <Link to="/admin" className="hover:underline">
+                Admin
+              </Link>
+            </li>
           </>
         )}
         {role.includes("TrustedIssuer") && (
