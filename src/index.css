@@ -170,6 +170,19 @@ nav ul li ul li a:hover {
   font-weight: 700;
   padding: 10px 20px;
 }
+.custom-delete-modal .ant-btn {
+  line-height: 10px;
+}
+.custom-delete-modal .ant-btn-dangerous {
+    border: none !important;
+    background-color: #6bc354d6 !important;
+    color: #fff !important;
+}
+.custom-delete-modal .ant-btn-default {
+    background-color: white;
+    border: 1px solid #ff000085;
+    color: #ff000085;
+}
 .ant-transfer-operation .ant-btn {
   border-radius: 5px;
 }

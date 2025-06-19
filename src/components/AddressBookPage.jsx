@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-import { Tabs } from "antd";
+import { Tabs, Modal } from "antd";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -75,18 +75,29 @@ const AddressBookPage = ({ service }) => {
     setActiveTab(key);
   };
 
-  const handleDeleteEntry = async (record) => {
-    const { name, walletAddress } = record;
-    try {
-      await toast.promise(ParseClient.deleteRecord("AddressBook", record.id), {
-        pending: `Deleting ${name}...`,
-        success: `${name} has been successfully deleted.`,
-        error: `Failed to delete ${name}. Please try again.`,
-      });
-      setRefreshTrigger((prev) => !prev);
-    } catch (error) {
-      console.error("Error deleting address book entry:", error);
-    }
+  const handleDeleteEntry = (record) => {
+    const { name, id: objectId } = record;
+
+    Modal.confirm({
+      title: `Are you sure you want to delete "${name}"?`,
+      content: "This action cannot be undone.",
+      okText: "Confirm",
+      cancelText: "Cancel",
+      okType: "danger",
+      className: "custom-delete-modal",
+      onOk: async () => {
+        try {
+          await toast.promise(service.deleteAddressBookEntry({ objectId }), {
+            pending: `Deleting ${name}...`,
+            success: `${name} has been successfully deleted.`,
+            error: `Failed to delete ${name}. Please try again.`,
+          });
+          setRefreshTrigger((prev) => !prev);
+        } catch (error) {
+          console.error("Error deleting address book entry:", error);
+        }
+      },
+    });
   };
 
   const columns = [
@@ -102,12 +113,12 @@ const AddressBookPage = ({ service }) => {
   ];
 
   const actions = [
-    { label: "View", name: NomyxAction.ViewAddressBookEntry },
+    //{ label: "View", name: NomyxAction.ViewAddressBookEntry },
     { label: "Edit", name: NomyxAction.EditAddressBookEntry },
     {
       label: "Delete",
       name: NomyxAction.DeleteAddressBookEntry,
-      confirmation: "Are you sure you want to delete this address book entry?",
+      //confirmation: "Are you sure you want to delete this address book entry?",
     },
   ];
 
@@ -118,11 +129,11 @@ const AddressBookPage = ({ service }) => {
       case NomyxAction.CreateAddressBookEntry:
         navigate("/address-book/create");
         break;
-      case NomyxAction.ViewAddressBookEntry:
-        toast.info(`Viewing entry for ${record.name} - To be implemented`);
-        break;
+      // case NomyxAction.ViewAddressBookEntry:
+      //   toast.info(`Viewing entry for ${record.name} - To be implemented`);
+      //   break;
       case NomyxAction.EditAddressBookEntry:
-        toast.info(`Editing entry for ${record.name} - To be implemented`);
+        navigate("/address-book/edit/" + record.id);
         break;
       case NomyxAction.DeleteAddressBookEntry:
         await handleDeleteEntry(record);
@@ -141,7 +152,7 @@ const AddressBookPage = ({ service }) => {
             title="Address Book"
             description="Manage saved wallet addresses for internal and external users"
             columns={columns}
-            // actions={actions}
+            actions={actions}
             globalActions={globalActions}
             search={true}
             data={addressBookEntries}
