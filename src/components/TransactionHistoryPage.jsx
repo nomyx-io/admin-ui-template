@@ -1,298 +1,225 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
-import { Tabs, DatePicker, Select, Input } from "antd";
+import { Tabs, DatePicker, Input, Button } from "antd";
+import Parse from "parse";
 import { toast } from "react-toastify";
 
-import ObjectList from "./ObjectList";
-import ParseClient from "../services/ParseClient";
-import { NomyxAction } from "../utils/Constants";
+import ObjectList from "./ObjectList"; // Replace with your actual component
 
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
-const { Option } = Select;
 
-const TransactionHistoryPage = ({ service }) => {
+const TransactionHistoryPage = (service) => {
+  const [rawTransactions, setRawTransactions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [activeTab, setActiveTab] = useState("Transactions");
-  const [refreshTrigger, setRefreshTrigger] = useState(false);
-  const [filters, setFilters] = useState({
+
+  // Separate state for filters (bound to inputs)
+  const [localFilters, setLocalFilters] = useState({
     dateRange: null,
-    transactionType: "",
-    status: "",
+    searchTerm: "",
     minAmount: "",
     maxAmount: "",
-    searchTerm: "",
   });
 
   const fetchTransactionData = useCallback(async () => {
     try {
-      // Fetch transactions from Parse
-      const transactionRecords = await ParseClient.getRecords(
-        "TransactionHistory",
-        [], // No where conditions initially - we'll apply filters separately
-        [],
-        ["user", "toUser"], // Include user pointers
-        1000,
-        0,
-        "timestamp",
-        "desc"
-      );
+      const transactionRecords = await Parse.Cloud.run("getTransactionHistoryRecords");
 
-      if (!transactionRecords) {
-        console.log("No TransactionHistory records found - make sure the Parse class exists");
+      if (!transactionRecords || transactionRecords.length === 0) {
+        setRawTransactions([]);
         setTransactions([]);
         return;
       }
 
-      const formattedTransactions = transactionRecords.map((transaction) => {
-        const userPointer = transaction.get("user");
-        const firstName = userPointer?.get("firstName") ?? "";
-        const lastName = userPointer?.get("lastName") ?? "";
-        const userName = firstName || lastName ? `${firstName} ${lastName}`.trim() : "Unknown User";
-
-        return {
-          id: transaction.id,
-          amount: transaction.get("amount") || 0,
-          token: transaction.get("token") || "ETH",
-          timestamp: transaction.get("timestamp")
-            ? transaction.get("timestamp").toISOString().split("T")[0] + " " + transaction.get("timestamp").toISOString().split("T")[1].split(".")[0]
-            : "",
-          transactionHash: transaction.get("transactionHash") || "",
-          fromAddress: transaction.get("fromAddress") || "",
-          toAddress: transaction.get("toAddress") || "",
-          status: transaction.get("status") || "Unknown",
-          transactionType: transaction.get("transactionType") || "Transfer",
-          fee: transaction.get("fee") || 0,
-          userName,
-          userEmail: transaction.get("user")?.get("email") || "",
-          toUserName: transaction.get("toUser")?.get("username") || "External",
-          bridgeTransactionId: transaction.get("bridgeTransactionId") || "",
-          kycInquiryId: transaction.get("kycInquiryId") || "",
-          gasUsed: transaction.get("gasUsed") || 0,
-          gasPrice: transaction.get("gasPrice") || "0",
-          blockNumber: transaction.get("blockNumber") || 0,
-          networkId: transaction.get("networkId") || "",
-          userId: transaction.get("user")?.id || "",
-        };
-      });
-
-      // Apply filters
-      if (filters.dateRange && filters.dateRange.length === 2) {
-        const [startDate, endDate] = filters.dateRange;
-        formattedTransactions = formattedTransactions.filter((tx) => {
-          const txDate = new Date(tx.timestamp);
-          return txDate >= startDate && txDate <= endDate;
-        });
-      }
-
-      if (filters.transactionType) {
-        formattedTransactions = formattedTransactions.filter((tx) => tx.transactionType === filters.transactionType);
-      }
-
-      if (filters.status) {
-        formattedTransactions = formattedTransactions.filter((tx) => tx.status === filters.status);
-      }
-
-      if (filters.minAmount) {
-        formattedTransactions = formattedTransactions.filter((tx) => tx.amount >= parseFloat(filters.minAmount));
-      }
-
-      if (filters.maxAmount) {
-        formattedTransactions = formattedTransactions.filter((tx) => tx.amount <= parseFloat(filters.maxAmount));
-      }
-
-      if (filters.searchTerm) {
-        const searchLower = filters.searchTerm.toLowerCase();
-        formattedTransactions = formattedTransactions.filter(
-          (tx) =>
-            tx.userName.toLowerCase().includes(searchLower) ||
-            tx.userEmail.toLowerCase().includes(searchLower) ||
-            tx.transactionHash.toLowerCase().includes(searchLower) ||
-            tx.fromAddress.toLowerCase().includes(searchLower) ||
-            tx.toAddress.toLowerCase().includes(searchLower) ||
-            tx.bridgeTransactionId.toLowerCase().includes(searchLower) ||
-            tx.kycInquiryId.toLowerCase().includes(searchLower)
-        );
-      }
-
-      console.log(`Fetched and filtered ${formattedTransactions.length} transactions`);
-      setTransactions(formattedTransactions);
+      // No need to format again, already done in the cloud function
+      setRawTransactions(transactionRecords);
+      setTransactions(transactionRecords);
     } catch (error) {
       console.error("Error fetching transaction data:", error);
-      toast.error("Failed to fetch transaction data. Make sure TransactionHistory class exists in Parse.");
+      toast.error("Failed to fetch transaction data.");
     }
-  }, [filters]);
+  }, []);
 
   useEffect(() => {
     fetchTransactionData();
-  }, [fetchTransactionData, refreshTrigger]);
+  }, [fetchTransactionData]);
 
-  const handleTabChange = (key) => {
-    setActiveTab(key);
-  };
+  const applyFilters = useCallback(() => {
+    const { dateRange, searchTerm, minAmount, maxAmount } = localFilters;
+    let filtered = [...rawTransactions];
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
+    console.log("Applying filters:", { dateRange, searchTerm, minAmount, maxAmount });
+    console.log("Raw transactions count:", rawTransactions.length);
 
-  const clearFilters = () => {
-    setFilters({
+    if (dateRange?.length === 2) {
+      const [start, end] = dateRange;
+      filtered = filtered.filter((tx) => {
+        const txDate = new Date(tx.timestamp);
+        return txDate >= start && txDate <= end;
+      });
+      console.log("After date filter:", filtered.length);
+    }
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(
+        (tx) =>
+          (tx.userName || "").toLowerCase().includes(term) ||
+          (tx.userEmail || "").toLowerCase().includes(term) ||
+          (tx.transactionHash || "").toLowerCase().includes(term) ||
+          (tx.fromAddress || "").toLowerCase().includes(term) ||
+          (tx.toAddress || "").toLowerCase().includes(term) ||
+          (tx.bridgeTransactionId || "").toLowerCase().includes(term) ||
+          (tx.kycInquiryId || "").toLowerCase().includes(term)
+      );
+      console.log("After search filter:", filtered.length, "Search term:", term);
+    }
+
+    if (minAmount.trim()) {
+      const min = parseFloat(minAmount);
+      if (!isNaN(min)) {
+        filtered = filtered.filter((tx) => tx.amount / 1_000_000 >= min);
+        console.log("After min amount filter:", filtered.length);
+      }
+    }
+
+    if (maxAmount.trim()) {
+      const max = parseFloat(maxAmount);
+      if (!isNaN(max)) {
+        filtered = filtered.filter((tx) => tx.amount / 1_000_000 <= max);
+        console.log("After max amount filter:", filtered.length);
+      }
+    }
+
+    console.log("Final filtered count:", filtered.length);
+    setTransactions([...filtered]); // Force new array reference
+  }, [rawTransactions, localFilters]);
+
+  // Auto-apply filters when localFilters or rawTransactions change
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  const handleInputChange = useCallback((key, value) => {
+    setLocalFilters((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setLocalFilters({
       dateRange: null,
-      transactionType: "",
-      status: "",
+      searchTerm: "",
       minAmount: "",
       maxAmount: "",
-      searchTerm: "",
     });
-  };
+    setTransactions(rawTransactions);
+  }, [rawTransactions]);
 
-  const columns = [
-    { label: "User", name: "userName" },
-    { label: "Email", name: "userEmail" },
-    { label: "Amount", name: "amount", render: (record) => `${record.amount} ${record.token}` },
-    // { label: "Type", name: "transactionType" },
-    // { label: "Status", name: "status" },
-    { label: "From", name: "fromAddress", width: "200px" },
-    { label: "To", name: "toAddress", width: "200px" },
-    { label: "Recipient", name: "toUserName" },
-    { label: "Fee", name: "fee", render: (record) => `${record.fee} ${record.token}` },
-    { label: "Timestamp", name: "timestamp" },
-    { label: "Tx Hash", name: "transactionHash", width: "150px" },
-    // { label: "Bridge ID", name: "bridgeTransactionId" },
-    // { label: "KYC ID", name: "kycInquiryId" },
-  ];
+  // const handleAction = async (event, action, record) => {
+  //   switch (action) {
+  //     case NomyxAction.ViewTransaction:
+  //       toast.info(`Viewing transaction ${record.transactionHash} - To be implemented`);
+  //       break;
+  //     case NomyxAction.ExportTransaction:
+  //       toast.info(`Exporting transaction ${record.transactionHash} - To be implemented`);
+  //       break;
+  //     case NomyxAction.ExportAllTransactions:
+  //       toast.info("Exporting all transactions - To be implemented");
+  //       break;
+  //     case NomyxAction.ClearFilters:
+  //       clearFilters();
+  //       toast.success("Filters cleared");
+  //       break;
+  //     default:
+  //       console.log("Action not handled: ", action);
+  //       break;
+  //   }
+  // };
 
-  const actions = [
-    { label: "View Details", name: NomyxAction.ViewTransaction },
-    { label: "Export", name: NomyxAction.ExportTransaction },
-  ];
-
-  const globalActions = [
-    // { label: "Export All", name: NomyxAction.ExportAllTransactions },
-    { label: "Clear Filters", name: NomyxAction.ClearFilters },
-  ];
-
-  const handleAction = async (event, action, record) => {
-    switch (action) {
-      case NomyxAction.ViewTransaction:
-        toast.info(`Viewing transaction ${record.transactionHash} - To be implemented`);
-        break;
-      case NomyxAction.ExportTransaction:
-        toast.info(`Exporting transaction ${record.transactionHash} - To be implemented`);
-        break;
-      case NomyxAction.ExportAllTransactions:
-        toast.info("Exporting all transactions - To be implemented");
-        break;
-      case NomyxAction.ClearFilters:
-        clearFilters();
-        toast.success("Filters cleared");
-        break;
-      default:
-        console.log("Action not handled: ", action);
-        break;
-    }
-  };
-
-  const FilterSection = () => (
-    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
-          <RangePicker value={filters.dateRange} onChange={(dates) => handleFilterChange("dateRange", dates)} className="w-full" />
+  // Memoize the FilterSection to prevent unnecessary re-renders
+  const FilterSection = useMemo(
+    () => (
+      <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+            <RangePicker value={localFilters.dateRange} onChange={(val) => handleInputChange("dateRange", val)} className="w-full" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <Input
+              value={localFilters.searchTerm}
+              placeholder="User, email, hash, address..."
+              onChange={(e) => handleInputChange("searchTerm", e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Min Amount</label>
+            <Input type="number" value={localFilters.minAmount} onChange={(e) => handleInputChange("minAmount", e.target.value)} className="w-full" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Max Amount</label>
+            <Input type="number" value={localFilters.maxAmount} onChange={(e) => handleInputChange("maxAmount", e.target.value)} className="w-full" />
+          </div>
         </div>
 
-        {/* <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Type</label>
-          <Select
-            value={filters.transactionType}
-            onChange={(value) => handleFilterChange("transactionType", value)}
-            className="w-full"
-            allowClear
-            placeholder="Select type"
-          >
-            <Option value="Transfer">Transfer</Option>
-            <Option value="On-Ramp">On-Ramp</Option>
-            <Option value="Off-Ramp">Off-Ramp</Option>
-            <Option value="Swap">Swap</Option>
-          </Select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <Select
-            value={filters.status}
-            onChange={(value) => handleFilterChange("status", value)}
-            className="w-full"
-            allowClear
-            placeholder="Select status"
-          >
-            <Option value="Completed">Completed</Option>
-            <Option value="Pending">Pending</Option>
-            <Option value="Failed">Failed</Option>
-            <Option value="Cancelled">Cancelled</Option>
-          </Select>
-        </div> */}
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-          <Input
-            value={filters.searchTerm}
-            onChange={(e) => handleFilterChange("searchTerm", e.target.value)}
-            placeholder="User, email, hash, address..."
-            className="w-full"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Min Amount</label>
-          <Input
-            type="number"
-            value={filters.minAmount}
-            onChange={(e) => handleFilterChange("minAmount", e.target.value)}
-            placeholder="0.0"
-            className="w-full"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Max Amount</label>
-          <Input
-            type="number"
-            value={filters.maxAmount}
-            onChange={(e) => handleFilterChange("maxAmount", e.target.value)}
-            placeholder="1000.0"
-            className="w-full"
-          />
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={clearFilters} className="leading-[10px]">
+            Clear Filters
+          </Button>
         </div>
       </div>
-    </div>
+    ),
+    [localFilters, handleInputChange, clearFilters]
+  );
+
+  // Memoize columns to prevent re-creation on every render
+  const columns = useMemo(
+    () => [
+      { label: "User", name: "userName" },
+      { label: "Email", name: "userEmail" },
+      {
+        label: "Amount",
+        name: "amount",
+        render: (record) => `$${(record.amount / 1_000_000).toFixed(2)}`,
+      },
+      { label: "From", name: "fromAddress" },
+      { label: "To", name: "toAddress" },
+      //{ label: "Recipient", name: "toUserName" },
+      { label: "Fee", name: "fee", render: (record) => `${record.fee}%` },
+      {
+        label: "Timestamp",
+        name: "timestamp",
+        render: (record) => (record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"),
+      },
+      {
+        label: "Tx Hash",
+        name: "transactionHash",
+        render: (record) => (
+          <a href={`${process.env.REACT_APP_ETHERSCAN_BASE_URL}${record.transactionHash}`} target="_blank" rel="noopener noreferrer">
+            {record.transactionHash}
+          </a>
+        ),
+      },
+    ],
+    []
   );
 
   return (
-    <>
-      <Tabs activeKey={activeTab} onChange={handleTabChange}>
-        <TabPane tab="Transaction History" key="Transactions">
-          <div>
-            <FilterSection />
-            <ObjectList
-              title="Transaction History"
-              description="Complete ledger of all transactions with filtering capabilities"
-              columns={columns}
-              //   actions={actions}
-              globalActions={globalActions}
-              search={false} // We have custom search in filters
-              data={transactions}
-              pageSize={20}
-              onAction={handleAction}
-              onGlobalAction={handleAction}
-            />
-          </div>
-        </TabPane>
-      </Tabs>
-    </>
+    <Tabs activeKey={activeTab} onChange={setActiveTab}>
+      <TabPane tab="Transaction History" key="Transactions">
+        {FilterSection}
+        <ObjectList
+          key={`transactions-${transactions.length}`}
+          title="Transaction History"
+          description="Complete ledger of all transactions"
+          columns={columns}
+          data={transactions}
+          pageSize={20}
+        />
+      </TabPane>
+    </Tabs>
   );
 };
 

@@ -730,6 +730,19 @@ class BlockchainService {
     return await ParseClient.run("createAddressBookEntry", { name, walletAddress, email, isInternal, createdBy });
   }
 
+  async getAddressBookEntry({ objectId }) {
+    const claimTopic = await ParseClient.getFirstRecord("AddressBook", ["objectId"], [objectId], ["*"]);
+    return claimTopic;
+  }
+
+  async updateAddressBookEntry({ objectId, name, walletAddress, email, isInternal }) {
+    return await ParseClient.run("updateAddressBookEntry", { objectId, name, walletAddress, email, isInternal });
+  }
+
+  async deleteAddressBookEntry({ objectId }) {
+    return await ParseClient.run("deleteAddressBookEntry", { objectId });
+  }
+
   async setFunctionClaims(functionId, requiredClaimTopics, description) {
     const contract = this.transferService.connect(this.signer);
     const tx = await contract.setFunctionClaimRequirements(functionId, requiredClaimTopics, description);

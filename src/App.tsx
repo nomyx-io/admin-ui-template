@@ -14,9 +14,9 @@ import { publicProvider } from "wagmi/providers/public";
 
 import AddressBookPage from "./components/AddressBookPage.jsx";
 import ClaimTopicsPage from "./components/ClaimTopicsPage.jsx";
-import CreateAddressEntry from "./components/CreateAddressEntry.jsx";
 import CreateClaimTopic from "./components/CreateClaimTopic.jsx";
 import CreateDigitalId from "./components/CreateDigitalId.jsx";
+import CreateOrEditAddressBookEntry from "./components/CreateOrEditAddressBookEntry.jsx";
 import CreatePassword from "./components/CreatePasswordPage.jsx";
 import CreateTrustedIssuer from "./components/CreateTrustedIssuer.jsx";
 import DigitalIdentityDetailView from "./components/DigitalIdentityDetailPage.jsx";
@@ -700,7 +700,21 @@ function App() {
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
                         {blockchainService ? (
-                          <CreateAddressEntry service={blockchainService} />
+                          <CreateOrEditAddressBookEntry service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="/address-book/edit/:id"
+                    element={
+                      <Protected role={"CentralAuthority"} roles={role}>
+                        {blockchainService ? (
+                          <CreateOrEditAddressBookEntry service={blockchainService} />
                         ) : (
                           <div className="flex justify-center items-center h-full">
                             <Spin tip="Initializing service..." />

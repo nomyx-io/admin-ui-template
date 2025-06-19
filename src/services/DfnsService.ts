@@ -628,7 +628,7 @@ class DfnsService {
       return { completeResponse: null, error: error.message };
     }
   }
-  
+
   public async initiateSetFunctionClaimRequirements(
     functionId: string,
     requiredClaimTopics: number[],
@@ -685,7 +685,7 @@ class DfnsService {
       return { completeResponse: null, error: error.message };
     }
   }
-  
+
   public async initiateTransferOwnership(newOwnerAddress: string, walletId: string, dfnsToken: string) {
     if (!newOwnerAddress || !walletId || !dfnsToken) {
       throw new Error("Missing required parameters for TransferOwnership.");

@@ -1,20 +1,43 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 
 import { Breadcrumb, Button, Input, Switch } from "antd";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
 import { isEthereumAddress } from "../utils";
 
-function CreateAddressBookEntry({ service }) {
+function CreateOrEditAddressBookEntry({ service }) {
   const navigate = useNavigate();
   const { user } = useContext(RoleContext);
+  const { id: entryId } = useParams(); // this will capture /edit/:id
+
+  const isEditMode = !!entryId;
 
   const [name, setName] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
   const [email, setEmail] = useState("");
   const [isInternal, setIsInternal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isEditMode) {
+      setLoading(true);
+      service
+        .getAddressBookEntry({ objectId: entryId })
+        .then((entry) => {
+          setName(entry.get("name") || "");
+          setWalletAddress(entry.get("walletAddress") || "");
+          setEmail(entry.get("email") || "");
+          setIsInternal(entry.get("isInternal") || false);
+        })
+        .catch((err) => {
+          toast.error("Failed to load address book entry.");
+          console.error(err);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [entryId, isEditMode, service]);
 
   const validateFields = () => {
     if (!name.trim()) {
@@ -39,25 +62,30 @@ function CreateAddressBookEntry({ service }) {
   const handleSave = async () => {
     if (!validateFields()) return;
     const currentUserId = user?.objectId;
+
+    const payload = {
+      name: name.trim(),
+      walletAddress: walletAddress.trim(),
+      email: email.trim(),
+      isInternal,
+    };
+
+    if (isEditMode) {
+      payload["objectId"] = entryId;
+    } else {
+      payload["createdBy"] = currentUserId;
+    }
+
     try {
-      toast
-        .promise(
-          service.createAddressBookEntry({
-            name: name.trim(),
-            walletAddress: walletAddress.trim(),
-            email: email.trim(),
-            isInternal,
-            createdBy: currentUserId,
-          }),
-          {
-            pending: "Creating Address Book Entry...",
-            success: "Address Entry created successfully",
-            error: "Failed to create address book entry",
-          }
-        )
-        .then(() => {
-          navigate("/address-book");
-        });
+      const promise = isEditMode ? service.updateAddressBookEntry(payload) : service.createAddressBookEntry(payload);
+
+      await toast.promise(promise, {
+        pending: isEditMode ? "Updating entry..." : "Creating entry...",
+        success: isEditMode ? "Address Book Entry updated successfully" : "Address Book Entry created successfully",
+        error: isEditMode ? "Failed to update entry" : "Failed to create entry",
+      });
+
+      navigate("/address-book");
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred");
@@ -68,9 +96,9 @@ function CreateAddressBookEntry({ service }) {
     <div>
       <Breadcrumb
         className="bg-transparent"
-        items={[{ title: <Link to="/">Home</Link> }, { title: <Link to="/address-book">Address Book</Link> }, { title: "Add" }]}
+        items={[{ title: <Link to="/">Home</Link> }, { title: <Link to="/address-book">Address Book</Link> }, { title: isEditMode ? "Edit" : "Add" }]}
       />
-      <p className="text-xl p-6">Create Address Book Entry</p>
+      <p className="text-xl p-6">{isEditMode ? "Edit Address Book Entry" : "Create Address Book Entry"}</p>
       <hr />
       <div className="p-3 mt-2 space-y-6">
         {/* Name */}
@@ -83,6 +111,7 @@ function CreateAddressBookEntry({ service }) {
             onChange={(e) => setName(e.target.value)}
             maxLength={64}
             className="border w-full p-2 rounded-lg text-xl"
+            disabled={loading}
           />
         </div>
 
@@ -96,6 +125,7 @@ function CreateAddressBookEntry({ service }) {
             onChange={(e) => setWalletAddress(e.target.value)}
             maxLength={64}
             className="border w-full p-2 rounded-lg text-xl"
+            disabled={loading}
           />
         </div>
 
@@ -108,19 +138,20 @@ function CreateAddressBookEntry({ service }) {
             placeholder="Enter Email"
             onChange={(e) => setEmail(e.target.value)}
             className="border w-full p-2 rounded-lg text-xl"
+            disabled={loading}
           />
         </div>
 
         {/* isInternal */}
         <div className="flex items-center gap-3">
           <label htmlFor="isInternal">Is Internal?</label>
-          <Switch id="isInternal" checked={isInternal} onChange={setIsInternal} />
+          <Switch id="isInternal" checked={isInternal} onChange={setIsInternal} disabled={loading} />
         </div>
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <Button className="bg-[#7F56D9] text-white font-semibold h-11 rounded" onClick={handleSave}>
-            Save Address Book Entry
+          <Button className="bg-[#7F56D9] text-white font-semibold h-11 rounded" onClick={handleSave} loading={loading}>
+            {isEditMode ? "Update Entry" : "Save Address Book Entry"}
           </Button>
         </div>
       </div>
@@ -128,4 +159,4 @@ function CreateAddressBookEntry({ service }) {
   );
 }
 
-export default CreateAddressBookEntry;
+export default CreateOrEditAddressBookEntry;
