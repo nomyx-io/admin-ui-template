@@ -213,7 +213,7 @@ const TrustedIssuersPage = ({ service }) => {
       width: "25%",
       render: (row) => (
         <div className="text-[#272b30]">
-          <div className="text-base">{row.trustedIssuer || "<No Name>"}</div>
+          <div>{row.trustedIssuer || "<No Name>"}</div>
         </div>
       ),
     },
