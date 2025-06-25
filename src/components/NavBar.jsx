@@ -42,19 +42,6 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
               </Link>
             </li>
             <li>
-              <span>
-                <a
-                  href={process.env.REACT_APP_MINTIFY_UI_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline flex items-center"
-                >
-                  Mint
-                  <span className="text-[#7F56D9]">↗</span>
-                </a>
-              </span>
-            </li>
-            <li>
               <Link to="/topics" className="hover:underline">
                 Compliance Rules
               </Link>
