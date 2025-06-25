@@ -143,10 +143,10 @@ function CreateOrEditAddressBookEntry({ service }) {
         </div>
 
         {/* isInternal */}
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           <label htmlFor="isInternal">Is Internal?</label>
           <Switch id="isInternal" checked={isInternal} onChange={setIsInternal} disabled={loading} />
-        </div>
+        </div> */}
 
         {/* Save Button */}
         <div className="flex justify-end">
