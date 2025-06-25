@@ -109,7 +109,7 @@ const AddressBookPage = ({ service }) => {
     // { label: "Tags", name: "tags" },
     // { label: "Last Used", name: "lastUsed" },
     { label: "Created By", name: "createdBy" },
-    { label: "Created", name: "createdAt" },
+    { label: "Created Date", name: "createdAt" },
   ];
 
   const actions = [
