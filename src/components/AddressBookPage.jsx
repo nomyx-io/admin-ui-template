@@ -105,11 +105,11 @@ const AddressBookPage = ({ service }) => {
     { label: "Email", name: "email" },
     { label: "Wallet Address", name: "walletAddress", width: "300px" },
     // { label: "Type", name: "walletType" },
-    { label: "Internal", name: "isInternal", render: (record) => (record.isInternal ? "Yes" : "No") },
+    // { label: "Internal", name: "isInternal", render: (record) => (record.isInternal ? "Yes" : "No") },
     // { label: "Tags", name: "tags" },
     // { label: "Last Used", name: "lastUsed" },
     { label: "Created By", name: "createdBy" },
-    { label: "Created", name: "createdAt" },
+    { label: "Created Date", name: "createdAt" },
   ];
 
   const actions = [
