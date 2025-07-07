@@ -48,7 +48,10 @@ function CreateClaimTopic({ service }) {
     }
 
     try {
-      if (walletPreference === WalletPreference.MANAGED) {
+      // Default to PRIVATE wallet preference if not set
+      const effectiveWalletPreference = walletPreference ?? WalletPreference.PRIVATE;
+
+      if (effectiveWalletPreference === WalletPreference.MANAGED) {
         // Handle MANAGED wallet preference using DFNSService
         toast
           .promise(
@@ -83,16 +86,24 @@ function CreateClaimTopic({ service }) {
           .catch((error) => {
             console.error("Error after attempting to create compliance rule:", error);
           });
-      } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
+      } else {
+        // Handle PRIVATE wallet preference (or null/default case)
+        console.log(`[CreateClaimTopic] Using ${effectiveWalletPreference === WalletPreference.PRIVATE ? "PRIVATE" : "DEFAULT"} wallet mode`);
         toast
           .promise(
             (async () => {
-              await service.addClaimTopic(hiddenName);
-              await service.updateClaimTopic({
-                topic: String(hiddenName),
-                displayName: trimmedDisplayName,
-              });
+              console.log(`[CreateClaimTopic] Calling service.addClaimTopic(${hiddenName}, "${trimmedDisplayName}")`);
+              await service.addClaimTopic(hiddenName, trimmedDisplayName);
+
+              // Only call updateClaimTopic if the service has this method
+              if (typeof service.updateClaimTopic === "function") {
+                await service.updateClaimTopic({
+                  topic: String(hiddenName),
+                  displayName: trimmedDisplayName,
+                });
+              } else {
+                console.log(`[CreateClaimTopic] updateClaimTopic method not available, skipping`);
+              }
             })(),
             {
               pending: "Creating Compliance Rule...",

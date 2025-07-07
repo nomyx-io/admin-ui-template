@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 
-import { useDisconnect } from "wagmi";
+// Removed wagmi - using blockchain-agnostic approach
 
 const AutoLogout = () => {
-  const { disconnect } = useDisconnect();
   const [expirationTime, setExpirationTime] = useState<number | null>(null);
   const [hasLoggedOut, setHasLoggedOut] = useState(false);
-  const [waitingForToken, setWaitingForToken] = useState(true); // NEW: Wait until tokenExpiration exists
+  const [waitingForToken, setWaitingForToken] = useState(true);
 
   useEffect(() => {
     const waitForToken = setInterval(() => {
@@ -44,7 +43,7 @@ const AutoLogout = () => {
     //console.log(`✅ AutoLogout initialized - Token expires at: ${new Date(tokenExp).toLocaleTimeString()} (${tokenExp})`);
 
     const timeRemaining = tokenExp - Date.now();
-    console.log(`⏳ Time remaining: ${Math.max(Math.round(timeRemaining / 1000), 0)}s`);
+    // console.log(`⏳ Time remaining: ${Math.max(Math.round(timeRemaining / 1000), 0)}s`);
 
     if (timeRemaining <= 0) {
       console.log("🚨 Token expired! Logging out...");
@@ -61,9 +60,8 @@ const AutoLogout = () => {
       return;
     }
 
-    console.log("🚨 Logging out...");
+    console.log("🚨 Auto-logout triggered - blockchain-agnostic session expired");
     setHasLoggedOut(true);
-    disconnect();
 
     localStorage.removeItem("sessionToken");
     localStorage.removeItem("tokenExpiration");

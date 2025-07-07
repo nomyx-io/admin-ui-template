@@ -12,12 +12,16 @@ const parseInitialize = () => {
   }
 
   Parse.initialize(appId, jsKey);
-  Parse.serverURL = `${serverURL}/parse`;
+  if (!serverURL.endsWith("/parse")) {
+    Parse.serverURL = serverURL + "/parse";
+  } else {
+    Parse.serverURL = serverURL;
+  }
 
   // Middleware: Automatically use the session token (JWT) for all requests
   const sessionToken = localStorage.getItem("sessionToken");
   if (sessionToken) {
-    Parse.User.become(sessionToken).catch((error) => {
+    Parse.User.become(sessionToken).catch((error: any) => {
       console.error("Error becoming user with sessionToken:", error);
     });
   }

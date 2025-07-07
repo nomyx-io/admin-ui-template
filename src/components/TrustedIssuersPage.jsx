@@ -80,15 +80,26 @@ const TrustedIssuersPage = ({ service }) => {
     let data = [];
     if (issuers) {
       issuers.forEach((item) => {
-        const claimTopicsString = item.attributes.claimTopics?.map((obj) => obj["topic"]).join(",") || "N/A";
+        // Add defensive checks to prevent undefined property access
+        if (!item || !item.attributes) {
+          console.warn("[TrustedIssuersPage] Skipping malformed issuer item:", item);
+          return;
+        }
+
+        const { attributes } = item;
+        const claimTopicsString = attributes.claimTopics?.map((obj) => obj["topic"]).join(",") || "N/A";
+
         data.push({
-          id: item.id,
+          id: item.id || "unknown",
           claimTopics: claimTopicsString,
-          address: item.attributes.issuer,
-          trustedIssuer: item.attributes.verifierName,
+          address: attributes.issuer || "N/A",
+          trustedIssuer: attributes.verifierName || "Unknown Issuer",
         });
       });
       setTrustedIssuers(data);
+    } else {
+      console.warn("[TrustedIssuersPage] No trusted issuers returned from service");
+      setTrustedIssuers([]);
     }
   }, [service]);
 
@@ -138,6 +149,27 @@ const TrustedIssuersPage = ({ service }) => {
           });
       } else if (walletPreference === WalletPreference.PRIVATE) {
         // Handle PRIVATE wallet preference
+        toast
+          .promise(
+            (async () => {
+              await service.removeTrustedIssuer(issuer);
+              fetchData();
+            })(),
+            {
+              pending: "Removing Trusted Issuer...",
+              success: `Successfully Removed Trusted Issuer ${issuer}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while removing Trusted Issuer ${issuer}`}</div>;
+                },
+              },
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to remove Trusted Issuer:", error);
+          });
+      } else {
+        // Handle case where wallet is not connected - use service directly
         toast
           .promise(
             (async () => {

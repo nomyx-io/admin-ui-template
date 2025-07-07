@@ -78,6 +78,10 @@ const isEthereumAddress = (address) => {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 };
 
+const isStellarAddress = (address) => {
+  return /^G[A-Z2-7]{55}$/.test(address);
+};
+
 const generateRandomString = (length) => {
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -95,4 +99,4 @@ const awaitTimeout = (delay, reason) =>
     }, delay)
   );
 
-export { getValue, recursiveSearch, isAlphanumeric, isAlphanumericAndSpace, isEthereumAddress, generateRandomString, awaitTimeout };
+export { getValue, recursiveSearch, isAlphanumeric, isAlphanumericAndSpace, isEthereumAddress, isStellarAddress, generateRandomString, awaitTimeout };

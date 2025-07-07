@@ -18,15 +18,19 @@ import DfnsService from "../services/DfnsService";
 import { WalletPreference } from "../utils/Constants";
 
 // Validation Schema
-const validationSchema = yup.object().shape({
-  nftTitle: yup.string().required("NFT Title is required"),
-  description: yup.string().required("Description is required"),
-  mintAddress: yup
-    .string()
-    .required("Mint Address is required")
-    .matches(/^0x[a-fA-F0-9]{40}$/, "Mint Address must be a valid wallet address"),
-  price: yup.string().required("Price is required"),
-});
+const createValidationSchema = (service) =>
+  yup.object().shape({
+    nftTitle: yup.string().required("NFT Title is required"),
+    description: yup.string().required("Description is required"),
+    mintAddress: yup
+      .string()
+      .required("Mint Address is required")
+      .test("valid-address", "Mint Address must be a valid wallet address", function (value) {
+        if (!value) return false;
+        return service.isValidAddress(value);
+      }),
+    price: yup.string().required("Price is required"),
+  });
 
 // MintPage Component
 const MintPage = ({ service }) => {
@@ -46,7 +50,7 @@ const MintPage = ({ service }) => {
     formState: { errors },
     reset,
   } = useForm({
-    resolver: yupResolver(validationSchema),
+    resolver: yupResolver(createValidationSchema(service)),
   });
 
   // Fetch compliance rules from Service

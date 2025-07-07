@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -6,7 +6,6 @@ import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext"; // Import RoleContext
 import DfnsService from "../services/DfnsService";
-import { isEthereumAddress } from "../utils";
 import { awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
 
@@ -21,7 +20,18 @@ function CreateDigitalId({ service }) {
   const [walletAddress, setWalletAddress] = useState(searchParams.get("walletAddress") || "");
   const [accountNumber, setAccountNumber] = useState(searchParams.get("accountNumber") || "");
 
-  function validateDigitalID(displayName, walletAddress, accountNumber) {
+  // Reset form validation when service changes (chain switching)
+  useEffect(() => {
+    // Clear any validation errors when the service changes
+    // This ensures address validation uses the correct blockchain format
+    if (service && walletAddress) {
+      // Re-validate the address with the new service
+      const isValid = service.isValidAddress(walletAddress);
+      console.log(`[CreateDigitalId] Re-validating address ${walletAddress} with new service: ${isValid}`);
+    }
+  }, [service]);
+
+  function validateDigitalID(displayName, walletAddress, accountNumber, service) {
     if (displayName.trim() === "") {
       toast.error("Identity display Name is required");
       return false;
@@ -37,8 +47,8 @@ function CreateDigitalId({ service }) {
       return false;
     }
 
-    if (!isEthereumAddress(walletAddress)) {
-      toast.error("Invalid Ethereum Wallet Address in Investor Wallet Address");
+    if (!service.isValidAddress(walletAddress)) {
+      toast.error("Invalid Wallet Address in Investor Wallet Address");
       return false;
     }
 
@@ -56,10 +66,14 @@ function CreateDigitalId({ service }) {
   }
 
   const handleCreateDigitalId = async () => {
+    console.log("[CreateDigitalId] handleCreateDigitalId called");
+    console.log("[CreateDigitalId] walletPreference:", walletPreference);
+    console.log("[CreateDigitalId] service:", service);
+
     const trimmedDisplayName = displayName.trim();
     const trimmedAccountNumber = accountNumber.trim();
 
-    if (!validateDigitalID(trimmedDisplayName, walletAddress, trimmedAccountNumber)) {
+    if (!validateDigitalID(trimmedDisplayName, walletAddress, trimmedAccountNumber, service)) {
       return; // Early return if validation fails
     }
 
@@ -143,8 +157,8 @@ function CreateDigitalId({ service }) {
           .catch((error) => {
             console.error("Error after attempting to create Digital ID:", error);
           });
-      } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
+      } else if (walletPreference === WalletPreference.PRIVATE || walletPreference === null || walletPreference === undefined) {
+        // Handle PRIVATE wallet preference or when no preference is set (default to PRIVATE for testing)
         toast
           .promise(
             (async () => {

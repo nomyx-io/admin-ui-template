@@ -3,5 +3,5 @@
 }
 
 .toast-background{
-    position: absolute;
+    /* position: absolute; - Removed to fix positioning issues */
 }

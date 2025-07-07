@@ -1,14 +1,66 @@
 import { WebAuthnSigner } from "@dfns/sdk-browser";
 import Parse from "parse";
+import { createBlockchainService, BlockchainType } from "nomyx-ts";
 
 class DfnsService {
   private static _instance: DfnsService;
+  private blockchainService: any;
+  private currentChain: BlockchainType;
+  private currentChainId: string;
+
+  private constructor() {
+    // Use ethereum-local as the default chain ID
+    this.currentChainId = process.env.REACT_APP_SELECTED_CHAIN || "ethereum-local";
+    this.currentChain = this.currentChainId.split("-")[0] as BlockchainType;
+    this.blockchainService = createBlockchainService(this.currentChainId);
+    console.log(`[DfnsService] Initialized for ${this.currentChainId} chain`);
+  }
 
   public static get instance(): DfnsService {
     if (!DfnsService._instance) {
       DfnsService._instance = new DfnsService();
     }
     return DfnsService._instance;
+  }
+
+  // Chain management methods
+  public switchChain(chainId: string) {
+    console.log(`[DfnsService] Switching from ${this.currentChainId} to ${chainId}`);
+    this.currentChainId = chainId;
+    this.currentChain = chainId.split("-")[0] as BlockchainType;
+    this.blockchainService = createBlockchainService(chainId);
+  }
+
+  public getCurrentChain(): BlockchainType {
+    return this.currentChain;
+  }
+
+  public getCurrentChainId(): string {
+    return this.currentChainId;
+  }
+
+  // Address validation helper
+  private validateAddress(address: string, context: string): void {
+    if (!this.blockchainService.isValidAddress(address)) {
+      throw new Error(`Invalid ${this.currentChain} address for ${context}: ${address}`);
+    }
+  }
+
+  // Public blockchain utilities
+  public getBlockchainService() {
+    return this.blockchainService;
+  }
+
+  public getAddressPlaceholder(): string {
+    return this.blockchainService.getAddressPlaceholder();
+  }
+
+  public isValidAddress(address: string): boolean {
+    return this.blockchainService.isValidAddress(address);
+  }
+
+  public formatAmount(amount: string | number, decimals: number): string {
+    return this.blockchainService.formatAmount(amount, decimals);
   }
 
   public async getInitialState() {}
@@ -67,19 +119,23 @@ class DfnsService {
       throw new Error("Missing required parameters for AddTrustedIssuer.");
     }
 
+    // Validate address for current chain
+    this.validateAddress(trustedIssuer, "AddTrustedIssuer");
+
     try {
       const initiateResponse = await Parse.Cloud.run("dfnsAddTrustedIssuerInit", {
         trustedIssuer,
         claimTopics,
         walletId,
         dfns_token: dfnsToken,
+        chain: this.currentChain, // Pass chain info to cloud function
       });
 
-      console.log("AddTrustedIssuer initiation response:", initiateResponse);
+      console.log(`[DfnsService] AddTrustedIssuer initiation response for ${this.currentChain}:`, initiateResponse);
 
       return { initiateResponse, error: null };
     } catch (error: any) {
-      console.error("Error initiating AddTrustedIssuer:", error);
+      console.error(`[DfnsService] Error initiating AddTrustedIssuer on ${this.currentChain}:`, error);
       return { initiateResponse: null, error: error.message };
     }
   }
@@ -117,18 +173,22 @@ class DfnsService {
       throw new Error("Missing required parameters for RemoveTrustedIssuer.");
     }
 
+    // Validate address for current chain
+    this.validateAddress(trustedIssuer, "RemoveTrustedIssuer");
+
     try {
       const initiateResponse = await Parse.Cloud.run("dfnsRemoveTrustedIssuerInit", {
         trustedIssuer,
         walletId,
         dfns_token: dfnsToken,
+        chain: this.currentChain,
       });
 
-      console.log("RemoveTrustedIssuer initiation response:", initiateResponse);
+      console.log(`[DfnsService] RemoveTrustedIssuer initiation response for ${this.currentChain}:`, initiateResponse);
 
       return { initiateResponse, error: null };
     } catch (error: any) {
-      console.error("Error initiating RemoveTrustedIssuer:", error);
+      console.error(`[DfnsService] Error initiating RemoveTrustedIssuer on ${this.currentChain}:`, error);
       return { initiateResponse: null, error: error.message };
     }
   }
@@ -216,18 +276,22 @@ class DfnsService {
       throw new Error("Missing required parameters for CreateIdentity.");
     }
 
+    // Validate address for current chain
+    this.validateAddress(ownerAddress, "CreateIdentity");
+
     try {
       const initiateResponse = await Parse.Cloud.run("dfnsCreateIdentityInit", {
         ownerAddress,
         walletId,
         dfns_token: dfnsToken,
+        chain: this.currentChain,
       });
 
-      console.log("CreateIdentity initiation response:", initiateResponse);
+      console.log(`[DfnsService] CreateIdentity initiation response for ${this.currentChain}:`, initiateResponse);
 
       return { initiateResponse, error: null };
     } catch (error: any) {
-      console.error("Error initiating CreateIdentity:", error);
+      console.error(`[DfnsService] Error initiating CreateIdentity on ${this.currentChain}:`, error);
       return { initiateResponse: null, error: error.message };
     }
   }
@@ -286,19 +350,23 @@ class DfnsService {
       throw new Error("Missing required parameters for AddIdentity.");
     }
 
+    // Validate address for current chain
+    this.validateAddress(ownerAddress, "AddIdentity");
+
     try {
       const initiateResponse = await Parse.Cloud.run("dfnsAddIdentityInit", {
         ownerAddress,
         identityData: identity,
         walletId,
         dfns_token: dfnsToken,
+        chain: this.currentChain,
       });
 
-      console.log("AddIdentity initiation response:", initiateResponse);
+      console.log(`[DfnsService] AddIdentity initiation response for ${this.currentChain}:`, initiateResponse);
 
       return { addIdentityInitResponse: initiateResponse, addIdentityInitError: null };
     } catch (error: any) {
-      console.error("Error initiating AddIdentity:", error);
+      console.error(`[DfnsService] Error initiating AddIdentity on ${this.currentChain}:`, error);
       return { addIdentityInitResponse: null, addIdentityInitError: error.message };
     }
   }
@@ -336,19 +404,23 @@ class DfnsService {
       throw new Error("Missing required parameters for SetClaims.");
     }
 
+    // Validate address for current chain
+    this.validateAddress(address, "SetClaims");
+
     try {
       const initiateResponse = await Parse.Cloud.run("dfnsSetClaimsInit", {
         address,
         claims,
         walletId,
         dfns_token: dfnsToken,
+        chain: this.currentChain,
       });
 
-      console.log("SetClaims initiation response:", initiateResponse);
+      console.log(`[DfnsService] SetClaims initiation response for ${this.currentChain}:`, initiateResponse);
 
       return { initiateResponse, error: null };
     } catch (error: any) {
-      console.error("Error initiating SetClaims:", error);
+      console.error(`[DfnsService] Error initiating SetClaims on ${this.currentChain}:`, error);
       return { initiateResponse: null, error: error.message };
     }
   }

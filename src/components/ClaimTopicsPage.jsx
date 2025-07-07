@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
 import { useNavigate } from "react-router-dom";
+import { Spin } from "antd";
 
 import ObjectList from "./ObjectList";
 import { NomyxAction } from "../utils/Constants";
@@ -8,6 +9,7 @@ import { NomyxAction } from "../utils/Constants";
 const ClaimTopicsPage = ({ service }) => {
   const navigate = useNavigate();
   const [claimTopics, setClaimTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const columns = [
     { label: "Id", name: "attributes.topic" },
@@ -36,10 +38,32 @@ const ClaimTopicsPage = ({ service }) => {
 
   useEffect(() => {
     (async function () {
-      const result = await service.getClaimTopics();
-      setClaimTopics(result);
+      if (!service || !service.getClaimTopics) {
+        console.log("[ClaimTopicsPage] Service not ready yet, waiting...");
+        return; // Keep loading true
+      }
+
+      try {
+        const result = await service.getClaimTopics();
+        setClaimTopics(result);
+      } catch (error) {
+        console.error("[ClaimTopicsPage] Error fetching claim topics:", error);
+        setClaimTopics([]); // Set empty array on error
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [service]);
+
+  // Show loading spinner while service is initializing
+  if (loading || !service) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <Spin size="large" />
+        <span className="ml-3">Loading compliance rules...</span>
+      </div>
+    );
+  }
 
   return (
     <ObjectList

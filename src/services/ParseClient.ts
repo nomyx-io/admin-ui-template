@@ -3,8 +3,9 @@ import Parse from "parse";
 class ParseClient {
   private static instance: ParseClient;
 
-  constuctor() {
+  constructor() {
     console.log("ParseClient constructor");
+    this.initialize();
   }
 
   // Singleton getInstance method
@@ -17,7 +18,8 @@ class ParseClient {
 
   private initialize() {
     Parse.initialize(process.env.REACT_APP_PARSE_APPLICATION_ID || "", process.env.REACT_APP_PARSE_JAVASCRIPT_KEY);
-    Parse.serverURL = process.env.REACT_APP_PARSE_SERVER_URL + "/parse" || "";
+    // Remove the extra /parse since REACT_APP_PARSE_SERVER_URL already includes it
+    Parse.serverURL = process.env.REACT_APP_PARSE_SERVER_URL || "";
     Parse.javaScriptKey = process.env.REACT_APP_PARSE_JAVASCRIPT_KEY;
 
     // Middleware: Automatically use the session token (JWT) for all requests
@@ -657,4 +659,8 @@ class ParseClient {
 }
 
 // Instantiate and export the singleton instance
-export default ParseClient.getInstance();
+const parseClientInstance = ParseClient.getInstance();
+
+// Export both the instance and Parse SDK objects for convenience
+export default parseClientInstance;
+export { Parse };

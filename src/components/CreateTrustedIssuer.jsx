@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
-import { isAlphanumericAndSpace, isEthereumAddress, awaitTimeout } from "../utils";
+import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
 
 function CreateTrustedIssuer({ service }) {
@@ -24,29 +24,75 @@ function CreateTrustedIssuer({ service }) {
   let id = location.pathname.split("/")[2];
   useEffect(() => {
     (async function () {
-      if (service.getClaimTopics && service.getTrustedIssuersByObjectId) {
+      console.log("[CreateTrustedIssuer] Service:", service);
+      console.log("[CreateTrustedIssuer] Service type:", typeof service);
+      console.log(
+        "[CreateTrustedIssuer] Service available methods:",
+        service ? Object.getOwnPropertyNames(Object.getPrototypeOf(service)) : "service is null"
+      );
+      console.log("[CreateTrustedIssuer] isValidAddress exists?", service && typeof service.isValidAddress);
+      console.log("[CreateTrustedIssuer] addTrustedIssuer exists?", service && typeof service.addTrustedIssuer);
+      if (service && service.getClaimTopics) {
         const result = await service.getClaimTopics();
-        const issuerData = await service?.getTrustedIssuersByObjectId(id);
-        setVerifierName(issuerData?.attributes?.verifierName || "");
-        setWalletAddress(issuerData?.attributes?.issuer || "");
-        let newArr = [];
-        setTargetKeys(newArr || "");
+        console.log("[CreateTrustedIssuer] Claim topics result:", result);
+
+        // Only try to load issuer data if we're editing (not creating)
+        if (id && id !== "create") {
+          const issuerData = await service?.getTrustedIssuersByObjectId(id);
+          if (issuerData) {
+            setVerifierName(issuerData.attributes?.verifierName || "");
+            setWalletAddress(issuerData.attributes?.issuer || "");
+
+            // Set targetKeys from issuerData claim topics
+            const issuerClaimTopics = issuerData.attributes?.claimTopics || [];
+            const selectedTopicIds = issuerClaimTopics.map((ct) => ct.topic);
+            setTargetKeys(selectedTopicIds);
+          }
+        }
+
         let data = [];
 
         if (result) {
-          result.forEach((item) => {
-            data.push({
-              key: item.attributes?.topic,
-              displayName: item.attributes?.displayName,
-              id: item.id,
-              topic: item.attributes?.topic,
-            });
-          });
+          // Handle both formats: array of numbers (Stellar) and array of objects (Ethereum)
+          if (Array.isArray(result) && result.length > 0) {
+            if (typeof result[0] === "number") {
+              // Stellar format: array of numbers
+              result.forEach((topicId) => {
+                data.push({
+                  key: topicId,
+                  displayName: `Topic ${topicId}`,
+                  id: topicId.toString(),
+                  topic: topicId,
+                });
+              });
+            } else {
+              // Ethereum format: array of objects with attributes
+              result.forEach((item) => {
+                data.push({
+                  key: item.attributes?.topic,
+                  displayName: item.attributes?.displayName,
+                  id: item.id,
+                  topic: item.attributes?.topic,
+                });
+              });
+            }
+          }
           setClaimTopics(data);
         }
       }
     })();
   }, [service, id]);
+
+  // Reset form validation when service changes (chain switching)
+  useEffect(() => {
+    // Clear any validation errors when the service changes
+    // This ensures address validation uses the correct blockchain format
+    if (service && walletAddress) {
+      // Re-validate the address with the new service
+      const isValid = service.isValidAddress(walletAddress);
+      console.log(`[CreateTrustedIssuer] Re-validating address ${walletAddress} with new service: ${isValid}`);
+    }
+  }, [service]);
 
   const onChange = (nextTargetKeys, direction, moveKeys) => {
     setTargetKeys(nextTargetKeys);
@@ -71,8 +117,14 @@ function CreateTrustedIssuer({ service }) {
       return false;
     }
 
-    if (!isEthereumAddress(walletAddress)) {
-      toast.error("Invalid Ethereum Wallet Address in Trusted Issuer Wallet Address");
+    if (!service || typeof service.isValidAddress !== "function") {
+      console.error("[CreateTrustedIssuer] isValidAddress method not available on service");
+      toast.error("Address validation service not available");
+      return false;
+    }
+
+    if (!service.isValidAddress(walletAddress)) {
+      toast.error("Invalid Wallet Address in Trusted Issuer Wallet Address");
       return false;
     }
 
@@ -85,6 +137,10 @@ function CreateTrustedIssuer({ service }) {
   }
 
   const saveTrustedIssuer = async () => {
+    console.log("[CreateTrustedIssuer] saveTrustedIssuer called");
+    console.log("[CreateTrustedIssuer] walletPreference:", walletPreference);
+    console.log("[CreateTrustedIssuer] WalletPreference enum:", WalletPreference);
+
     const trimmedVerifierName = verifierName.trim();
 
     if (!validateTrustedIssuer(trimmedVerifierName, walletAddress, targetKeys)) {
@@ -136,12 +192,20 @@ function CreateTrustedIssuer({ service }) {
           .catch((error) => {
             console.error("Error after attempting to add Trusted Issuer:", error);
           });
-      } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
+      } else if (walletPreference === WalletPreference.PRIVATE || walletPreference === undefined || walletPreference === null) {
+        // Handle PRIVATE wallet preference (or undefined/null as default)
+        console.log("[CreateTrustedIssuer] Using PRIVATE wallet mode (or default)");
         toast
           .promise(
             (async () => {
-              await service.addTrustedIssuer(walletAddress, targetKeys);
+              if (!service || typeof service.addTrustedIssuer !== "function") {
+                throw new Error("addTrustedIssuer method not available on service");
+              }
+              await service.addTrustedIssuer({
+                address: walletAddress,
+                claimTopics: targetKeys,
+                verifierName: trimmedVerifierName,
+              });
               await service.updateTrustedIssuer({
                 verifierName: trimmedVerifierName,
                 issuer: walletAddress,
@@ -219,8 +283,9 @@ function CreateTrustedIssuer({ service }) {
           .catch((error) => {
             console.error("Error after attempting to update Trusted Issuer:", error);
           });
-      } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
+      } else if (walletPreference === WalletPreference.PRIVATE || walletPreference === undefined || walletPreference === null) {
+        // Handle PRIVATE wallet preference (or undefined/null as default)
+        console.log("[CreateTrustedIssuer] Using PRIVATE wallet mode (or default)");
         toast
           .promise(
             (async () => {

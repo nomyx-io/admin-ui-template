@@ -1,16 +1,17 @@
 import { useContext, useEffect, useState, useRef } from "react";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Spin, Layout, Card, Radio, Form, Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAccount, useDisconnect } from "wagmi";
 
 import logoDark from "../assets/nomyx_logo_dark.png";
 import logoLight from "../assets/nomyx_logo_light.png";
 import { RoleContext } from "../context/RoleContext";
 import bg from "../images/BlackPaintBackground.webp";
 import { LoginPreference } from "../utils/Constants";
+
+// Import the blockchain selection manager from nomyx-ts
+import { BlockchainSelectionManager } from "nomyx-ts/dist/frontend";
 
 // Placeholder for your authentication function
 const authenticateUser = async (email, password) => {
@@ -22,14 +23,18 @@ const authenticateUser = async (email, password) => {
   return { success: false, message: "Invalid credentials" };
 };
 
-export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, service }) {
+export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, service, selectedChainId, onChainChange }) {
   const [loginPreference, setLoginPreference] = useState(LoginPreference.USERNAME_PASSWORD);
   const navigate = useNavigate();
   const { role } = useContext(RoleContext);
-  const { disconnect } = useDisconnect();
-  const { isConnected } = useAccount();
+  const [isConnected, setIsConnected] = useState(false);
   const [isConnectTriggered, setIsConnectTriggered] = useState(false);
   const previousRole = useRef(role);
+
+  // State for wallet connection
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAccount, setWalletAccount] = useState(null);
+  const [walletProvider, setWalletProvider] = useState(null);
 
   useEffect(() => {
     if (previousRole.current !== role) {
@@ -47,9 +52,13 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
 
   useEffect(() => {
     if (forceLogout) {
-      disconnect();
+      setIsConnected(false);
+      setIsConnectTriggered(false);
+      setWalletConnected(false);
+      setWalletAccount(null);
+      setWalletProvider(null);
     }
-  }, [forceLogout, disconnect]);
+  }, [forceLogout]);
 
   // Handle standard login form submission
   const handleStandardLogin = async (values) => {
@@ -58,25 +67,53 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
     // navigate("/"); // Redirect after successful login
   };
 
-  const handleConnect = async ({ address, connector, isReconnected }) => {
-    console.log("Connected with address: ", address);
+  // Handle wallet connection from BlockchainSelectionManager
+  const handleWalletConnect = (account, provider) => {
+    console.log("Wallet connected:", { account, provider });
+    setWalletConnected(true);
+    setWalletAccount(account);
+    setWalletProvider(provider);
+  };
+
+  // Handle wallet disconnection
+  const handleWalletDisconnect = () => {
+    console.log("Wallet disconnected");
+    setWalletConnected(false);
+    setWalletAccount(null);
+    setWalletProvider(null);
+  };
+
+  // Handle SmartWallet login
+  const handleSmartWalletConnect = async () => {
+    if (!walletConnected || !walletAccount) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    console.log("SmartWallet connection with:", {
+      account: walletAccount,
+      provider: walletProvider,
+      chain: selectedChainId,
+    });
+
     if (!isConnectTriggered) {
       console.log("Connect Triggered");
       setIsConnectTriggered(true);
-      await onConnect(address, connector);
+      setIsConnected(true);
+      // Pass wallet info to the parent component
+      await onConnect(walletAccount, walletProvider);
     }
   };
 
   const handleDisconnect = () => {
     setIsConnectTriggered(false);
+    setIsConnected(false);
+    setWalletConnected(false);
+    setWalletAccount(null);
+    setWalletProvider(null);
     onDisconnect();
-    navigate("/", { replace: true }); // Redirect to root path upon disconnect
+    navigate("/", { replace: true });
   };
-
-  useAccount({
-    onConnect: handleConnect,
-    onDisconnect: handleDisconnect,
-  });
 
   return (
     <div
@@ -93,12 +130,26 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
         </div>
       ) : (
         <>
+          {/* Add BlockchainSelectionManager at the top when SmartWallet is selected */}
+          {loginPreference === LoginPreference.WALLET && (
+            <div className="absolute top-4 right-4 z-10">
+              <BlockchainSelectionManager
+                selectedChainId={selectedChainId}
+                onChainChange={onChainChange}
+                onWalletConnect={handleWalletConnect}
+                onWalletDisconnect={handleWalletDisconnect}
+                showNetworkInfo={true}
+                showConnectButton={true}
+              />
+            </div>
+          )}
+
           <h1 className="text-right font-bold text-xl mb-4 w-full mt-8 !-ml-10 text-white">NomyxID</h1>
           <div className="flex flex-1 flex-col lg:flex-row">
             {/* Left Side */}
             <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-4 md:px-6 my-10">
               <div className="w-full max-w-2xl">
-                <img src={logoDark} alt="Logo" width={630} height={240} priority />
+                <img src={logoDark} alt="Logo" width={630} height={240} priority="true" />
               </div>
             </div>
 
@@ -126,7 +177,7 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
                             Standard
                           </Radio.Button>
                           <Radio.Button value={LoginPreference.WALLET} className="login-radio-button">
-                            Ethereum
+                            SmartWallet
                           </Radio.Button>
                         </Radio.Group>
                       }
@@ -179,8 +230,27 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
     </div> */}
                         </Form>
                       ) : (
-                        <div className="flex flex-col items-center">
-                          <ConnectButton label="Log in with Wallet" showBalance={false} onConnect={handleConnect} onDisconnect={handleDisconnect} />
+                        <div className="flex flex-col items-center space-y-4">
+                          <div className="text-center">
+                            <p className="text-gray-400 mb-2">Select a blockchain and connect your wallet above</p>
+                            {walletConnected && (
+                              <div className="bg-gray-800 rounded-lg p-3 mb-4">
+                                <p className="text-sm text-gray-300">Connected Account:</p>
+                                <p className="text-white font-mono text-sm">{walletAccount}</p>
+                                <p className="text-sm text-gray-300 mt-1">Chain: {selectedChainId}</p>
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            onClick={handleSmartWalletConnect}
+                            className={`px-6 py-3 rounded-md ${
+                              walletConnected ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-gray-600 text-gray-400 cursor-not-allowed"
+                            }`}
+                            size="large"
+                            disabled={!walletConnected}
+                          >
+                            Connect
+                          </Button>
                         </div>
                       )}
                     </Card>

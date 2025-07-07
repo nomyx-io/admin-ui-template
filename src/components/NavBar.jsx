@@ -1,32 +1,20 @@
 import React, { useContext } from "react";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
-import { useAccount, useDisconnect } from "wagmi";
 
 import NomyxLogo from "../assets/nomyx_logo_black.svg";
 import { RoleContext } from "../context/RoleContext";
 import { WalletPreference } from "../utils/Constants";
-import "@rainbow-me/rainbowkit/styles.css";
 
 const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
   const { walletPreference } = useContext(RoleContext);
-  const { disconnect } = useDisconnect();
 
   // Handle logout based on wallet preference
   const handleLogout = () => {
     if (walletPreference === WalletPreference.MANAGED) {
-      // Logout for wallet-based login
       onLogout();
     }
   };
-
-  useAccount({
-    onDisconnect: function () {
-      disconnect();
-      onDisconnect();
-    },
-  });
 
   return (
     <nav className="bg-white text-black p-6">
@@ -64,9 +52,14 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
                 Trusted Issuers
               </Link>
             </li>
+            <li>
+              <Link to="/identities" className="hover:underline">
+                Identities
+              </Link>
+            </li>
           </>
         )}
-        {role.includes("TrustedIssuer") && (
+        {role.includes("TrustedIssuer") && !role.includes("CentralAuthority") && (
           <li>
             <Link to="/identities" className="hover:underline">
               Identities
@@ -76,7 +69,9 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
 
         {walletPreference === WalletPreference.PRIVATE && (
           <li style={{ marginLeft: "auto" }}>
-            <ConnectButton />
+            <button onClick={onConnect} className="bg-blue-500 text-white px-4 py-2 rounded-md">
+              Connect Wallet
+            </button>
           </li>
         )}
 

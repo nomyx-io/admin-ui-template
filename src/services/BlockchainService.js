@@ -1,664 +1,743 @@
-import { ethers } from "ethers";
+import { createBlockchainService, UnifiedBlockchainService, ChainConfigService } from "nomyx-ts";
 import PubSub from "pubsub-js";
 
-import * as ClaimTopicsRegistry from "../abi/IClaimTopicsRegistry.json";
-import * as IdentityFactory from "../abi/IdentityFactory.json";
-import * as IdentityRegistry from "../abi/IIdentityRegistry.json";
-import * as MinterFacet from "../abi/IMinterFacet.json";
-import * as TrustedIssuersRegistry from "../abi/ITrustedIssuersRegistry.json";
 import ParseClient from "../services/ParseClient"; // Import the singleton instance
 import { NomyxEvent } from "../utils/Constants";
 
+/**
+ * Blockchain-Agnostic BlockchainService for Admin Portal
+ *
+ * This service provides a unified API for blockchain operations across
+ * Ethereum and Stellar networks using the nomyx-ts library.
+ *
+ * This is now a thin wrapper around UnifiedBlockchainService that adds
+ * admin portal specific functionality.
+ */
+
 class BlockchainService {
-  claimTopicsAbi = ClaimTopicsRegistry.default.abi;
-  identityRegistryAbi = IdentityRegistry.default.abi;
-  trustedIssuersRegistryAbi = TrustedIssuersRegistry.default.abi;
-  identityFactoryAbi = IdentityFactory.default.abi;
-  mintAbi = MinterFacet.default.abi;
-
-  constructor(provider, contractAddress, identityRegistryAddress) {
-    this.provider = provider;
-
-    // ✅ Check if provider is Web3Provider (Wallet) or JsonRpcProvider (RPC Fallback)
-    if (provider instanceof ethers.providers.Web3Provider) {
-      console.log("🔹 Web3 Wallet Detected, setting signer...");
-      this.signer = provider.getSigner();
-    } else {
-      if (provider instanceof ethers.providers.StaticJsonRpcProvider) {
-        this.signer = null; // Read-only mode
-        provider.polling = false;
-        provider._pollingInterval = Infinity;
-      }
-    }
-
-    console.log("blockchain service provider: ", this.provider);
-    console.log("blockchain service signer: ", this.signer);
-
-    // ✅ Use the best available provider for contracts (signer for transactions, provider for reads)
-    const contractProvider = this.signer || this.provider;
-
-    // ✅ Initialize smart contracts
-    this.claimTopicRegistryService = new ethers.Contract(contractAddress, this.claimTopicsAbi, contractProvider);
-    this.identityRegistryService = new ethers.Contract(contractAddress, this.identityRegistryAbi, contractProvider);
-    this.trustedIssuersRegistryService = new ethers.Contract(contractAddress, this.trustedIssuersRegistryAbi, contractProvider);
-    this.identityFactoryService = new ethers.Contract(identityRegistryAddress, this.identityFactoryAbi, contractProvider);
-    this.mintService = new ethers.Contract(contractAddress, this.mintAbi, contractProvider);
-
-    // Mint Registry
-    this.mint = this.mint.bind(this);
-
-    // Claim Topics Registry
-    this.addClaimTopic = this.addClaimTopic.bind(this);
-    this.removeClaimTopic = this.removeClaimTopic.bind(this);
-    this.getClaimTopics = this.getClaimTopics.bind(this);
-
-    // Identity Registry
-    this.createIdentity = this.createIdentity.bind(this);
-    this.getIdentity = this.getIdentity.bind(this);
-    this.addIdentity = this.addIdentity.bind(this);
-    this.getDigitalIdentity = this.getDigitalIdentity.bind(this);
-    this.getActiveIdentities = this.getActiveIdentities.bind(this);
-    this.getPendingIdentities = this.getPendingIdentities.bind(this);
-    this.updateIdentity = this.updateIdentity.bind(this);
-    this.createParseIdentity = this.createParseIdentity.bind(this);
-    this.batchAddIdentity = this.batchAddIdentity.bind(this);
-    this.removeIdentity = this.removeIdentity.bind(this);
-    this.unregisterIdentity = this.unregisterIdentity.bind(this);
-    this.softRemoveUser = this.softRemoveUser.bind(this);
-    this.approveUser = this.approveUser.bind(this);
-    this.setClaims = this.setClaims.bind(this);
-    this.addClaim = this.addClaim.bind(this);
-    this.removeClaim = this.removeClaim.bind(this);
-    this.contains = this.contains.bind(this);
-    this.isVerified = this.isVerified.bind(this);
-    this.identity = this.identity.bind(this);
-    this.getRegistryUsers = this.getRegistryUsers.bind(this);
-    this.isRegistryUser = this.isRegistryUser.bind(this);
-    this.getClaims = this.getClaims.bind(this);
-    this.getClaim = this.getClaim.bind(this);
-    this.hasClaim = this.hasClaim.bind(this);
-    this.getTrustedIssuersByObjectId = this.getTrustedIssuersByObjectId.bind(this);
-
-    // Trusted Issuers Registry
-    this.addTrustedIssuer = this.addTrustedIssuer.bind(this);
-    this.removeTrustedIssuer = this.removeTrustedIssuer.bind(this);
-    this.updateIssuerClaimTopics = this.updateIssuerClaimTopics.bind(this);
-    this.getTrustedIssuers = this.getTrustedIssuers.bind(this);
-    this.isTrustedIssuer = this.isTrustedIssuer.bind(this);
-    this.getTrustedIssuerClaimTopics = this.getTrustedIssuerClaimTopics.bind(this);
-    this.hasClaimTopic = this.hasClaimTopic.bind(this);
-
-    this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicAdded, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicAdded, claimTopic));
-    this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicRemoved, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicRemoved, claimTopic));
-    this.trustedIssuersRegistryService.on(NomyxEvent.ClaimTopicsUpdated, (trustedIssuer, claimTopics) =>
-      PubSub.publish(NomyxEvent.ClaimTopicsUpdated, {
-        trustedIssuer,
-        claimTopics,
-      })
-    );
-    this.trustedIssuersRegistryService.on(NomyxEvent.TrustedIssuerAdded, (trustedIssuer, claimTopics) =>
-      PubSub.publish(NomyxEvent.TrustedIssuerAdded, {
-        trustedIssuer,
-        claimTopics,
-      })
-    );
-    this.trustedIssuersRegistryService.on(NomyxEvent.TrustedIssuerRemoved, (trustedIssuer) =>
-      PubSub.publish(NomyxEvent.TrustedIssuerRemoved, trustedIssuer)
-    );
-    this.identityRegistryService.on(NomyxEvent.ClaimAdded, (claimId, topic, scheme, issuer, signature, data, uri) =>
-      PubSub.publish(NomyxEvent.ClaimAdded, {
-        claimId,
-        topic,
-        scheme,
-        issuer,
-        signature,
-        data,
-        uri,
-      })
-    );
-    this.identityRegistryService.on(NomyxEvent.ClaimRemoved, (claimId, topic, scheme, issuer, signature, data, uri) =>
-      PubSub.publish(NomyxEvent.ClaimRemoved, {
-        claimId,
-        topic,
-        scheme,
-        issuer,
-        signature,
-        data,
-        uri,
-      })
-    );
-    this.identityRegistryService.on(NomyxEvent.IdentityAdded, (address, identity) => PubSub.publish(NomyxEvent.IdentityAdded, { address, identity }));
-    this.identityRegistryService.on(NomyxEvent.IdentityRemoved, (address, identity) =>
-      PubSub.publish(NomyxEvent.IdentityRemoved, { address, identity })
-    );
-    this.identityRegistryService.on(NomyxEvent.IdentityCountryUpdated, (identity, country) =>
-      PubSub.publish(NomyxEvent.IdentityCountryUpdated, { identity, country })
-    );
-    this.identityRegistryService.on(NomyxEvent.ClaimAdded, (identity, claimTopic, claim) =>
-      PubSub.publish(NomyxEvent.ClaimAdded, { identity, claimTopic, claim })
-    );
-    this.identityRegistryService.on(NomyxEvent.ClaimRemoved, (identity, claimTopic) =>
-      PubSub.publish(NomyxEvent.ClaimRemoved, { identity, claimTopic })
-    );
+  constructor() {
+    this.chainConfigService = new ChainConfigService();
+    this.unifiedService = null;
+    this.currentChain = null;
+    this.initialized = false;
   }
 
-  // Event listeners
-  publish(event, data) {
-    PubSub.publish(event, data);
-  }
+  async initialize(chainId = "ethereum-local") {
+    console.log(`[Admin BlockchainService] Initializing with chain: ${chainId}`);
 
-  subscribe(event, handler) {
-    return PubSub.subscribe(event, handler);
-  }
-
-  unsubscribe(token) {
-    return PubSub.unsubscribe(token);
-  }
-
-  async mint(metaData) {
-    const contractWithSigner = this.mintService.connect(this.signer);
-    const tx = await contractWithSigner.gemforceMint(metaData);
-    return await tx.wait();
-  }
-
-  async addClaimTopic(claimTopic) {
-    const contractWithSigner = this.claimTopicRegistryService.connect(this.signer);
-    const tx = await contractWithSigner.addClaimTopic(claimTopic);
-    return await tx.wait();
-  }
-
-  async updateClaimTopic(claimTopic) {
-    const maxRetries = 3,
-      delay = 2000;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // Check if the record exists
-        const existingRecord = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "topic", "desc");
-        if (existingRecord?.length > 0) {
-          // Attempt to update the record
-          await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
-
-          console.log("Record updated successfully!");
-          return; // Exit after successful update
-        }
-      } catch (error) {
-        console.error(`Attempt ${attempt} failed: ${error.message}`);
-      }
-      // Wait for 1 second before retrying (if not the last attempt)
-      if (attempt < maxRetries) await new Promise((res) => setTimeout(res, delay));
-    }
-    console.error("Max retry attempts reached. Failed to update the record.");
-  }
-
-  async removeClaimTopic(claimTopic) {
-    const contractWithSigner = this.claimTopicRegistryService.connect(this.signer);
-    const tx = await contractWithSigner.removeClaimTopic(claimTopic);
-    await tx.wait();
-    return tx;
-  }
-
-  async getClaimTopics() {
-    return await ParseClient.getRecords("ClaimTopic", [], [], ["*"]);
-  }
-
-  async getNextClaimTopicId() {
-    debugger;
-    const result = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "createdAt", "desc");
-    let highestTopicId = result.length > 0 ? Number.parseInt(result[0].attributes.topic) + 1 : 1;
-    return highestTopicId;
-  }
-
-  async getClaimTopicById(id) {
-    const claimTopic = await ParseClient.getRecords("ClaimTopic", ["objectId"], [id], ["*"]);
-    return claimTopic;
-  }
-
-  async getTrustedIssuersForClaimTopics(id) {
-    const trustedIssuer = await ParseClient.getRecords("TrustedIssuer", ["claimTopics.topic"], [id]);
-    return trustedIssuer;
-  }
-
-  async getTrustedIssuersByObjectId(id) {
-    const results = await ParseClient.getRecords("TrustedIssuer", ["objectId"], [id]);
-
-    let trustedIssuer = null;
-
-    if (results.length > 0) {
-      trustedIssuer = results[0];
-    }
-
-    return trustedIssuer;
-  }
-
-  async getClaimsForClaimTopics(id) {
-    const pointerObject = {
-      __type: "Pointer",
-      className: "ClaimTopic",
-      objectId: id,
-    };
-
-    const claimTopics = await ParseClient.getRecords("Claim", ["claimTopicObj"], [pointerObject], ["*"]);
-    const claimTopicObj = await ParseClient.getRecords("ClaimTopic", ["objectId"], [id]);
-    if (claimTopicObj.length === 0) return []; // Return if no matching topic
-
-    const claimTopicValue = claimTopicObj[0].attributes.topic;
-
-    // Fetch identities that contain the claim topic in their claims array
-    const identities = await ParseClient.getRecords("Identity", ["claims"], [claimTopicValue]);
-
-    // Filter claim topics to include only those that match with identities
-    const filteredClaims = claimTopics.filter((claim) =>
-      identities.some((identity) => identity?.attributes.identity === claim?.attributes?.identity)
-    );
-
-    return filteredClaims;
-  }
-
-  async getActiveIdentities() {
     try {
-      // Fetch all active identities
-      const identities = await ParseClient.getRecords("Identity", ["active"], [true], ["*"]);
+      // Validate chain configuration first
+      const combinedConfig = await this.chainConfigService.getCombinedConfig(chainId);
 
-      if (identities && identities.length > 0) {
-        // Fetch active claims and include the related identityObj and claimTopicObj
-        const claims = await ParseClient.getRecords("Claim", ["active"], [true], ["identityObj", "claimTopicObj"]);
-
-        if (claims && claims.length > 0) {
-          for (let i = 0; i < identities.length; i++) {
-            const identity = identities[i];
-            const walletAddress = identity.get("walletAddress"); // Get walletAddress from the Identity
-
-            if (walletAddress) {
-              // Query the User class for pepMatched and watchlistMatched columns
-              const userRecords = await ParseClient.getRecords("User", ["walletAddress"], [walletAddress], ["pepMatched", "watchlistMatched"]);
-              if (userRecords && userRecords.length > 0) {
-                const user = userRecords[0]; // Assuming walletAddress is unique and returns one record
-                // Add pepMatched and watchlistMatched to the identity response
-                if (user.attributes?.pepMatched) {
-                  identity.pepMatched = user.attributes.pepMatched;
-                }
-                if (user.attributes?.watchlistMatched) {
-                  identity.watchlistMatched = user.attributes.watchlistMatched;
-                }
-              }
-            }
-
-            // Filter and map claims to the corresponding identity, with a check for valid identityObj
-            const activeClaims = claims.filter((claim) => {
-              const identityObj = claim.get("identityObj");
-              return identityObj && identityObj.id === identity.id; // Check if identityObj exists and matches
-            });
-
-            if (activeClaims.length > 0) {
-              // Ensure the claims object exists on the identity
-              if (!identity.attributes.claims) {
-                identity.attributes.claims = { children: [] }; // Initialize claims object if it doesn't exist
-              }
-
-              // Assign active claims to children
-              identity.attributes.claims.children = activeClaims;
-
-              // Sort the claims by topic
-              identity.attributes.claims.children.sort((a, b) => {
-                const topicA = a.attributes.claimTopicObj?.attributes?.topic || "";
-                const topicB = b.attributes.claimTopicObj?.attributes?.topic || "";
-                return topicA > topicB ? 1 : -1;
-              });
-            }
-          }
-        }
+      if (!combinedConfig.isValid) {
+        console.error(`[Admin BlockchainService] Invalid chain configuration for ${chainId}:`, combinedConfig.errors);
+        throw new Error(`Invalid chain configuration for ${chainId}: ${combinedConfig.errors.join(", ")}`);
       }
 
-      return identities;
+      // Create UnifiedBlockchainService instance for this chain
+      this.unifiedService = createBlockchainService(chainId);
+      this.currentChain = chainId;
+      this.initialized = true;
+
+      console.log(`[Admin BlockchainService] Successfully initialized nomyx-ts UnifiedBlockchainService for ${chainId}`);
+      console.log(`[Admin BlockchainService] Chain info:`, this.unifiedService.getChainInfo());
+
+      return true;
     } catch (error) {
-      console.error("Error fetching active identities or claims:", error);
+      console.error(`[Admin BlockchainService] Failed to initialize:`, error);
       throw error;
     }
   }
 
-  async getPendingIdentities() {
-    const users = await ParseClient.getRecords("_User", ["pendingApproval", "denied"], [true, false], ["*"]);
-    return users;
+  async switchChain(chainId) {
+    console.log(`[Admin BlockchainService] Switching to chain: ${chainId}`);
+    return await this.initialize(chainId);
   }
 
-  async getAddClaimIdentities() {
-    const identities = await ParseClient.getRecords("Identity", ["active"], [true], ["*"]);
-    if (identities && identities.length > 0) {
-      const claims = await ParseClient.getRecords("Claim", ["active"], [true], ["identityObj", "claimTopicObj"]);
+  async validateChain(chainId) {
+    console.log(`[Admin BlockchainService] Validating chain: ${chainId}`);
+    return await this.chainConfigService.validateChain(chainId);
+  }
 
-      for (let i = 0; i < identities.length; i++) {
-        const identity = identities[i];
+  async getDeploymentStatus(chainId) {
+    console.log(`[Admin BlockchainService] Getting deployment status for: ${chainId}`);
+    return await this.chainConfigService.getChainDeploymentStatus(chainId);
+  }
 
-        // Filter and map claims to the corresponding identity
-        const activeClaims = claims.filter((claim) => claim.get("identityObj").id === identity.id);
-        identity.attributes.claims = { children: activeClaims };
+  async getAllDeploymentStatuses() {
+    console.log(`[Admin BlockchainService] Getting all deployment statuses`);
+    return await this.chainConfigService.getAllChainDeploymentStatus();
+  }
 
-        // Sort the claims by topic
-        identity.attributes.claims.children.sort((a, b) => {
-          return a.attributes.claimTopicObj.attributes.topic > b.attributes.claimTopicObj.attributes.topic ? 1 : -1;
-        });
-      }
+  getChainDisplayName(chainId) {
+    return this.chainConfigService.getChainDisplayName(chainId);
+  }
 
-      // Filter identities to only include those without claims
-      const identitiesWithoutClaims = identities.filter((identity) => !identity.attributes.claims.children.length);
+  getCurrentChain() {
+    return this.currentChain;
+  }
 
-      return identitiesWithoutClaims;
+  // Address validation
+  isValidAddress(address) {
+    if (!this.initialized || !this.unifiedService) {
+      console.error(`[Admin BlockchainService] Service not initialized for address validation`);
+      return false;
     }
 
-    return [];
+    return this.unifiedService.isValidAddress(address);
   }
 
-  async softRemoveUser(identityAddress) {
-    // set pending approval and denied to false
-    return await ParseClient.updateExistingRecord("_User", ["walletAddress"], [identityAddress], { denied: true });
+  getContractAddress(contractName) {
+    if (!this.initialized) {
+      console.warn(`[Admin BlockchainService] Service not initialized, cannot get contract address for ${contractName}`);
+      return null;
+    }
+
+    // Get chain config to access contract addresses
+    const chainConfig = this.chainConfigService.getChainConfig(this.currentChain);
+    const contracts = chainConfig?.contracts;
+
+    // Handle facets
+    if (contracts?.facets && contracts.facets[contractName]) {
+      return contracts.facets[contractName];
+    }
+
+    // Handle main contracts
+    return contracts?.[contractName] || null;
   }
 
-  async createIdentity(identity) {
+  getAllContractAddresses() {
+    if (!this.initialized) {
+      console.warn(`[Admin BlockchainService] Service not initialized, returning empty contract addresses`);
+      return {};
+    }
+
+    const chainConfig = this.chainConfigService.getChainConfig(this.currentChain);
+    return chainConfig?.contracts || {};
+  }
+
+  // Blockchain operations using nomyx-ts UnifiedBlockchainService
+  async getClaimTopics() {
+    console.log(`[Admin BlockchainService] Getting claim topics via nomyx-ts`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
     try {
-      console.log("this.signer", this.signer);
-      const contract = this.identityFactoryService.connect(this.signer);
-      const tx = await contract.createIdentity(identity);
-      await tx.wait();
-      return tx;
-    } catch (error) {
-      console.log("createIdentity error", error);
-    }
-  }
+      // For Stellar, try to get detailed topics with names
+      if (this.currentChain === "stellar-testnet" && typeof this.unifiedService.getClaimTopicsDetailed === "function") {
+        console.log(`[Admin BlockchainService] Getting detailed claim topics for Stellar`);
+        const detailedTopics = await this.unifiedService.getClaimTopicsDetailed();
+        console.log(`[Admin BlockchainService] Retrieved ${detailedTopics.length} detailed claim topics`);
 
-  async getIdentity(address, retries = 5, delay = 1000) {
-    const contract = this.identityFactoryService.connect(this.signer);
-
-    for (let attempt = 0; attempt < retries; attempt++) {
-      const tx = await contract.getIdentity(address);
-
-      if (tx && tx !== "0x0000000000000000000000000000000000000000") {
-        // Ensure valid identity
-        console.log(`✅ Identity found: ${tx}`);
-        return tx;
+        // Convert detailed topics to admin portal format
+        return detailedTopics.map((topic) => ({
+          id: topic.id.toString(),
+          attributes: {
+            topic: topic.id,
+            displayName: topic.name || topic.displayName || `Claim Topic ${topic.id}`,
+          },
+        }));
       }
 
-      console.warn(`🔄 Identity not found yet, retrying... Attempt ${attempt + 1}/${retries}`);
-      await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
-    }
+      // Fallback to basic topics for other chains or if detailed method not available
+      const topics = await this.unifiedService.getClaimTopics();
+      console.log(`[Admin BlockchainService] Retrieved ${topics.length} claim topics`);
 
-    console.error("❌ Identity retrieval failed after multiple attempts.");
-    throw new Error("Identity not found");
-  }
-
-  async updateIdentity(identity, identityData) {
-    const maxRetries = 3,
-      baseDelay = 4000;
-
-    if (!identityData) {
-      console.warn("No identity data provided, skipping update.");
-      return null;
-    }
-
-    // Retry helper function
-    async function retryWithBackoff(fn, retries, delay) {
-      for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-          const result = await fn();
-          if (result) return result; // Return if successful
-        } catch (error) {
-          console.error(`Attempt ${attempt} failed:`, error);
-        }
-
-        if (attempt < retries) {
-          const waitTime = delay * attempt; // Exponential backoff
-          console.log(`Retrying in ${waitTime / 1000} seconds...`);
-          await new Promise((resolve) => setTimeout(resolve, waitTime));
-        }
-      }
-      console.error("Update failed after max retry attempts.");
-      return null;
-    }
-
-    // Perform the update with retry
-    return retryWithBackoff(() => ParseClient.updateExistingRecord("Identity", ["address"], [identity], identityData), maxRetries, baseDelay);
-  }
-
-  async createParseIdentity(identity, identityData) {
-    return await ParseClient.createRecord("_User", ["address"], [identity], identityData);
-  }
-
-  async isUser(identityAddress) {
-    const user = await ParseClient.getRecord("_User", ["walletAddress"], [identityAddress]);
-    return user ? true : false;
-  }
-
-  async approveUser(identityAddress) {
-    return await ParseClient.updateExistingRecord("_User", ["walletAddress"], [identityAddress], { pendingApproval: false });
-  }
-
-  async addIdentity(identity, identityData) {
-    const contract = this.identityRegistryService.connect(this.signer);
-    const tx = await contract.addIdentity(identity, identityData);
-    await tx.wait();
-    return tx;
-  }
-
-  async getDigitalIdentity(id) {
-    // Fetch the identity record based on the given ID
-    const identities = await ParseClient.getRecords("Identity", ["objectId"], [id], ["*"]);
-    const identity = identities.length > 0 ? identities[0] : null;
-    const user = (await ParseClient.getRecords("_User", ["personaReferenceId"], [identity.attributes.accountNumber], ["*"]))[0];
-    const claims = await ParseClient.getRecords("ClaimTopic", undefined, undefined, ["*"]);
-
-    // If no identity is found, return null
-    if (!identity) {
-      return null;
-    }
-
-    const claimAdded = await ParseClient.getRecords("ClaimAdded__e", ["identity"], [identity.attributes.identity], ["claimTopic", "blockHash"]);
-
-    // Map claimTopics to blockHashes for easy lookup
-    const blockHashMap = claimAdded.reduce((acc, record) => {
-      acc[record.attributes.claimTopic] = record.attributes.blockHash;
-      return acc;
-    }, {});
-
-    // Retrieve identity claims and filter them
-    const identityClaims = identity.attributes.claims || [];
-    const matchedClaims = claims
-      .filter((claim) => identityClaims.includes(claim?.attributes?.topic))
-      .map((claim) => ({
-        ...claim.attributes, // Include all original claim properties
-        blockHash: blockHashMap[claim.attributes.topic] || null, // Add blockHash if match is found
+      // Convert to admin portal format (matching UI expectations)
+      return topics.map((topicId, index) => ({
+        id: topicId.toString(),
+        attributes: {
+          topic: topicId,
+          displayName: `Claim Topic ${topicId}`,
+        },
       }));
-    // Return the identity along with its attributes, including the claims directly from the record
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting claim topics:`, error);
+      // Return empty array on error to prevent UI crashes
+      return [];
+    }
+  }
+
+  async getNextClaimTopicId() {
+    console.log(`[Admin BlockchainService] Getting next claim topic ID via nomyx-ts`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      const nextId = await this.unifiedService.getNextClaimTopicId();
+      console.log(`[Admin BlockchainService] Next claim topic ID: ${nextId}`);
+      return nextId;
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting next claim topic ID:`, error);
+      // Return 1 as fallback
+      return 1;
+    }
+  }
+
+  async addClaimTopic(topicId, displayName) {
+    console.log(`[Admin BlockchainService] Adding claim topic ${topicId} via nomyx-ts`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      // For Stellar, pass the display name if available
+      if (this.currentChain === "stellar-testnet" && displayName) {
+        console.log(`[Admin BlockchainService] Adding claim topic with name: ${displayName}`);
+        const result = await this.unifiedService.addClaimTopic(topicId, displayName);
+        console.log(`[Admin BlockchainService] Claim topic added successfully:`, result);
+
+        return {
+          success: true,
+          transactionHash: result.txHash || result.hash || result.transactionHash,
+          topicId: topicId,
+          displayName: displayName,
+        };
+      }
+
+      // For other chains or if no display name, use standard method
+      const result = await this.unifiedService.addClaimTopic(topicId);
+      console.log(`[Admin BlockchainService] Claim topic added successfully:`, result);
+
+      return {
+        success: true,
+        transactionHash: result.txHash || result.hash || result.transactionHash,
+        topicId: topicId,
+      };
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error adding claim topic:`, error);
+      throw error;
+    }
+  }
+
+  async removeClaimTopic(topicId) {
+    console.log(`[Admin BlockchainService] Removing claim topic ${topicId} via nomyx-ts`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      const result = await this.unifiedService.removeClaimTopic(topicId);
+      console.log(`[Admin BlockchainService] Claim topic removed successfully:`, result);
+
+      return {
+        success: true,
+        transactionHash: result.txHash || result.hash || result.transactionHash,
+        topicId: topicId,
+      };
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error removing claim topic:`, error);
+      throw error;
+    }
+  }
+
+  // Placeholder methods for other functionality
+  // TODO: Implement these using nomyx-ts UnifiedBlockchainService or workflows
+
+  async getTrustedIssuers() {
+    console.log(`[Admin BlockchainService] Getting trusted issuers via nomyx-ts`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      const issuers = await this.unifiedService.getTrustedIssuers();
+      console.log(`[Admin BlockchainService] Retrieved ${issuers.length} trusted issuers`);
+
+      // Standardize the format for UI consistency across blockchains
+      return issuers.map((issuer, index) => {
+        // Handle both Ethereum and Stellar formats
+        if (issuer.issuer_address || issuer.issuerAddress || issuer.address) {
+          // Stellar format: {claim_topics, is_active, issuer_address, name}
+          const address = issuer.issuer_address || issuer.issuerAddress || issuer.address;
+          const name = issuer.name || `Issuer ${index + 1}`;
+          const claimTopics = issuer.claim_topics || issuer.claimTopics || [];
+
+          return {
+            id: address || `issuer_${index}`,
+            attributes: {
+              issuer: address,
+              verifierName: name,
+              claimTopics: claimTopics.map((topic) => ({ topic: Number(topic) })),
+            },
+          };
+        } else if (issuer.id && issuer.attributes) {
+          // Already in expected format (likely Ethereum)
+          return issuer;
+        } else {
+          // Unknown format, try to handle gracefully
+          console.warn(`[Admin BlockchainService] Unknown issuer format:`, issuer);
+          return {
+            id: `issuer_${index}`,
+            attributes: {
+              issuer: issuer.toString(),
+              verifierName: `Unknown Issuer ${index + 1}`,
+              claimTopics: [],
+            },
+          };
+        }
+      });
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting trusted issuers:`, error);
+      // Return empty array on error to prevent UI crashes
+      return [];
+    }
+  }
+
+  async addTrustedIssuer(issuer) {
+    console.log(`[Admin BlockchainService] Adding trusted issuer via nomyx-ts:`, issuer);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      // For Stellar, pass the name if available
+      if (this.currentChain === "stellar-testnet" && issuer.verifierName) {
+        console.log(`[Admin BlockchainService] Adding trusted issuer with name: ${issuer.verifierName}`);
+        const result = await this.unifiedService.addTrustedIssuer(issuer.address, issuer.claimTopics, issuer.verifierName);
+        console.log(`[Admin BlockchainService] Trusted issuer added successfully:`, result);
+
+        return {
+          success: true,
+          transactionHash: result.txHash || result.hash || result.transactionHash,
+          issuerAddress: issuer.address,
+          claimTopics: issuer.claimTopics,
+          verifierName: issuer.verifierName,
+        };
+      }
+
+      // For other chains or if no name provided, use standard method
+      const result = await this.unifiedService.addTrustedIssuer(issuer.address, issuer.claimTopics);
+      console.log(`[Admin BlockchainService] Trusted issuer added successfully:`, result);
+
+      return {
+        success: true,
+        transactionHash: result.txHash || result.hash || result.transactionHash,
+        issuerAddress: issuer.address,
+        claimTopics: issuer.claimTopics,
+      };
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error adding trusted issuer:`, error);
+
+      // Provide more descriptive error messages
+      if (error.message && error.message.includes("Workflow")) {
+        throw new Error(`Failed to add trusted issuer. The workflow system is not implemented. Direct blockchain call failed: ${error.message}`);
+      } else if (error.message && error.message.includes("not initialized")) {
+        throw new Error(`Blockchain service not properly initialized. Please check your chain configuration.`);
+      } else if (error.message && error.message.includes("Invalid address")) {
+        throw new Error(`Invalid issuer address format for ${this.currentChain} chain.`);
+      }
+
+      throw error;
+    }
+  }
+
+  async removeTrustedIssuer(issuerAddress) {
+    console.log(`[Admin BlockchainService] Removing trusted issuer via nomyx-ts:`, issuerAddress);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      const result = await this.unifiedService.removeTrustedIssuer(issuerAddress);
+      console.log(`[Admin BlockchainService] Trusted issuer removed successfully:`, result);
+
+      return {
+        success: true,
+        transactionHash: result.txHash || result.hash || result.transactionHash,
+        issuerAddress: issuerAddress,
+      };
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error removing trusted issuer:`, error);
+      throw error;
+    }
+  }
+
+  async getTrustedIssuersByObjectId(id) {
+    console.log(`[Admin BlockchainService] Getting trusted issuer by ID: ${id}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      // Get all trusted issuers and find the one matching the ID
+      const issuers = await this.getTrustedIssuers();
+      const issuer = issuers.find((item) => item.id === id);
+
+      if (!issuer) {
+        console.warn(`[Admin BlockchainService] No trusted issuer found with ID: ${id}`);
+        return null;
+      }
+
+      console.log(`[Admin BlockchainService] Found trusted issuer:`, issuer);
+      return issuer;
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting trusted issuer by ID:`, error);
+      return null;
+    }
+  }
+
+  async updateTrustedIssuer(issuerData) {
+    console.log(`[Admin BlockchainService] Updating trusted issuer metadata:`, issuerData);
+
+    // This method updates the issuer metadata in Parse Server (database)
+    // The blockchain doesn't store display names, only addresses and claim topics
+    // So this is just for UI display purposes
+
+    // TODO: Implement Parse Server integration to store issuer metadata
+    // For now, we'll just return success
     return {
-      ...identity, // The identity object itself
-      ...identity.attributes, // Spread the attributes of the identity for easier access
-      claims: matchedClaims || [], // Return claims from identity attributes or an empty array
-      personaData:
-        user && user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
-      pepMatched: user && user.attributes.pepMatched,
-      watchlistMatched: user && user.attributes.watchlistMatched,
+      success: true,
+      data: issuerData,
     };
   }
 
-  async batchAddIdentity(identities, identityDatas) {
-    const contract = this.identityRegistryService.connect(this.signer);
-    const tx = await contract.batchAddIdentity(identities, identityDatas);
-    await tx.wait();
-    return tx;
-  }
+  async updateIssuerClaimTopics(issuerAddress, claimTopics) {
+    console.log(`[Admin BlockchainService] Updating issuer claim topics on blockchain:`, issuerAddress, claimTopics);
 
-  async removeIdentity(identity) {
-    const contract = this.identityFactoryService.connect(this.signer);
-    const tx = await contract.removeIdentity(identity);
-    await tx.wait();
-    return tx;
-  }
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
 
-  async unregisterIdentity(identity) {
-    const contract = this.identityRegistryService.connect(this.signer);
-    const tx = await contract.removeIdentity(identity);
-    await tx.wait();
-    return tx;
-  }
-
-  async setClaims(identity, claims) {
-    const contract = this.identityRegistryService.connect(this.signer);
-    const tx = await contract.setClaims(identity, claims);
-    const txs = await tx.wait();
-
-    return txs;
-  }
-
-  async addClaim(identity, claimTopic, claim) {
-    const contract = this.identityRegistryService.connect(this.signer);
-    const tx = await contract.addClaim(identity, claimTopic, claim);
-    await tx.wait();
-    return tx;
-  }
-
-  async removeClaim(identity, claimTopicObject) {
     try {
-      console.log("claimTopicObject", claimTopicObject);
-      // Extract the 'topic' field if claimTopicObject is an object
-      const claimTopic = claimTopicObject.topic;
+      // First remove the issuer
+      await this.unifiedService.removeTrustedIssuer(issuerAddress);
 
-      // Ensure claimTopic is a valid BigNumber-compatible value
-      if (!claimTopic || isNaN(Number(claimTopic))) {
-        throw new Error(`Invalid claimTopic value: ${claimTopic}`);
-      }
+      // Then add it back with new claim topics
+      const result = await this.unifiedService.addTrustedIssuer(issuerAddress, claimTopics);
 
-      const contract = this.identityRegistryService.connect(this.signer);
-      const tx = await contract.removeClaim(identity, claimTopic); // Pass valid claimTopic
-      await tx.wait();
-      return tx;
+      console.log(`[Admin BlockchainService] Issuer claim topics updated successfully:`, result);
+
+      return {
+        success: true,
+        transactionHash: result.txHash || result.hash || result.transactionHash,
+        issuerAddress: issuerAddress,
+        claimTopics: claimTopics,
+      };
     } catch (error) {
-      console.error("Error in removeClaim:", error);
-    }
-  }
+      console.error(`[Admin BlockchainService] Error updating issuer claim topics:`, error);
 
-  async contains(userAddress) {
-    return await this.identityRegistryService.contains(userAddress);
-  }
-
-  async isVerified(userAddress) {
-    return await this.identityRegistryService.isVerified(userAddress);
-  }
-
-  async identity(userAddress) {
-    return await this.identityRegistryService.identity(userAddress);
-  }
-
-  async getRegistryUsers() {
-    return await this.identityRegistryService.getRegistryUsers();
-  }
-
-  async isRegistryUser(registryUser) {
-    return await this.identityRegistryService.isRegistryUser(registryUser);
-  }
-
-  async getClaims(registryUser) {
-    return await this.identityRegistryService.getClaims(registryUser);
-  }
-
-  async getClaim(registryUser, claimTopic) {
-    return this.identityRegistryService && (await this.identityRegistryService.getClaim(registryUser, claimTopic));
-  }
-
-  async hasClaim(registryUser, claimTopic) {
-    return await this.identityRegistryService.hasClaim(registryUser, claimTopic);
-  }
-
-  async addTrustedIssuer(trustedIssuer, claimTopics) {
-    const contract = this.trustedIssuersRegistryService.connect(this.signer);
-    const tx = await contract.addTrustedIssuer(trustedIssuer, claimTopics);
-    await tx.wait();
-    return tx;
-  }
-
-  async updateTrustedIssuer(data) {
-    if (!data || !data.issuer) {
-      console.warn("🚨 Invalid data provided, skipping update.");
-      return null;
-    }
-
-    // ✅ Normalize issuer address to lowercase
-    const normalizedIssuer = data.issuer.toLowerCase();
-
-    console.log(`🔄 Starting updateTrustedIssuer for issuer: ${normalizedIssuer}`, data);
-
-    for (let attempt = 1; attempt <= 10; attempt++) {
-      console.log(`🔍 Attempt ${attempt}: Checking if TrustedIssuer exists via ParseClient...`);
-
-      try {
-        // ✅ Query using the lowercase version
-        const existingIssuer = await ParseClient.getRecord("TrustedIssuer", ["issuer"], [normalizedIssuer]);
-
-        if (!existingIssuer) {
-          console.warn(`⚠️ Attempt ${attempt}: TrustedIssuer '${normalizedIssuer}' not found yet.`);
-
-          if (attempt < 10) {
-            const waitTime = attempt * 2000; // Exponential backoff: 2s, 4s, 6s...
-            console.log(`⏳ Waiting ${waitTime / 1000}s before retrying...`);
-            await new Promise((resolve) => setTimeout(resolve, waitTime));
-            continue; // Retry
-          } else {
-            console.error(`❌ Giving up after ${attempt} attempts: TrustedIssuer '${normalizedIssuer}' never appeared.`);
-            return null;
-          }
-        }
-
-        console.log(`✅ TrustedIssuer found on attempt ${attempt}, proceeding with update...`);
-        console.log("🔹 Existing TrustedIssuer Data:", existingIssuer);
-
-        // ✅ Ensure the stored issuer address is also in lowercase
-        const updateData = { ...data, issuer: normalizedIssuer };
-
-        // ✅ Update using ParseClient
-        console.log(`🚀 Attempting update with data:`, updateData);
-        const result = await ParseClient.updateExistingRecord("TrustedIssuer", ["issuer"], [normalizedIssuer], updateData);
-
-        console.log(`🎉 Update successful for issuer '${normalizedIssuer}':`, result);
-        return result; // Return success
-      } catch (error) {
-        console.error(`❌ Error on attempt ${attempt}:`, error);
-
-        const waitTime = Math.min(attempt * 2000, 10000); // Cap wait time at 10s
-        console.log(`⏳ Retrying in ${waitTime / 1000}s...`);
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      // Provide more descriptive error messages
+      if (error.message && error.message.includes("Workflow")) {
+        throw new Error(
+          `Failed to update issuer claim topics. The workflow system is not implemented. Direct blockchain call failed: ${error.message}`
+        );
+      } else if (error.message && error.message.includes("not initialized")) {
+        throw new Error(`Blockchain service not properly initialized. Please check your chain configuration.`);
+      } else if (error.message && error.message.includes("Invalid address")) {
+        throw new Error(`Invalid issuer address format for ${this.currentChain} chain.`);
       }
+
+      throw error;
+    }
+  }
+
+  async getIdentities() {
+    console.log(`[Admin BlockchainService] Getting identities via nomyx-ts`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
     }
 
-    console.error(`❌ Update failed after 10 attempts for issuer '${normalizedIssuer}'.`);
-    return null; // Return null if all attempts fail
+    try {
+      const identities = await this.unifiedService.getIdentities();
+      console.log(`[Admin BlockchainService] Retrieved ${identities.length} identities`);
+
+      return identities;
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting identities:`, error);
+
+      // Check for specific error types but still return empty array to prevent crashes
+      if (error.message && error.message.includes("Workflow")) {
+        console.warn(`[Admin BlockchainService] Workflow system not implemented for getting identities. Returning empty array.`);
+      } else if (error.message && error.message.includes("not implemented")) {
+        console.warn(`[Admin BlockchainService] Identity retrieval not yet implemented for ${this.currentChain} chain. Returning empty array.`);
+      }
+
+      // Return empty array on error to prevent UI crashes
+      return [];
+    }
   }
 
-  async removeTrustedIssuer(trustedIssuer) {
-    const contract = this.trustedIssuersRegistryService.connect(this.signer);
-    const tx = await contract.removeTrustedIssuer(trustedIssuer);
-    await tx.wait();
-    return tx;
+  async getClaimTopicById(topicId) {
+    console.log(`[Admin BlockchainService] Getting claim topic by ID: ${topicId}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      // Get all claim topics and find the one matching the ID
+      const topics = await this.getClaimTopics();
+      const topic = topics.find((item) => item.id === topicId || item.attributes?.topic?.toString() === topicId);
+
+      if (!topic) {
+        console.warn(`[Admin BlockchainService] No claim topic found with ID: ${topicId}`);
+        return [];
+      }
+
+      // Return as array to match expected format
+      return [topic];
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting claim topic by ID:`, error);
+      return [];
+    }
   }
 
-  async updateIssuerClaimTopics(trustedIssuer, claimTopics) {
-    const contract = this.trustedIssuersRegistryService.connect(this.signer);
-    const tx = await contract.updateIssuerClaimTopics(trustedIssuer, claimTopics);
-    await tx.wait();
-    return tx;
+  async getTrustedIssuersForClaimTopics(topicId) {
+    console.log(`[Admin BlockchainService] Getting trusted issuers for claim topic: ${topicId}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      // Get all trusted issuers and filter those managing this topic
+      const allIssuers = await this.getTrustedIssuers();
+      const issuersWithTopic = allIssuers.filter((issuer) => {
+        const claimTopics = issuer.attributes?.claimTopics || [];
+        return claimTopics.some((ct) => ct.topic?.toString() === topicId?.toString());
+      });
+
+      console.log(`[Admin BlockchainService] Found ${issuersWithTopic.length} issuers managing topic ${topicId}`);
+      return issuersWithTopic;
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting trusted issuers for topic:`, error);
+      return [];
+    }
   }
 
-  async getTrustedIssuers() {
-    const trustedIssuer = await ParseClient.getRecords("TrustedIssuer", ["active"], [true], ["*"]);
-    return trustedIssuer;
+  async getClaimsForClaimTopics(topicId) {
+    console.log(`[Admin BlockchainService] Getting claims for claim topic: ${topicId}`);
+
+    // TODO: Implement actual claim fetching from blockchain
+    // For now, return empty array as claims functionality is not yet implemented
+    return [];
   }
 
-  async isTrustedIssuer(issuer) {
-    return await this.trustedIssuersRegistryService.isTrustedIssuer(issuer);
+  async createIdentity(ownerAddress) {
+    console.log(`[Admin BlockchainService] Creating identity via nomyx-ts:`, ownerAddress);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      const result = await this.unifiedService.createIdentity({ owner: ownerAddress });
+      console.log(`[Admin BlockchainService] Identity created successfully:`, result);
+
+      return {
+        success: true,
+        transactionHash: result.txHash || result.transactionHash,
+        identityAddress: result.identityAddress,
+        ownerAddress: ownerAddress,
+      };
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error creating identity:`, error);
+
+      // Provide more descriptive error messages
+      if (error.message && error.message.includes("Workflow")) {
+        throw new Error(`Failed to create identity. The workflow system is not implemented. Direct blockchain call failed: ${error.message}`);
+      } else if (error.message && error.message.includes("not initialized")) {
+        throw new Error(`Blockchain service not properly initialized. Please check your chain configuration.`);
+      } else if (error.message && error.message.includes("Invalid address")) {
+        throw new Error(`Invalid owner address format for ${this.currentChain} chain.`);
+      } else if (error.message && error.message.includes("not implemented")) {
+        throw new Error(`Identity creation is not yet implemented for ${this.currentChain} chain.`);
+      }
+
+      throw error;
+    }
   }
 
-  async getTrustedIssuerClaimTopics(trustedIssuer) {
-    return await this.trustedIssuersRegistryService.getTrustedIssuerClaimTopics(trustedIssuer);
+  async getIdentity(address) {
+    console.log(`[Admin BlockchainService] Getting identity for address: ${address}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      // Check if UnifiedBlockchainService has getIdentity method
+      if (typeof this.unifiedService.getIdentity === "function") {
+        const result = await this.unifiedService.getIdentity(address);
+        console.log(`[Admin BlockchainService] Retrieved identity:`, result);
+        return result;
+      } else {
+        console.warn(`[Admin BlockchainService] getIdentity not implemented in UnifiedBlockchainService`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting identity:`, error);
+
+      // Provide more descriptive error messages
+      if (error.message && error.message.includes("Workflow")) {
+        console.warn(`[Admin BlockchainService] Workflow system not implemented for getting identity. Returning null.`);
+        return null;
+      } else if (error.message && error.message.includes("not implemented")) {
+        console.warn(`[Admin BlockchainService] Get identity not yet implemented for ${this.currentChain} chain. Returning null.`);
+        return null;
+      }
+
+      throw error;
+    }
   }
 
-  async hasClaimTopic(issuer, claimTopic) {
-    return await this.trustedIssuersRegistryService.hasClaimTopic(issuer, claimTopic);
+  async addIdentity(address, identity) {
+    console.log(`[Admin BlockchainService] Adding identity for address: ${address}`, identity);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      // Check if UnifiedBlockchainService has addIdentity method
+      if (typeof this.unifiedService.addIdentity === "function") {
+        const result = await this.unifiedService.addIdentity(address, identity);
+        console.log(`[Admin BlockchainService] Identity added successfully:`, result);
+        return result;
+      } else {
+        console.warn(`[Admin BlockchainService] addIdentity not implemented in UnifiedBlockchainService`);
+        throw new Error(`Identity management is not yet implemented for ${this.currentChain} chain.`);
+      }
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error adding identity:`, error);
+
+      // Provide more descriptive error messages
+      if (error.message && error.message.includes("Workflow")) {
+        throw new Error(`Failed to add identity. The workflow system is not implemented. Direct blockchain call failed: ${error.message}`);
+      } else if (error.message && error.message.includes("not initialized")) {
+        throw new Error(`Blockchain service not properly initialized. Please check your chain configuration.`);
+      } else if (error.message && error.message.includes("Invalid address")) {
+        throw new Error(`Invalid address format for ${this.currentChain} chain.`);
+      } else if (error.message && error.message.includes("not implemented")) {
+        throw new Error(`Identity management is not yet implemented for ${this.currentChain} chain.`);
+      }
+
+      throw error;
+    }
+  }
+
+  async isInitialized() {
+    return this.initialized;
+  }
+
+  // Pass-through methods to UnifiedBlockchainService
+  getChainInfo() {
+    if (!this.unifiedService) {
+      throw new Error("Service not initialized");
+    }
+    return this.unifiedService.getChainInfo();
+  }
+
+  getCurrentChainFromService() {
+    if (!this.unifiedService) {
+      throw new Error("Service not initialized");
+    }
+    return this.unifiedService.getCurrentChain();
+  }
+
+  // Diamond Loupe Operations (EIP-2535)
+  async isDiamondContract(contractAddress) {
+    console.log(`[Admin BlockchainService] Checking if ${contractAddress} is a Diamond contract`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      return await this.unifiedService.isDiamondContract(contractAddress);
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error checking Diamond contract:`, error);
+      return false;
+    }
+  }
+
+  async getDiamondLoupeInfo(contractAddress) {
+    console.log(`[Admin BlockchainService] Getting Diamond Loupe info for ${contractAddress}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      const info = await this.unifiedService.getDiamondLoupeInfo(contractAddress);
+      console.log(`[Admin BlockchainService] Diamond Loupe info:`, info);
+      return info;
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting Diamond Loupe info:`, error);
+      throw error;
+    }
+  }
+
+  async getDiamondFacets(contractAddress) {
+    console.log(`[Admin BlockchainService] Getting Diamond facets for ${contractAddress}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      return await this.unifiedService.getDiamondFacets(contractAddress);
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting Diamond facets:`, error);
+      throw error;
+    }
+  }
+
+  async getFacetAddress(contractAddress, functionSelector) {
+    console.log(`[Admin BlockchainService] Getting facet address for selector ${functionSelector}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      return await this.unifiedService.getFacetAddress(contractAddress, functionSelector);
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting facet address:`, error);
+      throw error;
+    }
+  }
+
+  async getFacetSelectors(contractAddress, facetAddress) {
+    console.log(`[Admin BlockchainService] Getting selectors for facet ${facetAddress}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      return await this.unifiedService.getFacetSelectors(contractAddress, facetAddress);
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting facet selectors:`, error);
+      throw error;
+    }
+  }
+
+  async getAllFacetAddresses(contractAddress) {
+    console.log(`[Admin BlockchainService] Getting all facet addresses for ${contractAddress}`);
+
+    if (!this.initialized || !this.unifiedService) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      return await this.unifiedService.getAllFacetAddresses(contractAddress);
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting all facet addresses:`, error);
+      throw error;
+    }
   }
 }
 
