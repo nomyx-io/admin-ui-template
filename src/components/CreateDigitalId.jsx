@@ -117,10 +117,14 @@ function CreateDigitalId({ service }) {
               if (addIdentityCompleteError) throw new Error(addIdentityCompleteError);
 
               // Step 6: Update identity
+              const currentChain = await service.getCurrentChain();
               await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
                 displayName: trimmedDisplayName,
                 walletAddress: walletAddress.toLocaleLowerCase(),
                 accountNumber: trimmedAccountNumber,
+                status: "active",
+                address: { identityAddress: identity.identityAddress || identity }, // Send address as object
+                chain: currentChain, // Add the current chain for consistency with PRIVATE flow
               });
 
               // Step 7: Approve user if needed
@@ -173,10 +177,14 @@ function CreateDigitalId({ service }) {
 
               // Step 4: Update identity
               try {
+                const currentChain = await service.getCurrentChain();
                 await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
                   displayName: trimmedDisplayName,
                   walletAddress: walletAddress.toLocaleLowerCase(),
                   accountNumber: trimmedAccountNumber,
+                  status: "active",
+                  address: { identityAddress: identity.identityAddress }, // Send address as object
+                  chain: currentChain, // Add the current chain to segregate identities
                 });
               } catch (error) {
                 // Handle the error gracefully and continue

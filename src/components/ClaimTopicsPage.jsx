@@ -1,26 +1,66 @@
-import { useState, useEffect } from "react";
-
 import { useNavigate } from "react-router-dom";
 import { Spin } from "antd";
+import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
 import { NomyxAction } from "../utils/Constants";
+import useChainAwareData from "../hooks/useChainAwareData";
 
 const ClaimTopicsPage = ({ service }) => {
   const navigate = useNavigate();
-  const [claimTopics, setClaimTopics] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  // Use the chain-aware hook to fetch claim topics
+  const {
+    data: claimTopics,
+    loading,
+    error,
+    currentChain,
+    refetch,
+  } = useChainAwareData(service, async (service) => {
+    return await service.getClaimTopics();
+  });
 
   const columns = [
     { label: "Id", name: "attributes.topic" },
     { label: "Compliance Rule", name: "attributes.displayName", width: "95%" },
   ];
 
-  const actions = [{ label: "View", name: NomyxAction.ViewClaimTopic }];
+  const actions = [
+    { label: "View", name: NomyxAction.ViewClaimTopic },
+    { label: "Update", name: NomyxAction.UpdateClaimTopic },
+    {
+      label: "Delete",
+      name: NomyxAction.DeleteClaimTopic,
+      confirmation: "Are you sure you want to delete this Compliance Rule?",
+    },
+  ];
 
   const globalActions = [{ label: "Create Compliance Rule", name: NomyxAction.CreateClaimTopic }];
 
   const search = true;
+
+  const handleDeleteClaimTopic = async (topicId) => {
+    try {
+      await toast.promise(
+        (async () => {
+          await service.removeClaimTopic(topicId);
+          // Refresh the data after deletion
+          await refetch();
+        })(),
+        {
+          pending: "Deleting Compliance Rule...",
+          success: `Successfully deleted Compliance Rule ${topicId}`,
+          error: {
+            render({ data }) {
+              return <div>{data?.message || `Failed to delete Compliance Rule ${topicId}`}</div>;
+            },
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error deleting claim topic:", error);
+    }
+  };
 
   const handleAction = async (event, action, record) => {
     switch (action) {
@@ -31,29 +71,16 @@ const ClaimTopicsPage = ({ service }) => {
         let id = record.id;
         navigate("/topics/" + id);
         break;
+      case NomyxAction.UpdateClaimTopic:
+        navigate("/topics/" + record.id + "/edit");
+        break;
+      case NomyxAction.DeleteClaimTopic:
+        handleDeleteClaimTopic(record.attributes?.topic);
+        break;
       default:
         console.log("Unknown action: " + action);
     }
   };
-
-  useEffect(() => {
-    (async function () {
-      if (!service || !service.getClaimTopics) {
-        console.log("[ClaimTopicsPage] Service not ready yet, waiting...");
-        return; // Keep loading true
-      }
-
-      try {
-        const result = await service.getClaimTopics();
-        setClaimTopics(result);
-      } catch (error) {
-        console.error("[ClaimTopicsPage] Error fetching claim topics:", error);
-        setClaimTopics([]); // Set empty array on error
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [service]);
 
   // Show loading spinner while service is initializing
   if (loading || !service) {
@@ -73,7 +100,7 @@ const ClaimTopicsPage = ({ service }) => {
       actions={actions}
       globalActions={globalActions}
       search={search}
-      data={claimTopics}
+      data={claimTopics || []}
       pageSize={10}
       onAction={handleAction}
       onGlobalAction={handleAction}

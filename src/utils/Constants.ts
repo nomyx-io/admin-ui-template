@@ -17,6 +17,8 @@ enum NomyxEvent {
 enum NomyxAction {
   CreateClaimTopic,
   ViewClaimTopic,
+  UpdateClaimTopic,
+  DeleteClaimTopic,
   CreateTrustedIssuer,
   RemoveTrustedIssuer,
   UpdateClaimTopics,

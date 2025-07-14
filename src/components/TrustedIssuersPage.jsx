@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext } from "react";
+import { useState, useContext } from "react";
 
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -7,6 +7,7 @@ import ObjectList from "./ObjectList";
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { NomyxAction, WalletPreference } from "../utils/Constants";
+import useChainAwareData from "../hooks/useChainAwareData";
 
 // const AddTrustedIssuerDialog = ({ service, visible, setVisibility, addTrustedIssuer }) => {
 //   const [form] = Form.useForm();
@@ -72,40 +73,39 @@ import { NomyxAction, WalletPreference } from "../utils/Constants";
 
 const TrustedIssuersPage = ({ service }) => {
   const navigate = useNavigate();
-  const [trustedIssuers, setTrustedIssuers] = useState([]);
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
-  const fetchData = useCallback(async () => {
-    const issuers = service.getTrustedIssuers && (await service.getTrustedIssuers());
-    let data = [];
-    if (issuers) {
-      issuers.forEach((item) => {
-        // Add defensive checks to prevent undefined property access
-        if (!item || !item.attributes) {
-          console.warn("[TrustedIssuersPage] Skipping malformed issuer item:", item);
-          return;
-        }
+  // Use the chain-aware hook to fetch trusted issuers
+  const {
+    data: rawIssuers,
+    loading,
+    refetch: fetchData,
+    currentChain,
+  } = useChainAwareData(service, async (service) => {
+    return await service.getTrustedIssuers();
+  });
 
-        const { attributes } = item;
-        const claimTopicsString = attributes.claimTopics?.map((obj) => obj["topic"]).join(",") || "N/A";
+  // Transform the raw data into the format needed for the table
+  const trustedIssuers = [];
+  if (rawIssuers) {
+    rawIssuers.forEach((item) => {
+      // Add defensive checks to prevent undefined property access
+      if (!item || !item.attributes) {
+        console.warn("[TrustedIssuersPage] Skipping malformed issuer item:", item);
+        return;
+      }
 
-        data.push({
-          id: item.id || "unknown",
-          claimTopics: claimTopicsString,
-          address: attributes.issuer || "N/A",
-          trustedIssuer: attributes.verifierName || "Unknown Issuer",
-        });
+      const { attributes } = item;
+      const claimTopicsString = attributes.claimTopics?.map((obj) => obj["topic"]).join(",") || "N/A";
+
+      trustedIssuers.push({
+        id: item.id || "unknown",
+        claimTopics: claimTopicsString,
+        address: attributes.issuer || "N/A",
+        trustedIssuer: attributes.verifierName || "Unknown Issuer",
       });
-      setTrustedIssuers(data);
-    } else {
-      console.warn("[TrustedIssuersPage] No trusted issuers returned from service");
-      setTrustedIssuers([]);
-    }
-  }, [service]);
-
-  useEffect(() => {
-    fetchData();
-  }, [service, fetchData]);
+    });
+  }
 
   // const addTrustedIssuer = async (issuer, claimTopics) => {
   //   await service.addTrustedIssuer(issuer, claimTopics);
@@ -230,6 +230,15 @@ const TrustedIssuersPage = ({ service }) => {
         break;
     }
   };
+
+  // Show loading spinner while service is initializing
+  if (loading || !service) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <span className="ml-3">Loading trusted issuers...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

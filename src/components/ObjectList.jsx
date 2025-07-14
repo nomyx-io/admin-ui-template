@@ -177,9 +177,13 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                 {columns.map((column) => {
                   let fieldName = typeof column === "object" ? column.name : column;
                   let key = fieldName + "-" + record.id;
-                  if (column.name != "flagged_account")
-                    return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{getValue(fieldName, record)}</>}</td>;
-                  else
+                  if (column.name != "flagged_account") {
+                    const value = getValue(fieldName, record);
+                    // Handle objects that might be rendered as React children
+                    const displayValue =
+                      typeof value === "object" && value !== null && !Array.isArray(value) ? value.identityAddress || JSON.stringify(value) : value;
+                    return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{displayValue}</>}</td>;
+                  } else
                     return (
                       <td key={key}>
                         {record.watchlistMatched && (

@@ -12,6 +12,7 @@ import DfnsService from "./services/DfnsService";
 
 import ClaimTopicsPage from "./components/ClaimTopicsPage.jsx";
 import CreateClaimTopic from "./components/CreateClaimTopic.jsx";
+import EditClaimTopic from "./components/EditClaimTopic.jsx";
 import CreateDigitalId from "./components/CreateDigitalId.jsx";
 import CreatePassword from "./components/CreatePasswordPage.jsx";
 import CreateTrustedIssuer from "./components/CreateTrustedIssuer.jsx";
@@ -21,10 +22,10 @@ import EditClaimsSummaryView from "./components/EditClaimsSummaryView.jsx";
 import Home from "./components/Home.jsx";
 import IdentitiesPage from "./components/IdentitiesPage.jsx";
 import Layout from "./components/Layout";
-import Login from "./components/LoginPage.jsx";
+import Login from "./components/LoginPageWrapper";
 import MintPage from "./components/MintPage.jsx";
 import NavBar from "./components/NavBar.jsx";
-import Protected from "./components/Protected";
+import Protected from "./components/ProtectedWrapper";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
 import { RoleContext } from "./context/RoleContext";
@@ -33,7 +34,7 @@ import BlockchainService from "./services/BlockchainService.js";
 import parseInitialize from "./services/parseInitialize";
 import IdentityService from "./services/IdentityService";
 import { generateRandomString } from "./utils";
-import AutoLogout from "./utils/AutoLogout";
+import { AutoLogout } from "nomyx-ts/dist/frontend";
 import { WalletPreference } from "./utils/Constants.js";
 
 // localStorage key for persisting selected chain
@@ -462,11 +463,14 @@ function App() {
               position="bottom-right"
               className="toast-background"
               progressClassName="toast-progress-bar"
-              autoClose={4000}
+              autoClose={2500}
               closeOnClick
-              pauseOnHover
+              pauseOnHover={false}
+              pauseOnFocusLoss={false}
+              draggable={false}
               limit={1}
               newestOnTop={false}
+              hideProgressBar={false}
             />
             {/* Application Routes */}
             <Routes>
@@ -489,6 +493,7 @@ function App() {
                     service={blockchainService}
                     selectedChainId={selectedChainId}
                     onChainChange={switchChain}
+                    role={role}
                   />
                 }
               />
@@ -516,6 +521,14 @@ function App() {
                 element={
                   <Protected role={"CentralAuthority"} roles={role}>
                     <ViewClaimTopic service={blockchainService} />
+                  </Protected>
+                }
+              />
+              <Route
+                path="/topics/:topicId/edit"
+                element={
+                  <Protected role={"CentralAuthority"} roles={role}>
+                    <EditClaimTopic service={blockchainService} />
                   </Protected>
                 }
               />

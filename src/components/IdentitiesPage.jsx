@@ -18,6 +18,7 @@ const IdentitiesPage = ({ service }) => {
   const [pendingIdentities, setPendingIdentities] = useState([]);
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const [currentChain, setCurrentChain] = useState(null);
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const fetchData = useCallback(
@@ -25,9 +26,13 @@ const IdentitiesPage = ({ service }) => {
       try {
         let fetchedIdentities = [];
         if (service) {
+          // Get current chain
+          const chain = await service.getCurrentChain();
+          setCurrentChain(chain);
+
           if (tab === "Identities" || tab === "Claims") {
-            // Fetch active identities for Identities and Claims tabs
-            fetchedIdentities = await service.getActiveIdentities();
+            // Fetch active identities for Identities and Claims tabs, filtered by chain
+            fetchedIdentities = await service.getActiveIdentities(chain);
             fetchedIdentities = fetchedIdentities.map((identity) => {
               let identidyObj = {};
               if (identity && identity.attributes) {
@@ -36,7 +41,15 @@ const IdentitiesPage = ({ service }) => {
                 identidyObj.claims = claimsArray.join(", "); // Convert claims array to comma-separated string
                 identidyObj.displayName = identity.attributes.displayName || "";
                 identidyObj.kyc_id = identity.attributes.accountNumber || "";
-                identidyObj.identityAddress = identity.attributes.address || "";
+                // Handle both string and object address formats for backward compatibility
+                const address = identity.attributes.address;
+                if (typeof address === "string") {
+                  identidyObj.identityAddress = address;
+                } else if (address && typeof address === "object") {
+                  identidyObj.identityAddress = address.identityAddress || "";
+                } else {
+                  identidyObj.identityAddress = "";
+                }
                 identidyObj.id = identity.id;
                 identidyObj.pepMatched = identity?.pepMatched || false;
                 identidyObj.watchlistMatched = identity?.watchlistMatched || false;
@@ -109,6 +122,25 @@ const IdentitiesPage = ({ service }) => {
   useEffect(() => {
     fetchData(activeTab);
   }, [activeTab, service, refreshTrigger, fetchData]);
+
+  // Monitor for chain changes
+  useEffect(() => {
+    if (!service) return;
+
+    const checkChainChange = async () => {
+      const chain = await service.getCurrentChain();
+      if (chain !== currentChain && currentChain !== null) {
+        // Chain has changed, refresh data
+        fetchData(activeTab);
+      }
+    };
+
+    // Check for chain changes periodically
+    const interval = setInterval(checkChainChange, 1000);
+
+    return () => clearInterval(interval);
+  }, [service, currentChain, activeTab, fetchData]);
+
   const handleTabChange = (key) => {
     setActiveTab(key);
   };
@@ -140,6 +172,7 @@ const IdentitiesPage = ({ service }) => {
   };
 
   const handleRemoveIdentity = async (event, action, record) => {
+    console.log("[IdentitiesPage] handleRemoveIdentity called with:", { walletPreference, record });
     if (walletPreference === WalletPreference.MANAGED) {
       const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       const identities = [record.identityAddress];
@@ -204,14 +237,45 @@ const IdentitiesPage = ({ service }) => {
           const identities = [record.identityAddress];
 
           for (const identity of identities) {
-            // Step 1: Call removeIdentity
+            // Step 1: Call removeIdentity (blockchain)
             await service.removeIdentity(identity);
-            // Step 2: Call unregisterIdentity
+            // Step 2: Call unregisterIdentity (blockchain)
             await service.unregisterIdentity(identity);
+            // Step 3: Soft remove from database
+            await service.softRemoveUser(record);
           }
 
           // After successful removal, trigger a refresh of the component
           setRefreshTrigger((prev) => !prev); // This needs to be tested upon updated removal event contract redeployment
+        },
+        {
+          pending: `Removing ${record?.displayName}...`,
+          success: `Successfully removed ${record?.displayName}`,
+          error: {
+            render({ data }) {
+              return <div>{data?.reason || `An error occurred while removing ${record?.displayName}`}</div>;
+            },
+          },
+        }
+      );
+    } else {
+      console.log("[IdentitiesPage] Wallet preference not handled:", walletPreference);
+      // Fallback to private wallet behavior for dev mode
+      toast.promise(
+        async () => {
+          const identities = [record.identityAddress];
+
+          for (const identity of identities) {
+            // Step 1: Call removeIdentity (blockchain)
+            await service.removeIdentity(identity);
+            // Step 2: Call unregisterIdentity (blockchain)
+            await service.unregisterIdentity(identity);
+            // Step 3: Soft remove from database
+            await service.softRemoveUser(record);
+          }
+
+          // After successful removal, trigger a refresh of the component
+          setRefreshTrigger((prev) => !prev);
         },
         {
           pending: `Removing ${record?.displayName}...`,
@@ -291,7 +355,7 @@ const IdentitiesPage = ({ service }) => {
         navigate("/identities/" + record.id + "/edit");
         break;
       case NomyxAction.RemoveIdentity:
-        handleRemoveIdentity(event, action, record);
+        await handleRemoveIdentity(event, action, record);
         break;
       case NomyxAction.CreatePendingIdentity:
         const { displayName, kyc_id, identityAddress } = record;
