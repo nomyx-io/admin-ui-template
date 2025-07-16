@@ -308,6 +308,9 @@ class BlockchainService {
                 if (user.attributes?.watchlistMatched) {
                   identity.watchlistMatched = user.attributes.watchlistMatched;
                 }
+                if (user.attributes?.username) {
+                  identity.email = user.attributes.username;
+                }
               }
             }
 
