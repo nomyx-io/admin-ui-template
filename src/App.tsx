@@ -34,7 +34,6 @@ import BlockchainService from "./services/BlockchainService.js";
 import parseInitialize from "./services/parseInitialize";
 import IdentityService from "./services/IdentityService";
 import { generateRandomString } from "./utils";
-import { AutoLogout } from "nomyx-ts/dist/frontend";
 import { WalletPreference } from "./utils/Constants.js";
 
 // localStorage key for persisting selected chain
@@ -445,8 +444,6 @@ function App() {
         </div>
       )}
       <Router>
-        <AutoLogout />
-
         {/* Blockchain Manager (Only visible when logged in) */}
         {role.length > 0 && <BlockchainManager selectedChainId={selectedChainId} onChainChange={switchChain} onLogout={onLogoutEmailPassword} />}
 
