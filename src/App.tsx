@@ -7,7 +7,6 @@ import axios from "axios";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import { createBlockchainService, BlockchainType } from "nomyx-ts";
-import BlockchainManager from "./components/BlockchainManager";
 import DfnsService from "./services/DfnsService";
 
 import ClaimTopicsPage from "./components/ClaimTopicsPage.jsx";
@@ -24,7 +23,7 @@ import IdentitiesPage from "./components/IdentitiesPage.jsx";
 import Layout from "./components/Layout";
 import Login from "./components/LoginPageWrapper";
 import MintPage from "./components/MintPage.jsx";
-import NavBar from "./components/NavBar.jsx";
+import NavBar from "./components/NavBar";
 import Protected from "./components/ProtectedWrapper";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
@@ -263,17 +262,8 @@ function App() {
       // Continue with client-side cleanup even if server logout fails
     }
 
-    // Reset client-side state
-    setRole([]);
-    setWalletPreference(null);
-    setDfnsToken(null);
-    setUser(null);
-    setForceLogout(false);
-    setIsConnected(false);
-    localStorage.removeItem("sessionToken");
-    localStorage.removeItem("tokenExpiration");
-    setBlockchainService(null);
-    setIdentityService(null);
+    // Use the full logout to clear all state
+    onFullLogout();
 
     toast.success("Logged out successfully.");
   };
@@ -414,7 +404,16 @@ function App() {
     }
   }, [role]);
 
+  // Wallet disconnect - only disconnects the blockchain wallet
   const onDisconnect = () => {
+    // Only disconnect wallet, don't clear session
+    console.log("[Admin App] Disconnecting wallet only, keeping session");
+    // You can add wallet-specific disconnect logic here if needed
+    // For example, clearing wallet-specific state
+  };
+
+  // Full logout - clears Parse session and all state
+  const onFullLogout = () => {
     setRole([]);
     setDfnsToken(null);
     setUser(null);
@@ -444,13 +443,17 @@ function App() {
         </div>
       )}
       <Router>
-        {/* Blockchain Manager (Only visible when logged in) */}
-        {role.length > 0 && <BlockchainManager selectedChainId={selectedChainId} onChainChange={switchChain} onLogout={onLogoutEmailPassword} />}
-
         {/* Navigation Bar (Only visible when logged in) */}
         {role.length > 0 && (
           <div className={`topnav p-0`}>
-            <NavBar onConnect={onConnect} onDisconnect={onDisconnect} onLogout={onLogoutEmailPassword} role={role} />
+            <NavBar
+              onConnect={onConnect}
+              onDisconnect={onDisconnect}
+              onLogout={onLogoutEmailPassword}
+              role={role}
+              selectedChainId={selectedChainId}
+              onChainChange={switchChain}
+            />
           </div>
         )}
 

@@ -80,7 +80,9 @@ nav ul li ul li a:hover {
 /* Styling for Top Navigation Menu */
 .topnav {
   background-color: #333;
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to visible to allow dropdowns */
+  position: relative;
+  z-index: 1000;
 }
 
 /* Style the links inside the navigation bar */
