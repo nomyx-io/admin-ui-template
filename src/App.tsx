@@ -36,45 +36,6 @@ import { generateRandomString } from "./utils";
 import AutoLogout from "./utils/AutoLogout";
 import { WalletPreference } from "./utils/Constants.js";
 
-const localhost: Chain = {
-  id: 31337,
-  name: "Localhost",
-  network: "localhost",
-  nativeCurrency: {
-    decimals: 18,
-    name: "Ethereum",
-    symbol: "ETH",
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_LOCALHOST || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_LOCALHOST || ""],
-    },
-  },
-  testnet: true,
-};
-
-const baseSep: Chain = {
-  id: 84532,
-  network: "base",
-  name: "Base Sepolia",
-  nativeCurrency: {
-    name: "Base",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_BASE_SEPOLIA || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_BASE_SEPOLIA || ""],
-    },
-  },
-};
-
 const optSep: Chain = {
   id: 11155420,
   network: "optimism",
@@ -94,27 +55,8 @@ const optSep: Chain = {
   },
 };
 
-const base: Chain = {
-  id: 8453,
-  network: "base",
-  name: "Base",
-  nativeCurrency: {
-    name: "Base",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_BASE || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_BASE || ""],
-    },
-  },
-};
-
 const { chains, publicClient } = configureChains(
-  [base, baseSep, localhost, optSep], // mainnet, polygon, optimism, arbitrum, zora,
+  [optSep], // mainnet, polygon, optimism, arbitrum, zora,
   [alchemyProvider({ apiKey: "CSgNtTJ6_Clrf1zNjVp2j1ppfLE2-aVX" }), publicProvider()]
 );
 
