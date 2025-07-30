@@ -17,6 +17,7 @@ import CreateClaimTopic from "./components/CreateClaimTopic.jsx";
 import CreateDigitalId from "./components/CreateDigitalId.jsx";
 import CreatePassword from "./components/CreatePasswordPage.jsx";
 import CreateTrustedIssuer from "./components/CreateTrustedIssuer.jsx";
+import CSPMeta from "./components/CSPMeta.jsx";
 import DigitalIdentityDetailView from "./components/DigitalIdentityDetailPage.jsx";
 import EditClaims from "./components/EditClaims.jsx";
 import EditClaimsSummaryView from "./components/EditClaimsSummaryView.jsx";
@@ -438,6 +439,7 @@ function App() {
 
   return (
     <WagmiConfig config={wagmiConfig}>
+      {/* <CSPMeta /> */}
       <RainbowKitProvider chains={chains}>
         <RoleContext.Provider value={{ role, setRole, walletPreference, setWalletPreference, dfnsToken, setDfnsToken, user, setUser }}>
           {/* Loading Spinner Overlay */}
