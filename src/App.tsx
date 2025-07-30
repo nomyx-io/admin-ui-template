@@ -145,7 +145,7 @@ const validateToken = async (token: string) => {
       user: data?.user,
       walletPreference: data?.user?.walletPreference,
       dfnsToken: data?.dfnsToken,
-      cognito: JSON.parse(data?.cognitoToken),
+      cognito: data?.cognitoToken,
     };
   } catch (error) {
     console.error("Error validating token:", error);
@@ -181,7 +181,7 @@ function App() {
         roles: data?.user?.roles || [],
         user: data?.user,
         dfnsToken: data?.dfns_token,
-        cognito: JSON.parse(data?.cognitoToken),
+        cognito: data?.cognitoToken,
       };
     } catch (error) {
       console.log("Error during authentication:", error);
