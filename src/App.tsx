@@ -145,6 +145,7 @@ const validateToken = async (token: string) => {
       user: data?.user,
       walletPreference: data?.user?.walletPreference,
       dfnsToken: data?.dfnsToken,
+      cognito: JSON.parse(data?.cognitoToken),
     };
   } catch (error) {
     console.error("Error validating token:", error);
@@ -180,6 +181,7 @@ function App() {
         roles: data?.user?.roles || [],
         user: data?.user,
         dfnsToken: data?.dfns_token,
+        cognito: JSON.parse(data?.cognitoToken),
       };
     } catch (error) {
       console.log("Error during authentication:", error);
@@ -224,7 +226,7 @@ function App() {
       return;
     }
 
-    const { token, roles, walletPreference, dfnsToken }: any = await getToken({
+    const { token, roles, walletPreference, dfnsToken, cognito }: any = await getToken({
       message: message,
       signature: signature,
     });
@@ -235,6 +237,8 @@ function App() {
       setWalletPreference(walletPreference);
       setDfnsToken(dfnsToken);
       localStorage.setItem("sessionToken", token);
+      localStorage.setItem("jwt_token", cognito?.idToken);
+      localStorage.setItem("refresh_token", cognito?.refreshToken);
     } else {
       if (signature) {
         toast.error("Sorry you are not authorized!");
@@ -296,7 +300,7 @@ function App() {
 
   // Define the onLogin function (Username/Password Login)
   const onLogin = async (email: string, password: string) => {
-    const { token, roles, walletPreference, user, dfnsToken } = await getToken({ email, password });
+    const { token, roles, walletPreference, user, dfnsToken, cognito } = await getToken({ email, password });
 
     const expirationTime = Date.now() + 60 * 30 * 1000; // 30m logout
     if (roles.length > 0) {
@@ -306,6 +310,8 @@ function App() {
       setWalletPreference(walletPreference);
       localStorage.setItem("sessionToken", token);
       localStorage.setItem("tokenExpiration", expirationTime.toString());
+      localStorage.setItem("jwt_token", cognito?.idToken);
+      localStorage.setItem("refresh_token", cognito?.refreshToken);
       setIsConnected(true);
       //const provider = await setupProvider();
       if (!provider) {
@@ -367,17 +373,21 @@ function App() {
   const restoreSession = async () => {
     const token = localStorage.getItem("sessionToken");
     if (token) {
-      const { valid, roles, walletPreference, user, dfnsToken } = await validateToken(token);
+      const { valid, roles, walletPreference, user, dfnsToken, cognito } = await validateToken(token);
       if (valid && roles.length > 0) {
         setRole(roles);
         setUser(user);
         setDfnsToken(dfnsToken);
         setWalletPreference(walletPreference);
         setIsConnected(true);
+        localStorage.setItem("jwt_token", cognito?.idToken);
+        localStorage.setItem("refresh_token", cognito?.refreshToken);
       } else {
         // Token is invalid or roles are empty
         localStorage.removeItem("sessionToken");
         localStorage.removeItem("tokenExpiration");
+        localStorage.removeItem("jwt_token");
+        localStorage.removeItem("refresh_token");
         setForceLogout(true);
       }
     }
