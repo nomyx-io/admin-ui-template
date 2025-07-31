@@ -128,7 +128,7 @@ function CreateClaimTopic({ service }) {
       <p className="text-xl p-6">Create Compliance Rule</p>
       <hr />
       <div className="p-3 mt-2">
-        <div>
+        <div data-tour="compliance-rule-display-name">
           <label htmlFor="claimTopicDisplayName">Compliance Rule Display Name *</label>
           <div className="mt-3 ml-1 relative w-full flex border rounded-lg p-0">
             <Input
@@ -144,7 +144,7 @@ function CreateClaimTopic({ service }) {
           </div>
           <p>User-friendly name that describes the schema. Shown to end-users.</p>
         </div>
-        <div className="mt-10 mb-6">
+        <div className="mt-10 mb-6" data-tour="compliance-rule-topic-id">
           <label htmlFor="claimTopicHiddenName">TopicID hidden name *</label>
           <div className="mt-3 ml-1 relative w-full flex border rounded-lg p-0">
             <Input
@@ -161,7 +161,11 @@ function CreateClaimTopic({ service }) {
           <p>Only alphanumeric characters allowed and no spaces. Not seen by end-users.</p>
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
-          <Button className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white" onClick={saveClaimTopic}>
+          <Button
+            className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
+            onClick={saveClaimTopic}
+            data-tour="create-compliance-rule-submit"
+          >
             Create Compliance Rule
           </Button>
         </div>

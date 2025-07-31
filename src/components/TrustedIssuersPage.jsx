@@ -229,7 +229,13 @@ const TrustedIssuersPage = ({ service }) => {
       confirmation: "Are you sure you want to remove this Trusted Issuer?",
     },
   ];
-  const globalActions = [{ label: "Create Trusted Issuer", name: NomyxAction.CreateTrustedIssuer }];
+  const globalActions = [
+    {
+      label: "Create Trusted Issuer",
+      name: NomyxAction.CreateTrustedIssuer,
+      props: { "data-tour": "create-trusted-issuer-btn" },
+    },
+  ];
 
   const search = true;
 

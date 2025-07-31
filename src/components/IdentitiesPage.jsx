@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
 import { Tabs } from "antd";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
@@ -19,6 +19,8 @@ const IdentitiesPage = ({ service }) => {
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
+  const location = useLocation();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Helper function to extract error message
   const getErrorMessage = (error) => {
@@ -163,6 +165,50 @@ const IdentitiesPage = ({ service }) => {
   useEffect(() => {
     fetchData(activeTab);
   }, [activeTab, service, refreshTrigger, fetchData]);
+
+  const handleDelayedRefresh = useCallback(
+    async (retryCount = 0, maxRetries = 3) => {
+      const delays = [2000, 4000, 6000]; // 2s, 4s, 6s delays
+
+      if (retryCount < maxRetries) {
+        setIsRefreshing(true);
+
+        setTimeout(async () => {
+          try {
+            await fetchData(activeTab);
+
+            // Check if we got updated data, if not retry
+            // You might want to add additional logic here to verify the data is actually updated
+            if (retryCount < maxRetries - 1) {
+              handleDelayedRefresh(retryCount + 1, maxRetries);
+            } else {
+              setIsRefreshing(false);
+            }
+          } catch (error) {
+            console.error("Error during delayed refresh:", error);
+            setIsRefreshing(false);
+          }
+        }, delays[retryCount] || 6000);
+      } else {
+        setIsRefreshing(false);
+      }
+    },
+    [activeTab, fetchData]
+  );
+
+  // Add this useEffect to handle navigation-triggered refresh
+  useEffect(() => {
+    if (location.state?.refresh) {
+      // Immediate refresh
+      fetchData(activeTab);
+
+      // Then delayed refreshes to catch blockchain updates
+      handleDelayedRefresh();
+
+      // Clear the state to prevent repeated refreshes
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, activeTab, fetchData, handleDelayedRefresh]);
 
   const handleTabChange = (key) => {
     setActiveTab(key);
@@ -328,7 +374,11 @@ const IdentitiesPage = ({ service }) => {
     },
   ];
   const pendingActions = [
-    { label: "Approve", name: NomyxAction.CreatePendingIdentity },
+    {
+      label: "Approve",
+      name: NomyxAction.CreatePendingIdentity,
+      props: { "data-tour": "identities-approve-btn" },
+    },
     { label: "View", name: NomyxAction.ViewPendingIdentity },
     {
       label: "Deny",
@@ -337,7 +387,11 @@ const IdentitiesPage = ({ service }) => {
     },
   ];
   const claimsActions = [
-    { label: "Add Rules", name: NomyxAction.AddClaims },
+    {
+      label: "Add Rules",
+      name: NomyxAction.AddClaims,
+      props: { "data-tour": "identities-add-rules-btn" },
+    },
     { label: "View", name: NomyxAction.ViewIdentity },
     {
       label: "Remove",
@@ -405,7 +459,7 @@ const IdentitiesPage = ({ service }) => {
             onGlobalAction={handleAction}
           />
         </TabPane>
-        <TabPane tab="Pending" key="Pending">
+        <TabPane tab={<span data-tour="identities-pending-tab">Pending</span>} key="Pending">
           <ObjectList
             title="Pending"
             description="Identities that have yet to be approved or denied"
@@ -419,7 +473,7 @@ const IdentitiesPage = ({ service }) => {
             onGlobalAction={handleAction}
           />
         </TabPane>
-        <TabPane tab="Add Rules" key="Claims">
+        <TabPane tab={<span data-tour="identities-add-rules-tab">Add Rules</span>} key="Claims">
           <ObjectList
             title="Add Rules"
             description="Identies that have yet to be related to Compliance Rules"

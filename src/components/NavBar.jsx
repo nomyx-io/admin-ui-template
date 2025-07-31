@@ -55,12 +55,12 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
               </span>
             </li>
             <li>
-              <Link to="/topics" className="hover:underline">
+              <Link to="/topics" className="hover:underline" data-tour="nav-compliance-rules">
                 Compliance Rules
               </Link>
             </li>
             <li>
-              <Link to="/issuers" className="hover:underline">
+              <Link to="/issuers" className="hover:underline" data-tour="nav-trusted-issuers">
                 Trusted Issuers
               </Link>
             </li>
@@ -68,7 +68,7 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
         )}
         {role.includes("TrustedIssuer") && (
           <li>
-            <Link to="/identities" className="hover:underline">
+            <Link to="/identities" className="hover:underline" data-tour="nav-identities">
               Identities
             </Link>
           </li>

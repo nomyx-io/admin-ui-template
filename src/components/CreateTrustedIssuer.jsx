@@ -413,7 +413,7 @@ function CreateTrustedIssuer({ service }) {
       <p className="text-xl p-6">{isCreateMode ? "Create" : "Update"} Trusted Issuer</p>
       <hr></hr>
       <div className="p-6 mt-2">
-        <div>
+        <div data-tour="trusted-issuer-display-name">
           <label htmlFor="trustedIssuerName">Trusted Issuer display name *</label>
           {isCreateMode ? (
             <div className="mt-3 mb-3">
@@ -445,7 +445,7 @@ function CreateTrustedIssuer({ service }) {
             </div>
           )}
         </div>
-        <div className="mt-10 mb-6">
+        <div className="mt-10 mb-6" data-tour="trusted-issuer-wallet">
           <label htmlFor="trustedIssuerWallet">Trusted Issuer Wallet *</label>
           <div className="mt-3 relative w-full flex border rounded-lg">
             <Input
@@ -464,7 +464,7 @@ function CreateTrustedIssuer({ service }) {
           </div>
           <p className="my-4">Manage Compliance Rule IDs</p>
         </div>
-        <div className="my-5">
+        <div className="my-5" data-tour="trusted-issuer-compliance-rules">
           <Transfer
             className="w-full"
             showSelectAll={false}
@@ -488,6 +488,7 @@ function CreateTrustedIssuer({ service }) {
               className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
               onClick={saveTrustedIssuer}
               disabled={!dataLoaded}
+              data-tour="create-trusted-issuer-submit"
             >
               Create Trusted Issuer
             </Button>

@@ -137,6 +137,7 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                     key={globalAction.name}
                     className={"btn global-action-" + globalAction.name}
                     onClick={(event) => handleAction(event, globalAction.name, globalAction.confirmation)}
+                    {...globalAction.props}
                   >
                     {globalAction.label}
                   </button>

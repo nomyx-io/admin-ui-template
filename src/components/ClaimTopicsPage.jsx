@@ -16,7 +16,13 @@ const ClaimTopicsPage = ({ service }) => {
 
   const actions = [{ label: "View", name: NomyxAction.ViewClaimTopic }];
 
-  const globalActions = [{ label: "Create Compliance Rule", name: NomyxAction.CreateClaimTopic }];
+  const globalActions = [
+    {
+      label: "Create Compliance Rule",
+      name: NomyxAction.CreateClaimTopic,
+      props: { "data-tour": "create-compliance-rule-btn" },
+    },
+  ];
 
   const search = true;
 
