@@ -1,10 +1,13 @@
 import Parse from "parse";
 
+import { parseJWTClient } from "../services/parseInitialize"; // Adjust the path as needed
+
 class ParseClient {
   private static instance: ParseClient;
 
-  constuctor() {
+  constructor() {
     console.log("ParseClient constructor");
+    this.initialize();
   }
 
   // Singleton getInstance method
@@ -16,17 +19,92 @@ class ParseClient {
   }
 
   private initialize() {
-    Parse.initialize(process.env.REACT_APP_PARSE_APPLICATION_ID || "", process.env.REACT_APP_PARSE_JAVASCRIPT_KEY);
-    Parse.serverURL = process.env.REACT_APP_PARSE_SERVER_URL + "/parse" || "";
-    Parse.javaScriptKey = process.env.REACT_APP_PARSE_JAVASCRIPT_KEY;
+    const appId = process.env.REACT_APP_PARSE_APPLICATION_ID;
+    const jsKey = process.env.REACT_APP_PARSE_JAVASCRIPT_KEY;
+    const serverURL = process.env.REACT_APP_PARSE_SERVER_URL;
 
-    // Middleware: Automatically use the session token (JWT) for all requests
+    if (!appId || !jsKey || !serverURL) {
+      console.error("ParseClient initialization failed: Missing environment variables");
+      return;
+    }
+
+    // Only initialize Parse if the JWT client hasn't already done it
+    if (!parseJWTClient.isInitialized) {
+      Parse.initialize(appId, jsKey);
+      Parse.serverURL = `${serverURL}/parse`;
+      Parse.javaScriptKey = jsKey;
+    }
+
+    // Initialize Parse User session if sessionToken exists
+    this.initParseUserSession();
+
+    console.log("ParseClient initialized with external JWT support");
+  }
+
+  private async initParseUserSession(): Promise<void> {
     const sessionToken = localStorage.getItem("sessionToken");
     if (sessionToken) {
-      Parse.User.become(sessionToken).catch((error) => {
-        console.error("Error becoming user with sessionToken:", error);
-      });
+      try {
+        await Parse.User.become(sessionToken);
+        console.log("Parse User session restored");
+      } catch (error: any) {
+        console.error("Invalid session token:", error.message);
+        localStorage.removeItem("sessionToken");
+
+        if (error.code === 209 || error.code === 101) {
+          parseJWTClient.clearTokens();
+        }
+      }
     }
+  }
+
+  // JWT Token Management Methods - delegate to external JWT client
+  public setJWTToken(token: string): void {
+    parseJWTClient.setJWTToken(token);
+  }
+
+  public setRefreshToken(token: string): void {
+    parseJWTClient.setRefreshToken(token);
+  }
+
+  public setTokens(accessToken: string, refreshToken: string, sessionToken?: string): void {
+    parseJWTClient.setTokens(accessToken, refreshToken, sessionToken);
+  }
+
+  public setSessionToken(sessionToken: string): void {
+    parseJWTClient.setSessionToken(sessionToken);
+  }
+
+  public clearTokens(): void {
+    parseJWTClient.clearTokens();
+  }
+
+  public getJWTToken(): string | null {
+    return parseJWTClient.getJWTToken();
+  }
+
+  public hasJWTToken(): boolean {
+    return parseJWTClient.hasJWTToken();
+  }
+
+  public isUserAuthenticated(): boolean {
+    return parseJWTClient.isUserAuthenticated();
+  }
+
+  public setRefreshEndpoint(endpoint: string): void {
+    parseJWTClient.setRefreshEndpoint(endpoint);
+  }
+
+  // Utility method to ensure JWT is set before operations that need it
+  private ensureJWTToken(): void {
+    if (!parseJWTClient.hasJWTToken()) {
+      console.warn("No JWT token available - some operations may fail");
+    }
+  }
+
+  // Helper method to check token expiration proactively
+  public async checkAndRefreshToken(): Promise<boolean> {
+    return parseJWTClient.checkAndRefreshToken();
   }
 
   /**
@@ -36,6 +114,7 @@ class ParseClient {
    * @returns
    */
   public async get(collectionName: string, id: string) {
+    this.ensureJWTToken();
     const Collection = Parse.Object.extend(collectionName);
     const query = new Parse.Query(Collection);
     query.equalTo("objectId", id);
@@ -56,6 +135,7 @@ class ParseClient {
     whereValues: any[] = [],
     includesValues: any[] = []
   ): Promise<Parse.Object | undefined> {
+    this.ensureJWTToken();
     if (whereFields.length !== whereValues.length) {
       throw new Error("The number of whereFields and whereValues must match");
     }
@@ -74,6 +154,7 @@ class ParseClient {
    * @returns
    */
   public async getRecordWithBlockchain(collection: any, networkId: any, idFields: any = [], idValueFields: any = []) {
+    this.ensureJWTToken();
     try {
       const Blockchain = Parse.Object.extend("Blockchain");
       const bquery = new Parse.Query(Blockchain);
@@ -90,6 +171,7 @@ class ParseClient {
   }
 
   public countRecords(collectionName: any, collectionIdFields: any, collectionIds: any) {
+    this.ensureJWTToken();
     try {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
@@ -128,6 +210,7 @@ class ParseClient {
     orderDirection: string = "asc",
     nonNullFields: string[] = []
   ) {
+    this.ensureJWTToken();
     try {
       if (whereFields.length !== whereValues.length) {
         throw new Error("The number of whereFields and whereValues must match");
@@ -168,6 +251,7 @@ class ParseClient {
    * @throws {Error} if the number of whereFields and whereValues do not match
    */
   public async getFirstRecord(className: string, whereFields: string[], whereValues: any[]) {
+    this.ensureJWTToken();
     try {
       if (whereFields.length !== whereValues.length) {
         throw new Error("The number of whereFields and whereValues must match");
@@ -184,6 +268,7 @@ class ParseClient {
   }
 
   public async getLatestRecord(className: string, whereFields: string[], whereValues: any[]) {
+    this.ensureJWTToken();
     try {
       if (whereFields.length !== whereValues.length) {
         throw new Error("The number of whereFields and whereValues must match");
@@ -214,6 +299,7 @@ class ParseClient {
     collectionIds: any = [],
     data: any = {}
   ): Promise<Parse.Object | undefined> {
+    this.ensureJWTToken();
     const Collection = Parse.Object.extend(collectionName);
     const query = new Parse.Query(Collection);
     collectionIdFields.forEach((cif: any, i: number) => query.equalTo(cif, collectionIds[i]));
@@ -244,6 +330,7 @@ class ParseClient {
    * @returns
    */
   public async updateExistingRecord(collectionName: any, collectionIdFields: any, collectionIds: any, data: any) {
+    this.ensureJWTToken();
     try {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
@@ -277,6 +364,7 @@ class ParseClient {
     collectionIdsValues: any = [],
     data: any = {}
   ): Promise<Parse.Object | undefined> {
+    this.ensureJWTToken();
     try {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
@@ -306,6 +394,7 @@ class ParseClient {
     collectionIdsValues: any = [],
     data: any = {}
   ): Promise<Parse.Object | undefined> {
+    this.ensureJWTToken();
     try {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
@@ -336,6 +425,7 @@ class ParseClient {
    * @returns
    */
   public async deleteRecord(collectionName: any, collectionId: any) {
+    this.ensureJWTToken();
     try {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
@@ -354,6 +444,7 @@ class ParseClient {
    * @param records
    */
   public async saveAll(records: any) {
+    this.ensureJWTToken();
     try {
       const allRecords = [];
       for (let i = 0; i < records.length; i++) {
@@ -365,7 +456,6 @@ class ParseClient {
       }
       for (let i = 0; i < allRecords.length; i++) {
         await allRecords[i].save(null);
-        //saveAll: Saved record ${allRecords[i].attributes}
       }
     } catch (e) {
       console.log(`saveAll: Error saving records ${records}`);
@@ -378,6 +468,7 @@ class ParseClient {
    * @param records
    */
   public async saveAllFor(collectionName: string, records: any) {
+    this.ensureJWTToken();
     try {
       const allRecords = [];
       for (let i = 0; i < records.length; i++) {
@@ -389,10 +480,9 @@ class ParseClient {
       }
       for (let i = 0; i < allRecords.length; i++) {
         await allRecords[i].save(null);
-        //saveAllFor: Saved record ${allRecords[i]}
       }
     } catch (e) {
-      console.log(`saveAllFoe: Error saving records ${records}`);
+      console.log(`saveAllFor: Error saving records ${records}`);
     }
   }
 
@@ -402,6 +492,7 @@ class ParseClient {
    * @returns
    */
   public async getSchema(className: string) {
+    this.ensureJWTToken();
     try {
       const query = new Parse.Query("_SCHEMA");
       query.equalTo("className", className);
@@ -417,6 +508,7 @@ class ParseClient {
    * @returns
    */
   public async saveSchema(schema: any) {
+    this.ensureJWTToken();
     try {
       return await schema.save();
     } catch (e) {
@@ -431,6 +523,7 @@ class ParseClient {
    * @returns
    */
   public async createSchema(className: string, fields: any) {
+    this.ensureJWTToken();
     try {
       // get all the existing schemas
       const schemas = await this.getAllSchemas();
@@ -495,6 +588,7 @@ class ParseClient {
    * @param schemasList
    */
   public async createSchemas(schemasList: any) {
+    this.ensureJWTToken();
     const schemas = await this.getAllSchemas();
     const schemaNames = schemas.map((s: any) => s.className);
     for (let i = 0; i < schemasList.length; i++) {
@@ -513,6 +607,7 @@ class ParseClient {
    * @returns
    */
   public async deleteCollection(collectionName: string) {
+    this.ensureJWTToken();
     try {
       const query = new Parse.Query(collectionName);
       const records = await query.find();
@@ -528,6 +623,7 @@ class ParseClient {
    * @returns
    */
   public async deleteSchema(className: string) {
+    this.ensureJWTToken();
     try {
       const schema = await this.getSchema(className);
       return schema ? await schema.destroy() : undefined;
@@ -540,6 +636,7 @@ class ParseClient {
    * get all schemas in the parse database
    */
   public async getAllSchemas() {
+    this.ensureJWTToken();
     try {
       return await Parse.Schema.all();
     } catch (e) {
@@ -556,6 +653,7 @@ class ParseClient {
    * @returns
    */
   public async saveFile(name: string, data?: any, type?: string) {
+    this.ensureJWTToken();
     const parseFile = new Parse.File(name, data, type);
     await parseFile.save({ useMasterKey: true });
     return parseFile;
@@ -568,6 +666,7 @@ class ParseClient {
    * @param fields
    */
   public async updateRecord(collectionName: string | { className: string }, id: string, fields: { [x: string]: any }) {
+    this.ensureJWTToken();
     const Collection = Parse.Object.extend(collectionName);
     const collection = new Collection();
     collection.id = id;
@@ -578,12 +677,13 @@ class ParseClient {
   }
 
   /**
-   * createa a record in the parse database
+   * create a record in the parse database
    * @param collectionName
    * @param fields
    * @returns
    */
   public async create(collectionName: string, fields: { [x: string]: any }) {
+    this.ensureJWTToken();
     const Collection = Parse.Object.extend(collectionName);
     const collection = new Collection();
     for (const key in fields) {
@@ -601,6 +701,7 @@ class ParseClient {
    * @returns
    */
   public async update(collName: string | { className: string }, existingRecordId: string, objectToInsert: { [x: string]: any }) {
+    this.ensureJWTToken();
     const Collection = Parse.Object.extend(collName);
     const collection = new Collection();
     collection.id = existingRecordId;
@@ -618,6 +719,7 @@ class ParseClient {
    * @returns {Promise<any>}
    */
   public async run(cloudFunction: string, params: any = {}): Promise<any> {
+    // Cloud functions already work with JWT, no need to check token here
     try {
       return await Parse.Cloud.run(cloudFunction, params);
     } catch (error: any) {
@@ -632,6 +734,8 @@ class ParseClient {
   public async logout(): Promise<void> {
     try {
       await Parse.User.logOut();
+      // Also clear JWT tokens when logging out
+      this.clearTokens();
       console.log("User logged out successfully.");
     } catch (error: any) {
       console.error("Error logging out user:", error.message);
@@ -644,10 +748,8 @@ class ParseClient {
     }
 
     try {
-      // Use Parse.Cloud.run to call registerInit
       const challenge = await Parse.Cloud.run("registerInit", { username });
       console.log("Received registration challenge:", challenge);
-
       return { challenge, error: null };
     } catch (error: any) {
       console.error("Error initiating registration:", error);
@@ -680,7 +782,6 @@ class ParseClient {
     try {
       const params: any = { address };
 
-      // Only include optional parameters if they are provided
       if (firstname) params.firstname = firstname;
       if (lastname) params.lastname = lastname;
       if (email) params.email = email;

@@ -5,25 +5,9 @@ interface TokenRefreshResponse {
   refreshToken?: string;
 }
 
-interface RequestOptions {
-  requestHeaders?: Record<string, string>;
-  [key: string]: any;
-}
-
 interface ParseError extends Error {
   code?: number;
   message: string;
-}
-
-interface RESTController {
-  request: (method: string, path: string, data: any, options?: RequestOptions) => Promise<any>;
-}
-
-// Extend Parse CoreManager type to include missing methods
-declare module "parse" {
-  namespace CoreManager {
-    function getRESTController(): RESTController;
-  }
 }
 
 class ParseJWTClient {
@@ -31,7 +15,8 @@ class ParseJWTClient {
   private jwtToken: string | null = null;
   private refreshToken: string | null = null;
   private refreshPromise: Promise<string> | null = null;
-  private refreshEndpoint: string = "/auth/refresh";
+  private refreshEndpoint: string = "/auth/refresh-cognito-token";
+  private originalRestController: any = null;
 
   constructor() {
     this.init();
@@ -43,18 +28,22 @@ class ParseJWTClient {
     const serverURL = process.env.REACT_APP_PARSE_SERVER_URL;
 
     if (!appId || !jsKey || !serverURL) {
-      console.error("ParseClient initialization failed: Missing environment variables.");
+      console.error("ParseClient initialization failed: Missing environment variables");
       return;
     }
 
+    // Initialize Parse normally
     Parse.initialize(appId, jsKey);
     Parse.serverURL = `${serverURL}/parse`;
 
-    // Override the default RESTController to add JWT token
+    // Load existing tokens
+    this.loadTokens();
+
+    // Set up clean JWT interceptor
     this.setupJWTInterceptor();
 
-    // Load existing JWT and refresh tokens
-    this.loadTokens();
+    // Update global headers with any loaded JWT token
+    this.updateGlobalHeaders();
 
     // Initialize Parse User session if sessionToken exists
     this.initParseUserSession();
@@ -67,14 +56,11 @@ class ParseJWTClient {
     if (sessionToken) {
       try {
         await Parse.User.become(sessionToken);
-        console.log("Parse User session restored successfully");
       } catch (error) {
         const parseError = error as ParseError;
-        console.error("Error becoming user with sessionToken:", parseError);
-        // Clear invalid session token
+        console.error("Invalid session token:", parseError.message);
         localStorage.removeItem("sessionToken");
 
-        // If session token is invalid, also clear JWT tokens as they might be related
         if (parseError.code === 209 || parseError.code === 101) {
           this.clearTokens();
         }
@@ -84,55 +70,64 @@ class ParseJWTClient {
 
   private setupJWTInterceptor(): void {
     try {
-      // Type assertion to handle missing type definitions
       const coreManager = Parse.CoreManager as any;
-      const originalRequest = coreManager.getRESTController().request;
+      const restController = coreManager.getRESTController();
 
-      coreManager.getRESTController().request = async (method: string, path: string, data: any, options: RequestOptions = {}): Promise<any> => {
-        // Add JWT token to all requests
-        if (this.jwtToken) {
-          options.requestHeaders = {
-            ...options.requestHeaders,
-            Authorization: `Bearer ${this.jwtToken}`,
-            "X-JWT-Token": this.jwtToken,
-          };
-        }
+      // Store original method once
+      if (!this.originalRestController) {
+        this.originalRestController = restController.request.bind(restController);
+      }
 
+      const self = this;
+
+      // Clean override of request method for error handling only
+      restController.request = async (method: string, path: string, data: any, options: any = {}) => {
         try {
-          // Call original request method
-          return await originalRequest.call(coreManager.getRESTController(), method, path, data, options);
+          return await self.originalRestController(method, path, data, options);
         } catch (error) {
           const parseError = error as ParseError;
-          // Handle JWT expiration
-          if (this.isTokenExpiredError(parseError)) {
-            console.log("JWT token expired, attempting refresh...");
 
+          // Handle token expiration
+          if (self.isTokenExpiredError(parseError)) {
             try {
-              // Attempt to refresh the token
-              await this.refreshJWTToken();
-
-              // Retry the original request with new token
-              if (this.jwtToken) {
-                options.requestHeaders = {
-                  ...options.requestHeaders,
-                  Authorization: `Bearer ${this.jwtToken}`,
-                  "X-JWT-Token": this.jwtToken,
-                };
-                return await originalRequest.call(coreManager.getRESTController(), method, path, data, options);
-              }
+              await self.refreshJWTToken();
+              // Token refresh will automatically update global headers
+              return await self.originalRestController(method, path, data, options);
             } catch (refreshError) {
               console.error("Token refresh failed:", refreshError);
-              this.clearTokens();
-              this.onRefreshFailed(refreshError as Error);
+              self.clearTokens();
+              self.onRefreshFailed(refreshError as Error);
               throw refreshError;
             }
           }
+
           throw error;
         }
       };
     } catch (error) {
       console.error("Failed to setup JWT interceptor:", error);
-      console.warn("JWT interceptor not available - falling back to manual token management");
+    }
+  }
+
+  private updateGlobalHeaders(): void {
+    try {
+      const coreManager = Parse.CoreManager as any;
+
+      if (this.jwtToken) {
+        // Set global headers that will be sent with every Parse request
+        const currentHeaders = coreManager.get("REQUEST_HEADERS") || {};
+        coreManager.set("REQUEST_HEADERS", {
+          ...currentHeaders,
+          Authorization: `Bearer ${this.jwtToken}`,
+        });
+      } else {
+        // Remove JWT from global headers
+        const currentHeaders = coreManager.get("REQUEST_HEADERS") || {};
+        const { Authorization, ...headersWithoutAuth } = currentHeaders;
+        coreManager.set("REQUEST_HEADERS", headersWithoutAuth);
+      }
+    } catch (error) {
+      console.error("Failed to update global headers:", error);
     }
   }
 
@@ -140,9 +135,10 @@ class ParseJWTClient {
     return (
       error.code === 209 ||
       error.code === 401 ||
-      (error.message && error.message.toLowerCase().includes("unauthorized")) ||
-      (error.message && error.message.toLowerCase().includes("token expired")) ||
-      (error.message && error.message.toLowerCase().includes("invalid token"))
+      (error.message &&
+        (error.message.toLowerCase().includes("unauthorized") ||
+          error.message.toLowerCase().includes("token expired") ||
+          error.message.toLowerCase().includes("invalid token")))
     );
   }
 
@@ -159,8 +155,7 @@ class ParseJWTClient {
     this.refreshPromise = this.performTokenRefresh();
 
     try {
-      const result = await this.refreshPromise;
-      return result;
+      return await this.refreshPromise;
     } finally {
       this.refreshPromise = null;
     }
@@ -169,6 +164,7 @@ class ParseJWTClient {
   private async performTokenRefresh(): Promise<string> {
     try {
       const serverURL = process.env.REACT_APP_PARSE_SERVER_URL;
+
       const response = await fetch(`${serverURL}${this.refreshEndpoint}`, {
         method: "POST",
         headers: {
@@ -181,24 +177,21 @@ class ParseJWTClient {
       });
 
       if (!response.ok) {
-        throw new Error(`Token refresh failed: ${response.status} ${response.statusText}`);
+        throw new Error(`Token refresh failed: ${response.status}`);
       }
 
       const data: TokenRefreshResponse = await response.json();
 
-      if (data.accessToken) {
-        this.setJWTToken(data.accessToken);
-
-        // Update refresh token if provided
-        if (data.refreshToken) {
-          this.setRefreshToken(data.refreshToken);
-        }
-
-        console.log("JWT token refreshed successfully");
-        return data.accessToken;
-      } else {
+      if (!data.accessToken) {
         throw new Error("No access token in refresh response");
       }
+
+      this.setJWTToken(data.accessToken);
+
+      if (data.refreshToken) {
+        this.setRefreshToken(data.refreshToken);
+      }
+      return data.accessToken;
     } catch (error) {
       console.error("Token refresh error:", error);
       throw error;
@@ -206,23 +199,21 @@ class ParseJWTClient {
   }
 
   private loadTokens(): void {
-    const accessToken = localStorage.getItem("jwt_token") || sessionStorage.getItem("jwt_token");
-    const refreshToken = localStorage.getItem("refresh_token") || sessionStorage.getItem("refresh_token");
+    this.jwtToken = localStorage.getItem("jwt_token");
+    this.refreshToken = localStorage.getItem("refresh_token");
 
-    if (accessToken) {
-      this.setJWTToken(accessToken);
-    }
-
-    if (refreshToken) {
-      this.setRefreshToken(refreshToken);
-    }
+    if (this.jwtToken) console.log("JWT token loaded from storage");
+    if (this.refreshToken) console.log("Refresh token loaded from storage");
   }
 
+  // Public methods
   public setJWTToken(token: string): void {
     this.jwtToken = token;
     if (token) {
       localStorage.setItem("jwt_token", token);
     }
+    // Update global Parse headers whenever token changes
+    this.updateGlobalHeaders();
   }
 
   public setRefreshToken(token: string): void {
@@ -236,7 +227,6 @@ class ParseJWTClient {
     this.setJWTToken(accessToken);
     this.setRefreshToken(refreshToken);
 
-    // Set Parse User session token if provided
     if (sessionToken) {
       this.setSessionToken(sessionToken);
     }
@@ -245,7 +235,6 @@ class ParseJWTClient {
   public setSessionToken(sessionToken: string): void {
     if (sessionToken) {
       localStorage.setItem("sessionToken", sessionToken);
-      // Automatically become the user with this session token
       Parse.User.become(sessionToken).catch((error: ParseError) => {
         console.error("Error setting Parse User session:", error);
         localStorage.removeItem("sessionToken");
@@ -258,16 +247,16 @@ class ParseJWTClient {
     this.refreshToken = null;
     localStorage.removeItem("jwt_token");
     localStorage.removeItem("refresh_token");
-    localStorage.removeItem("sessionToken"); // Also clear Parse session token
-    // Clear Parse User session
+    localStorage.removeItem("sessionToken");
+
     if (Parse.User.current()) {
       Parse.User.logOut();
     }
-  }
 
-  // Legacy method for backward compatibility
-  public clearJWTToken(): void {
-    this.clearTokens();
+    // Clear JWT from global headers
+    this.updateGlobalHeaders();
+
+    console.log("✅ All tokens cleared");
   }
 
   public getJWTToken(): string | null {
@@ -294,15 +283,10 @@ class ParseJWTClient {
     return localStorage.getItem("sessionToken");
   }
 
-  public hasSessionToken(): boolean {
-    return !!this.getSessionToken();
-  }
-
   public isUserAuthenticated(): boolean {
-    return !!Parse.User.current() && (this.hasJWTToken() || this.hasSessionToken());
+    return !!Parse.User.current() && (this.hasJWTToken() || !!this.getSessionToken());
   }
 
-  // Check if token is expired based on JWT payload (optional)
   public isTokenExpired(token: string = this.jwtToken || ""): boolean {
     if (!token) return true;
 
@@ -310,13 +294,11 @@ class ParseJWTClient {
       const payload = JSON.parse(atob(token.split(".")[1]));
       const currentTime = Math.floor(Date.now() / 1000);
       return payload.exp < currentTime;
-    } catch (error) {
-      console.warn("Could not decode JWT token:", error);
+    } catch {
       return true;
     }
   }
 
-  // Proactively refresh token if it's about to expire (within 5 minutes)
   public async checkAndRefreshToken(): Promise<boolean> {
     if (!this.jwtToken || !this.refreshToken) {
       return false;
@@ -340,24 +322,37 @@ class ParseJWTClient {
   }
 
   public onJWTExpired(): void {
-    console.warn("JWT token expired");
-    // redirect to login
+    console.warn("JWT token expired - redirecting to login");
     window.location.href = "/login";
   }
 
   public onRefreshFailed(error: Error): void {
-    // Override this method to handle refresh failure
     console.error("Token refresh failed:", error);
     this.onJWTExpired();
   }
 
-  // Configure custom refresh endpoint
   public setRefreshEndpoint(endpoint: string): void {
     this.refreshEndpoint = endpoint;
   }
 
   public get isInitialized(): boolean {
     return this.initialized;
+  }
+
+  // Utility methods
+  public async testConnection(): Promise<boolean> {
+    try {
+      const TestObject = Parse.Object.extend("_User");
+      const query = new Parse.Query(TestObject);
+      query.limit(1);
+
+      await query.find();
+      console.log("Parse connection test successful");
+      return true;
+    } catch (error) {
+      console.log("Parse connection test failed:", error);
+      return false;
+    }
   }
 }
 
@@ -366,9 +361,6 @@ const parseJWTClient = new ParseJWTClient();
 
 // Legacy initialization function for backward compatibility
 const parseInitialize = (): ParseJWTClient => {
-  if (!parseJWTClient.isInitialized) {
-    parseJWTClient["init"]();
-  }
   return parseJWTClient;
 };
 
