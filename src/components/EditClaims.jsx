@@ -152,7 +152,7 @@ const EditClaims = ({ service }) => {
                   };
                   await delay(4000);
                   //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
-                  navigate("/identities");
+                  navigate("/identities", { state: { refresh: true } });
                 } catch (error) {
                   console.error("Error in set claims operation:", error);
                   throw error;
