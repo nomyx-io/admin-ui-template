@@ -293,6 +293,8 @@ function App() {
     setIsConnected(false);
     localStorage.removeItem("sessionToken");
     localStorage.removeItem("tokenExpiration");
+    localStorage.removeItem("jwt_token");
+    localStorage.removeItem("refresh_token");
     setBlockchainService(null);
 
     toast.success("Logged out successfully.");
@@ -429,6 +431,8 @@ function App() {
     setIsConnected(false);
     localStorage.removeItem("sessionToken");
     localStorage.removeItem("tokenExpiration");
+    localStorage.removeItem("jwt_token");
+    localStorage.removeItem("refresh_token");
     setBlockchainService(null);
   };
 
