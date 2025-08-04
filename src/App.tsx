@@ -31,7 +31,7 @@ import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
 import { RoleContext } from "./context/RoleContext";
 import BlockchainService from "./services/BlockchainService.js";
-import parseInitialize from "./services/parseInitialize";
+import parseInitialize, { parseJWTClient } from "./services/parseInitialize";
 import { generateRandomString } from "./utils";
 import AutoLogout from "./utils/AutoLogout";
 import { WalletPreference } from "./utils/Constants.js";
@@ -258,6 +258,7 @@ function App() {
     setIsConnected(true);
 
     initializeBlockchainService(provider);
+    parseJWTClient.setTokensImmediate(cognito?.idToken, cognito?.refreshToken, token);
     // Initialize Parse
     parseInitialize();
   };
@@ -324,7 +325,7 @@ function App() {
 
       console.log("✅ Provider initialized:", provider);
       initializeBlockchainService(provider);
-
+      parseJWTClient.setTokensImmediate(cognito?.idToken, cognito?.refreshToken, token);
       // Initialize Parse
       parseInitialize();
     } else {
@@ -384,6 +385,8 @@ function App() {
         setIsConnected(true);
         localStorage.setItem("jwt_token", cognito?.idToken);
         localStorage.setItem("refresh_token", cognito?.refreshToken);
+        parseJWTClient.setTokensImmediate(cognito?.idToken, cognito?.refreshToken, token);
+        parseInitialize();
       } else {
         // Token is invalid or roles are empty
         localStorage.removeItem("sessionToken");

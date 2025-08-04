@@ -354,6 +354,45 @@ class ParseJWTClient {
       return false;
     }
   }
+
+  public forceTokenUpdate(): void {
+    // Reload tokens from localStorage
+    this.loadTokens();
+
+    // Update global headers immediately
+    this.updateGlobalHeaders();
+
+    // Re-initialize Parse User session if sessionToken exists
+    this.initParseUserSession();
+
+    console.log("✅ Forced token update completed");
+  }
+
+  public setTokensImmediate(accessToken: string, refreshToken: string, sessionToken?: string): void {
+    // Set tokens immediately without waiting for localStorage
+    this.jwtToken = accessToken;
+    this.refreshToken = refreshToken;
+
+    // Store in localStorage
+    localStorage.setItem("jwt_token", accessToken);
+    localStorage.setItem("refresh_token", refreshToken);
+
+    if (sessionToken) {
+      localStorage.setItem("sessionToken", sessionToken);
+    }
+
+    // Update global headers immediately
+    this.updateGlobalHeaders();
+
+    // Set Parse User session immediately
+    if (sessionToken) {
+      Parse.User.become(sessionToken).catch((error: ParseError) => {
+        console.error("Error setting Parse User session:", error);
+      });
+    }
+
+    console.log("✅ Tokens set immediately");
+  }
 }
 
 // Create singleton instance
