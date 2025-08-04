@@ -255,8 +255,6 @@ class ParseJWTClient {
 
     // Clear JWT from global headers
     this.updateGlobalHeaders();
-
-    console.log("✅ All tokens cleared");
   }
 
   public getJWTToken(): string | null {
@@ -364,8 +362,6 @@ class ParseJWTClient {
 
     // Re-initialize Parse User session if sessionToken exists
     this.initParseUserSession();
-
-    console.log("✅ Forced token update completed");
   }
 
   public setTokensImmediate(accessToken: string, refreshToken: string, sessionToken?: string): void {
@@ -390,8 +386,6 @@ class ParseJWTClient {
         console.error("Error setting Parse User session:", error);
       });
     }
-
-    console.log("✅ Tokens set immediately");
   }
 }
 
