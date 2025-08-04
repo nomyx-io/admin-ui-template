@@ -286,58 +286,40 @@ class BlockchainService {
 
   async getActiveIdentities() {
     try {
-      // Fetch all active identities
       const identities = await ParseClient.getRecords("Identity", ["active"], [true], ["*"]);
 
       if (identities && identities.length > 0) {
-        // Fetch active claims and include the related identityObj and claimTopicObj
         const claims = await ParseClient.getRecords("Claim", ["active"], [true], ["identityObj", "claimTopicObj"]);
 
         if (claims && claims.length > 0) {
-          for (let i = 0; i < identities.length; i++) {
-            const identity = identities[i];
-            const walletAddress = identity.get("walletAddress"); // Get walletAddress from the Identity
+          for (const identity of identities) {
+            const walletAddress = identity.get("walletAddress");
 
             if (walletAddress) {
-              // Query the User class for pepMatched and watchlistMatched columns
               const userRecords = await ParseClient.getRecords("User", ["walletAddress"], [walletAddress], ["pepMatched", "watchlistMatched"]);
-              if (userRecords && userRecords.length > 0) {
-                const user = userRecords[0]; // Assuming walletAddress is unique and returns one record
-                // Add pepMatched and watchlistMatched to the identity response
-                if (user.attributes?.pepMatched) {
-                  identity.pepMatched = user.attributes.pepMatched;
-                }
-                if (user.attributes?.watchlistMatched) {
-                  identity.watchlistMatched = user.attributes.watchlistMatched;
-                }
-                if (user.attributes?.personaVerificationData) {
-                  identity.personaVerificationData = user.attributes.personaVerificationData;
-                }
+              if (userRecords.length > 0) {
+                const user = userRecords[0];
+                identity.pepMatched = user.attributes?.pepMatched || false;
+                identity.watchlistMatched = user.attributes?.watchlistMatched || false;
+                identity.personaVerificationData = user.attributes?.personaVerificationData || null;
               }
             }
 
-            // Filter and map claims to the corresponding identity, with a check for valid identityObj
+            // Claims for this identity
             const activeClaims = claims.filter((claim) => {
               const identityObj = claim.get("identityObj");
-              return identityObj && identityObj.id === identity.id; // Check if identityObj exists and matches
+              return identityObj && identityObj.id === identity.id;
             });
 
-            if (activeClaims.length > 0) {
-              // Ensure the claims object exists on the identity
-              if (!identity.attributes.claims) {
-                identity.attributes.claims = { children: [] }; // Initialize claims object if it doesn't exist
-              }
+            // Sort them by topic
+            const sortedClaims = activeClaims.sort((a, b) => {
+              const topicA = a.attributes?.claimTopicObj?.attributes?.topic || "";
+              const topicB = b.attributes?.claimTopicObj?.attributes?.topic || "";
+              return topicA > topicB ? 1 : -1;
+            });
 
-              // Assign active claims to children
-              identity.attributes.claims.children = activeClaims;
-
-              // Sort the claims by topic
-              identity.attributes.claims.children.sort((a, b) => {
-                const topicA = a.attributes.claimTopicObj?.attributes?.topic || "";
-                const topicB = b.attributes.claimTopicObj?.attributes?.topic || "";
-                return topicA > topicB ? 1 : -1;
-              });
-            }
+            // Store in _claims for safe frontend access
+            identity._claims = sortedClaims;
           }
         }
       }
