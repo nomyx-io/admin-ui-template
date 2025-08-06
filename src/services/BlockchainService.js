@@ -17,15 +17,19 @@ class BlockchainService {
   mintAbi = MinterFacet.default.abi;
 
   constructor(provider, contractAddress, identityRegistryAddress) {
+    this.contractAddress = contractAddress;
     this.provider = provider;
 
-    // ✅ Check if provider is Web3Provider (Wallet) or JsonRpcProvider (RPC Fallback)
+    this.dedicatedProvider = new ethers.providers.JsonRpcProvider(process.env.REACT_APP_RPC_URL);
+
     if (provider instanceof ethers.providers.Web3Provider) {
       this.signer = provider.getSigner();
     } else {
-      this.signer = null; // Read-only mode
-      provider._pollingInterval = Infinity;
-      provider._events = [];
+      if (provider instanceof ethers.providers.StaticJsonRpcProvider) {
+        this.signer = null; // Read-only mode
+        provider.polling = false;
+        provider._pollingInterval = Infinity;
+      }
     }
 
     // ✅ Use the best available provider for contracts (signer for transactions, provider for reads)
@@ -194,7 +198,6 @@ class BlockchainService {
   }
 
   async getNextClaimTopicId() {
-    debugger;
     const result = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "createdAt", "desc");
     let highestTopicId = result.length > 0 ? Number.parseInt(result[0].attributes.topic) + 1 : 1;
     return highestTopicId;
@@ -222,81 +225,95 @@ class BlockchainService {
     return trustedIssuer;
   }
 
+  /**
+   * Retrieves claims associated with a specific claim topic
+   * @param {string} id - The object ID of the claim topic
+   * @returns {Array} - Array of claims or empty array if none found
+   */
   async getClaimsForClaimTopics(id) {
-    const pointerObject = {
-      __type: "Pointer",
-      className: "ClaimTopic",
-      objectId: id,
-    };
+    try {
+      // Validate input
+      if (!id) {
+        return [];
+      }
 
-    const claimTopics = await ParseClient.getRecords("Claim", ["claimTopicObj"], [pointerObject], ["*"]);
-    const claimTopicObj = await ParseClient.getRecords("ClaimTopic", ["objectId"], [id]);
-    if (claimTopicObj.length === 0) return []; // Return if no matching topic
+      // Get the claim topic details
+      const claimTopicObj = await ParseClient.getRecords("ClaimTopic", ["objectId"], [id]);
+      if (!claimTopicObj || claimTopicObj.length === 0) {
+        return [];
+      }
 
-    const claimTopicValue = claimTopicObj[0].attributes.topic;
+      // Extract the topic value
+      const claimTopicValue = claimTopicObj[0].attributes.topic;
 
-    // Fetch identities that contain the claim topic in their claims array
-    const identities = await ParseClient.getRecords("Identity", ["claims"], [claimTopicValue]);
+      // Get claims using the topic value directly
+      const claimTopics = await ParseClient.getRecords("Claim", ["topic"], [claimTopicValue], ["*"]);
 
-    // Filter claim topics to include only those that match with identities
-    const filteredClaims = claimTopics.filter((claim) =>
-      identities.some((identity) => identity?.attributes.identity === claim?.attributes?.identity)
-    );
+      // Ensure we have valid claim data
+      if (!claimTopics || !Array.isArray(claimTopics)) {
+        return [];
+      }
 
-    return filteredClaims;
+      // Re-implement identity filtering with proper error handling
+      try {
+        // Get identities that contain this claim topic
+        const identities = await ParseClient.getRecords("Identity", ["claims"], [claimTopicValue]);
+
+        // Only filter if we have valid identities data
+        if (identities && Array.isArray(identities) && identities.length > 0) {
+          return claimTopics.filter(
+            (claim) => claim?.attributes?.identity && identities.some((identity) => identity?.attributes?.identity === claim.attributes.identity)
+          );
+        }
+      } catch (filterError) {
+        // If filtering fails, fall back to returning all claims
+      }
+
+      // Return all claims if filtering is not possible
+      return claimTopics;
+    } catch (error) {
+      // Log error but don't expose details to client
+      console.error("Error in getClaimsForClaimTopics:", error);
+      return [];
+    }
   }
 
   async getActiveIdentities() {
     try {
-      // Fetch all active identities
       const identities = await ParseClient.getRecords("Identity", ["active"], [true], ["*"]);
 
       if (identities && identities.length > 0) {
-        // Fetch active claims and include the related identityObj and claimTopicObj
         const claims = await ParseClient.getRecords("Claim", ["active"], [true], ["identityObj", "claimTopicObj"]);
 
         if (claims && claims.length > 0) {
-          for (let i = 0; i < identities.length; i++) {
-            const identity = identities[i];
-            const walletAddress = identity.get("walletAddress"); // Get walletAddress from the Identity
+          for (const identity of identities) {
+            const walletAddress = identity.get("walletAddress");
 
             if (walletAddress) {
-              // Query the User class for pepMatched and watchlistMatched columns
               const userRecords = await ParseClient.getRecords("User", ["walletAddress"], [walletAddress], ["pepMatched", "watchlistMatched"]);
-              if (userRecords && userRecords.length > 0) {
-                const user = userRecords[0]; // Assuming walletAddress is unique and returns one record
-                // Add pepMatched and watchlistMatched to the identity response
-                if (user.attributes?.pepMatched) {
-                  identity.pepMatched = user.attributes.pepMatched;
-                }
-                if (user.attributes?.watchlistMatched) {
-                  identity.watchlistMatched = user.attributes.watchlistMatched;
-                }
+              if (userRecords.length > 0) {
+                const user = userRecords[0];
+                identity.pepMatched = user.attributes?.pepMatched || false;
+                identity.watchlistMatched = user.attributes?.watchlistMatched || false;
+                identity.personaVerificationData = user.attributes?.personaVerificationData || null;
               }
             }
 
-            // Filter and map claims to the corresponding identity, with a check for valid identityObj
+            // Claims for this identity
             const activeClaims = claims.filter((claim) => {
               const identityObj = claim.get("identityObj");
-              return identityObj && identityObj.id === identity.id; // Check if identityObj exists and matches
+              return identityObj && identityObj.id === identity.id;
             });
 
-            if (activeClaims.length > 0) {
-              // Ensure the claims object exists on the identity
-              if (!identity.attributes.claims) {
-                identity.attributes.claims = { children: [] }; // Initialize claims object if it doesn't exist
-              }
+            // Sort them by topic
+            const sortedClaims = activeClaims.sort((a, b) => {
+              const topicA = a.attributes?.claimTopicObj?.attributes?.topic || "";
+              const topicB = b.attributes?.claimTopicObj?.attributes?.topic || "";
+              return topicA > topicB ? 1 : -1;
+            });
 
-              // Assign active claims to children
-              identity.attributes.claims.children = activeClaims;
-
-              // Sort the claims by topic
-              identity.attributes.claims.children.sort((a, b) => {
-                const topicA = a.attributes.claimTopicObj?.attributes?.topic || "";
-                const topicB = b.attributes.claimTopicObj?.attributes?.topic || "";
-                return topicA > topicB ? 1 : -1;
-              });
-            }
+            // Store in _claims for safe frontend access
+            identity._claims = sortedClaims;
           }
         }
       }
@@ -632,8 +649,32 @@ class BlockchainService {
     return trustedIssuer;
   }
 
+  //temporary fix: the idea is to update this service (and App) to use dedicated provider for getters
   async isTrustedIssuer(issuer) {
-    return await this.trustedIssuersRegistryService.isTrustedIssuer(issuer);
+    if (!this.contractAddress) {
+      console.error("contractAddress is undefined in isTrustedIssuer");
+      throw new Error("Missing contract address for trusted issuer check");
+    }
+
+    if (!this.trustedIssuersRegistryAbi) {
+      console.error("trustedIssuersRegistryAbi is undefined");
+      throw new Error("Missing ABI for trusted issuer contract");
+    }
+
+    if (!this.dedicatedProvider) {
+      console.error("dedicatedProvider is undefined");
+      throw new Error("Missing dedicated provider for read-only contract call");
+    }
+
+    try {
+      const contract = new ethers.Contract(this.contractAddress, this.trustedIssuersRegistryAbi, this.dedicatedProvider);
+      const result = await contract.isTrustedIssuer(issuer);
+      console.log("isTrustedIssuer result:", result);
+      return result;
+    } catch (err) {
+      console.error("Error calling isTrustedIssuer:", err);
+      throw err;
+    }
   }
 
   async getTrustedIssuerClaimTopics(trustedIssuer) {
