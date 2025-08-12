@@ -31,6 +31,7 @@ import MintPage from "./components/MintPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
 import SetFunctionClaims from "./components/SetFunctionClaims.jsx";
+import TradeHistoryPage from "./components/TradeHistoryPage.jsx";
 import TransactionHistoryPage from "./components/TransactionHistoryPage.jsx";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
@@ -735,6 +736,18 @@ function App() {
                           </div>
                         )}
                       </Protected>
+                    }
+                  />
+                  <Route
+                    path="/trade-history"
+                    element={
+                      blockchainService ? (
+                        <TradeHistoryPage service={blockchainService} />
+                      ) : (
+                        <div className="flex justify-center items-center h-full">
+                          <Spin tip="Initializing service..." />
+                        </div>
+                      )
                     }
                   />
                   <Route

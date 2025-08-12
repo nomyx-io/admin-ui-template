@@ -62,6 +62,11 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
               </Link>
             </li>
             <li>
+              <Link to="/trade-history" className="hover:underline">
+                Trade History
+              </Link>
+            </li>
+            <li>
               <Link to="/admin" className="hover:underline">
                 Admin
               </Link>
