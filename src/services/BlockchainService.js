@@ -1,4 +1,4 @@
-import { createBlockchainService, UnifiedBlockchainService, ChainConfigService } from "nomyx-ts";
+import { createBlockchainService, UnifiedBlockchainService, ChainConfigService } from "@nomyx/shared";
 import PubSub from "pubsub-js";
 
 import ParseClient from "../services/ParseClient"; // Import the singleton instance
@@ -121,7 +121,8 @@ class BlockchainService {
     console.log(`[Admin BlockchainService] Getting claim topics via nomyx-ts`);
 
     if (!this.initialized || !this.unifiedService) {
-      throw new Error("BlockchainService not initialized");
+      console.warn("[Admin BlockchainService] Service not fully initialized, returning empty array");
+      return [];
     }
 
     try {
@@ -244,7 +245,8 @@ class BlockchainService {
     console.log(`[Admin BlockchainService] Getting trusted issuers via nomyx-ts`);
 
     if (!this.initialized || !this.unifiedService) {
-      throw new Error("BlockchainService not initialized");
+      console.warn("[Admin BlockchainService] Service not fully initialized, returning empty array");
+      return [];
     }
 
     try {
@@ -481,7 +483,8 @@ class BlockchainService {
     console.log(`[Admin BlockchainService] Getting identities via nomyx-ts`);
 
     if (!this.initialized || !this.unifiedService) {
-      throw new Error("BlockchainService not initialized");
+      console.warn("[Admin BlockchainService] Service not fully initialized, returning empty array");
+      return [];
     }
 
     try {

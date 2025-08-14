@@ -12,7 +12,6 @@ const Home = () => {
       <header className="table-header" style={{ position: "relative" }}>
         <h1>Welcome to NomyxID</h1>
         <h2>Decentralized Identity Management</h2>
-        <img src={NomyxLogo} alt="Nomyx Logo" style={{ position: "absolute", top: "-2rem", right: 10, width: "15%" }} />
       </header>
       <Row justify="center" gutter={[16, 16]}>
         <Col span={24}>

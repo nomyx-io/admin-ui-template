@@ -17,17 +17,20 @@ class ParseClient {
   }
 
   private initialize() {
-    Parse.initialize(process.env.REACT_APP_PARSE_APPLICATION_ID || "", process.env.REACT_APP_PARSE_JAVASCRIPT_KEY);
-    // Remove the extra /parse since REACT_APP_PARSE_SERVER_URL already includes it
-    Parse.serverURL = process.env.REACT_APP_PARSE_SERVER_URL || "";
-    Parse.javaScriptKey = process.env.REACT_APP_PARSE_JAVASCRIPT_KEY;
+    // Check if we're in the browser
+    if (typeof window !== 'undefined') {
+      const appId = process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID || process.env.REACT_APP_PARSE_APPLICATION_ID || "nomyx";
+      const jsKey = process.env.NEXT_PUBLIC_PARSE_JAVASCRIPT_KEY || process.env.REACT_APP_PARSE_JAVASCRIPT_KEY || "12345";
+      const serverURL = process.env.NEXT_PUBLIC_PARSE_SERVER_URL || process.env.REACT_APP_PARSE_SERVER_URL || "http://localhost:1338/parse";
+      
+      Parse.initialize(appId, jsKey);
+      Parse.serverURL = serverURL;
+      Parse.javaScriptKey = jsKey;
 
-    // Middleware: Automatically use the session token (JWT) for all requests
-    const sessionToken = localStorage.getItem("sessionToken");
-    if (sessionToken) {
-      Parse.User.become(sessionToken).catch((error) => {
-        console.error("Error becoming user with sessionToken:", error);
-      });
+      // Important: Don't try to restore Parse sessions from localStorage
+      // The sessionToken in localStorage is from our custom JWT auth system,
+      // not a Parse session token. Parse operations will work without authentication,
+      // and classes like Identity will fall back to blockchain data when Parse auth fails.
     }
   }
 
@@ -83,7 +86,7 @@ class ParseClient {
       const query = new Parse.Query(collection);
       query.matchesQuery("network", bquery);
       idFields.forEach((idField: any, i: number) => query.equalTo(idField, idValueFields[i]));
-      return await query.first({ useMasterKey: true });
+      return await query.first();
     } catch (e) {
       console.log(
         `getRecordWithBlockchain: Error getting record with collection ${collection} and networkId ${networkId} and idFields ${idFields} and idValueFields ${idValueFields}`
@@ -96,7 +99,7 @@ class ParseClient {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
       collectionIdFields.forEach((cif: any, i: number) => query.equalTo(cif, collectionIds[i]));
-      return query.count({ useMasterKey: true });
+      return query.count();
     } catch (e) {
       console.log(
         `countRecords: Error counting records with collectionName ${collectionName} and collectionIdFields ${collectionIdFields} and collectionIds ${collectionIds}`
@@ -342,9 +345,9 @@ class ParseClient {
       const Collection = Parse.Object.extend(collectionName);
       const query = new Parse.Query(Collection);
       query.equalTo("objectId", collectionId);
-      const record = await query.first({ useMasterKey: true });
+      const record = await query.first();
       if (record) {
-        return await record.destroy({ useMasterKey: true });
+        return await record.destroy();
       }
     } catch (e) {
       console.log(`deleteRecord: Error deleting record with collectionName ${collectionName} and collectionId ${collectionId}: ${e}`);
@@ -559,7 +562,7 @@ class ParseClient {
    */
   public async saveFile(name: string, data?: any, type?: string) {
     const parseFile = new Parse.File(name, data, type);
-    await parseFile.save({ useMasterKey: true });
+    await parseFile.save();
     return parseFile;
   }
 

@@ -1,27 +1,34 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Rust build artifacts
+/target
+**/*.rs.bk
+Cargo.lock
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Custom build directory for shared storage WASM
+/.stellar-contracts
 
-# testing
-/coverage
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 
-# production
-/build
-
-# misc
+# OS specific
 .DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+Thumbs.db
+target_ide/
+**/test_snapshots**
+**.stellar-contracts
+**/node_modules
+**/.next
+nginx/logs
+test-results/
+workflows/dist/
+nomyx-ts/dist
 
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-/.idea/
-.vercel
-.env*.local
-
+# Test artifacts
+.anvil.pid
+.deployed-addresses.json
+workflows/.deployed-addresses.json
+**/test_snapshots/
+**/.next/

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../hooks/useNextRouter";
 import { Spin } from "antd";
 import { toast } from "react-toastify";
 

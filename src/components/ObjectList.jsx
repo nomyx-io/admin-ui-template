@@ -180,8 +180,28 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                   if (column.name != "flagged_account") {
                     const value = getValue(fieldName, record);
                     // Handle objects that might be rendered as React children
-                    const displayValue =
-                      typeof value === "object" && value !== null && !Array.isArray(value) ? value.identityAddress || JSON.stringify(value) : value;
+                    let displayValue = value;
+                    
+                    // Special handling for claimTopics array with objects
+                    if (fieldName === "claimTopics" && Array.isArray(value)) {
+                      displayValue = value.map(item => 
+                        typeof item === 'object' ? (item.topic || item.toString()) : item
+                      ).join(", ");
+                    } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+                      // Special handling for nested attributes
+                      if (record.attributes && record.attributes[fieldName]) {
+                        displayValue = record.attributes[fieldName];
+                      } else if (fieldName === "displayName") {
+                        // For displayName field, try to extract a string representation
+                        displayValue = value.displayName || value.name || value.toString() || "Identity";
+                      } else {
+                        displayValue = value.identityAddress || JSON.stringify(value);
+                      }
+                    }
+                    // Ensure displayValue is always a string for the displayName column
+                    if (fieldName === "displayName" && typeof displayValue !== "string") {
+                      displayValue = String(displayValue);
+                    }
                     return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{displayValue}</>}</td>;
                   } else
                     return (

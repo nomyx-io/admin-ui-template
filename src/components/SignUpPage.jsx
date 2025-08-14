@@ -4,7 +4,7 @@ import React, { useState } from "react";
 
 import { Layout } from "antd";
 import Parse from "parse";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../hooks/useNextRouter";
 import { toast } from "react-toastify"; // Ensure react-toastify is installed
 
 import SignUpForm from "./signup/SignUpForm";

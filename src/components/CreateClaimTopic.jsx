@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useContext } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
-import { Link, useNavigate } from "react-router-dom";
+import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
@@ -134,7 +134,7 @@ function CreateClaimTopic({ service }) {
     <div>
       <Breadcrumb
         className="bg-transparent"
-        items={[{ title: <Link to={"/"}>Home</Link> }, { title: <Link to={"/topics"}>Compliance Rules</Link> }, { title: "Add" }]}
+        items={[{ title: <Link href={"/"}>Home</Link> }, { title: <Link href={"/topics"}>Compliance Rules</Link> }, { title: "Add" }]}
       />
       <p className="text-xl p-6">Create Compliance Rule</p>
       <hr />

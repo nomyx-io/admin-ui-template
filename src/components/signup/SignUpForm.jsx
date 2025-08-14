@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 
 import { Card, Form, Input, Button } from "antd";
-import { Link } from "react-router-dom"; // Import Link from react-router-dom
+import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter"; // Import Link from react-router-dom
 
 import nomyxLogo from "../../assets/nomyx_logo_white.svg"; // Adjust the path as needed
 import bg from "../../images/BlackPaintBackground.webp";
@@ -146,7 +146,7 @@ const SignUpForm = ({ onNext, formData }) => {
             </p>
             <p className="text-black font-bold">
               Already have an account?&nbsp;
-              <Link to="/login" className="text-blue-600">
+              <Link href="/login" className="text-blue-600">
                 Sign In
               </Link>
             </p>

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { CheckOutlined } from "@ant-design/icons"; // Import icon
 import { Layout, Form, Input, Button, Card } from "antd";
 import Parse from "parse";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import logoDark from "../assets/nomyx_logo_dark.png";

@@ -18,13 +18,9 @@ const parseInitialize = () => {
     Parse.serverURL = serverURL;
   }
 
-  // Middleware: Automatically use the session token (JWT) for all requests
-  const sessionToken = localStorage.getItem("sessionToken");
-  if (sessionToken) {
-    Parse.User.become(sessionToken).catch((error: any) => {
-      console.error("Error becoming user with sessionToken:", error);
-    });
-  }
+  // Note: The sessionToken in localStorage is from our custom auth system (JWT),
+  // not a Parse session token. Parse operations will work without authentication
+  // and the Identity class will fall back to blockchain data when needed.
 };
 
 export default parseInitialize;

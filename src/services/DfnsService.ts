@@ -1,6 +1,6 @@
 import { WebAuthnSigner } from "@dfns/sdk-browser";
 import Parse from "parse";
-import { createBlockchainService, BlockchainType } from "nomyx-ts";
+import { createBlockchainService, BlockchainType } from "@nomyx/shared";
 
 class DfnsService {
   private static _instance: DfnsService;

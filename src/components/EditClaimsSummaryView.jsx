@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Button, Input, Tooltip } from "antd";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "../hooks/useNextRouter";
 
 import { ClaimCard } from "./ClaimCard";
 import { ShareIcon } from "../assets/icons";

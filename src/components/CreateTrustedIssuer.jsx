@@ -1,11 +1,12 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Transfer } from "antd";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
+import { useBlockchainManager } from "../context/BlockchainManagerContext"; // Use wallet-agnostic hook from context
 import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
@@ -19,7 +20,11 @@ function CreateTrustedIssuer({ service }) {
   const [selectedKeys, setSelectedKeys] = React.useState([]);
   const location = useLocation();
 
-  const { walletPreference, user, dfnsToken } = React.useContext(RoleContext);
+  // Get user and dfnsToken from RoleContext (for DFNS operations)
+  const { user, dfnsToken } = useContext(RoleContext);
+  
+  // Get wallet state from BlockchainSelectionManager (wallet-agnostic)
+  const { isConnected, account, getWalletType } = useBlockchainManager();
 
   let id = location.pathname.split("/")[2];
   useEffect(() => {
@@ -137,18 +142,29 @@ function CreateTrustedIssuer({ service }) {
   }
 
   const saveTrustedIssuer = async () => {
+    // Get wallet type from BlockchainSelectionManager (wallet-agnostic)
+    const walletType = getWalletType();
     console.log("[CreateTrustedIssuer] saveTrustedIssuer called");
-    console.log("[CreateTrustedIssuer] walletPreference:", walletPreference);
-    console.log("[CreateTrustedIssuer] WalletPreference enum:", WalletPreference);
+    console.log("[CreateTrustedIssuer] walletType:", walletType);
+    console.log("[CreateTrustedIssuer] isConnected:", isConnected);
+    console.log("[CreateTrustedIssuer] service available:", !!service);
+    console.log("[CreateTrustedIssuer] service.addTrustedIssuer available:", !!(service && service.addTrustedIssuer));
 
     const trimmedVerifierName = verifierName.trim();
 
     if (!validateTrustedIssuer(trimmedVerifierName, walletAddress, targetKeys)) {
       return;
     }
+    
+    // Check if wallet is connected
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
 
     try {
-      if (walletPreference === WalletPreference.MANAGED) {
+      // Check if we're using DFNS managed wallet
+      if (walletType === 'managed' && (!service || !service.addTrustedIssuer)) {
         // Handle MANAGED wallet preference using DFNSService
         toast
           .promise(
@@ -171,12 +187,7 @@ function CreateTrustedIssuer({ service }) {
               );
               if (completeError) throw new Error(completeError);
               await new Promise((resolve) => setTimeout(resolve, 6000)); // 4-second delay
-              //return completeResponse;
-              await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
-                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              });
+              // Note: Update is not needed immediately after creation
               navigate("/issuers");
             })(),
             {
@@ -192,25 +203,33 @@ function CreateTrustedIssuer({ service }) {
           .catch((error) => {
             console.error("Error after attempting to add Trusted Issuer:", error);
           });
-      } else if (walletPreference === WalletPreference.PRIVATE || walletPreference === undefined || walletPreference === null) {
-        // Handle PRIVATE wallet preference (or undefined/null as default)
-        console.log("[CreateTrustedIssuer] Using PRIVATE wallet mode (or default)");
+      } else if (walletType === 'private' && service && service.addTrustedIssuer) {
+        // Handle private wallet (DEV, MetaMask, Freighter)
+        console.log("[CreateTrustedIssuer] Using private wallet mode");
+        console.log("[CreateTrustedIssuer] Service available, proceeding with blockchain call");
         toast
           .promise(
             (async () => {
               if (!service || typeof service.addTrustedIssuer !== "function") {
                 throw new Error("addTrustedIssuer method not available on service");
               }
-              await service.addTrustedIssuer({
+              const result = await service.addTrustedIssuer({
                 address: walletAddress,
                 claimTopics: targetKeys,
                 verifierName: trimmedVerifierName,
               });
-              await service.updateTrustedIssuer({
-                verifierName: trimmedVerifierName,
-                issuer: walletAddress,
-                claimTopics: targetKeys.map((topic) => ({ topic, timestamp: Date.now() })), // Assuming you want to add timestamps
-              });
+              
+              // Verify the transaction was successful
+              console.log(`[CreateTrustedIssuer] Add trusted issuer result:`, result);
+              if (!result || (!result.success && !result.txHash && !result.transactionHash)) {
+                throw new Error('Transaction did not return a success confirmation');
+              }
+              
+              // Add a small delay to ensure blockchain state is updated
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              // Note: Update is not needed immediately after creation
+              // The issuer is created with the correct claim topics
             })(),
             {
               pending: "Adding Trusted Issuer...",
@@ -228,6 +247,10 @@ function CreateTrustedIssuer({ service }) {
           .catch((error) => {
             console.error("Error after attempting to add Trusted Issuer:", error);
           });
+      } else {
+        // This should not happen with the wallet-agnostic approach
+        console.error("[CreateTrustedIssuer] Unable to determine how to proceed. WalletType:", walletType, "Service:", !!service);
+        toast.error("Unable to process request. Please ensure wallet is connected.");
       }
     } catch (error) {
       console.error("Unexpected error during saveTrustedIssuer:", error);
@@ -329,10 +352,10 @@ function CreateTrustedIssuer({ service }) {
         className="bg-transparent"
         items={[
           {
-            title: <Link to={"/"}>Home</Link>,
+            title: <Link href={"/"}>Home</Link>,
           },
           {
-            title: <Link to={"/issuers"}>Trusted Issuer</Link>,
+            title: <Link href={"/issuers"}>Trusted Issuer</Link>,
           },
           {
             title: id === "create" ? "Add" : "Update",

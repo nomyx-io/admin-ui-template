@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 
 import { ClaimCard } from "./ClaimCard";
 
@@ -138,10 +138,10 @@ function DigitalIdentityDetailView({ service }) {
         className="bg-transparent"
         items={[
           {
-            title: <Link to={"/"}>Home</Link>,
+            title: <Link href={"/"}>Home</Link>,
           },
           {
-            title: <Link to={"/identities"}>Identities</Link>,
+            title: <Link href={"/identities"}>Identities</Link>,
           },
           {
             title: identityId === "pending" ? "Pending" : identity?.displayName,

@@ -1,0 +1,84 @@
+{
+  "ethereum-local": {
+    "type": "ethereum",
+    "networkName": "localhost",
+    "chainId": 31337,
+    "rpcUrl": "http://127.0.0.1:8545",
+    "contracts": {
+      "DiamondFactory": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "Diamond": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+      "IdentityFactory": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+      "ClaimTopicsRegistry": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+      "TrustedIssuersRegistry": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+      "IdentityRegistry": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+      "GemforceMinter": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+      "facets": {
+        "ClaimTopicsRegistryFacet": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "TrustedIssuersRegistryFacet": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+        "IdentityRegistryFacet": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+        "GemforceMinterFacet": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        "ClaimTopicsRegistry": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+        "TrustedIssuersRegistry": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+        "IdentityRegistry": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+        "GemforceMinter": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+        "MarketplaceFacet": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+        "CarbonCreditFacet": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+        "TradeDealFacet": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+        "Marketplace": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+        "CarbonCredit": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+        "TradeDeal": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+        "TreasuryFacet": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+        "Treasury": "0x9987105738e15c7c4Ad9C7c85b8a061E1fb32c54",
+        "OwnershipFacet": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+        "ERC721AFacet": "0x0165878A594ca255338adfa4d48449f69242Eb8F"
+      },
+      "Marketplace": "0x9A79295AcAd7974476f5058A2c91C4E0Ce1C231c",
+      "CarbonCredit": "0x9A79295AcAd7974476f5058A2c91C4E0Ce1C231c",
+      "TradeDeal": "0x9A79295AcAd7974476f5058A2c91C4E0Ce1C231c",
+      "USDC": "0x0000000000000000000000000000000000000001"
+    },
+    "deployedAt": "2025-08-09T22:11:40.250Z"
+  },
+  "stellar-local": {
+    "type": "stellar",
+    "networkName": "standalone",
+    "rpcUrl": "http://localhost:8000/soroban/rpc",
+    "sorobanUrl": "http://localhost:8000/soroban/rpc",
+    "horizonUrl": "http://localhost:8000",
+    "networkPassphrase": "Standalone Network ; February 2017",
+    "passphrase": "Standalone Network ; February 2017",
+    "contracts": {
+      "DiamondFactory": "CC5QTEKALTKVWG7TKCCKOAX2ZSVF4NUFMTU4ZC2M2KLUFKUWEX2WTLMK",
+      "DiamondProxy": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+      "facets": {
+        "ClaimTopicsRegistry": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "TrustedIssuersRegistry": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "IdentityRegistry": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "IdentityFactory": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "GemforceMinter": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "CarbonCredit": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "Marketplace": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "TradeDeal": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "Ownership": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I",
+        "Treasury": "CDUHMUKDCOXKVJIOMDEURPNE5TEGTTK4AGJDI7FBAVGTMBERVBK73W4I"
+      },
+      "wasmHashes": {
+        "DiamondProxy": "3e4c9df93a6677357afc9495444955938851c6b29bcf9949b4e1bf5d74574494",
+        "ClaimTopicsRegistry": "689eb9fead7573de38209e50b35e616e4da0641f44d08968551d7af36b093472",
+        "TrustedIssuersRegistry": "32b26f09231fe424b2d039ee92a21d50116fe600008bce7d0f05c008fd1ecc46",
+        "IdentityRegistry": "5993eab9b7c1ca6c2c0c8f3bee5488c62ac0f6e592e71d4609db09dab87d4408",
+        "IdentityFactory": "771eb71511387e15dcd3d0ee489f1572159a53f2443f662bf92cf4d89eb00a00",
+        "GemforceMinter": "b0dce6a40f12eb3217cdd4b159c9d0fc11ba4db7a750b1f31576ff59225e0eba",
+        "CarbonCredit": "45b550450757d99d88c9a0c51b8a06fa022ab404a305b478b18707fbe58145ae",
+        "Marketplace": "0092f9c72cac3e4ae285068fcdd95bb2d3ccd25c5d9730007735d6760d197501",
+        "TradeDeal": "35fb65ca61e718d822af90c4ce0ba32cc12ce976f77f0e064fe5f7c9d95930a5",
+        "Ownership": "39abae4729cc28406288e4324a08fff57ba38357f33f176ff0c8696393bb5129",
+        "Treasury": "8d5730f197ae14b58db290e610ebeff1748ea1c2dfc8ce21b60996c061126474"
+      },
+      "CarbonCredit": "CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH",
+      "Marketplace": "CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH",
+      "TradeDeal": "CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH"
+    },
+    "deployedAt": "2025-08-09T22:12:25.502Z"
+  }
+}

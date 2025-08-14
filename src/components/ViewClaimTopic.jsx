@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Breadcrumb } from "antd";
 import { Tabs } from "antd";
 import moment from "moment";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 
 import ObjectList from "./ObjectList";
 
@@ -123,10 +123,10 @@ function ViewClaimTopic({ service }) {
         className="bg-transparent"
         items={[
           {
-            title: <Link to={"/"}>Home</Link>,
+            title: <Link href={"/"}>Home</Link>,
           },
           {
-            title: <Link to={"/topics"}>Compliance Rule</Link>,
+            title: <Link href={"/topics"}>Compliance Rule</Link>,
           },
           {
             title: topicId,

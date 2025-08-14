@@ -1,10 +1,11 @@
 import { useState, useContext, useEffect } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
-import { RoleContext } from "../context/RoleContext"; // Import RoleContext
+import { RoleContext } from "../context/RoleContext"; // Import RoleContext for user/dfnsToken
+import { useBlockchainManager } from "../context/BlockchainManagerContext"; // Use wallet-agnostic hook from context
 import DfnsService from "../services/DfnsService";
 import { awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
@@ -14,7 +15,11 @@ function CreateDigitalId({ service }) {
   const searchParams = new URLSearchParams(location.search);
   const navigate = useNavigate();
 
-  const { walletPreference, user, dfnsToken } = useContext(RoleContext); // Access walletPreference and other necessary data from context
+  // Get user and dfnsToken from RoleContext (for DFNS operations)
+  const { user, dfnsToken } = useContext(RoleContext);
+  
+  // Get wallet state from BlockchainSelectionManager (wallet-agnostic)
+  const { isConnected, account, getWalletType } = useBlockchainManager();
 
   const [displayName, setDisplayName] = useState(searchParams.get("displayName") || "");
   const [walletAddress, setWalletAddress] = useState(searchParams.get("walletAddress") || "");
@@ -66,9 +71,13 @@ function CreateDigitalId({ service }) {
   }
 
   const handleCreateDigitalId = async () => {
+    // Get wallet type from BlockchainSelectionManager (wallet-agnostic)
+    const walletType = getWalletType();
     console.log("[CreateDigitalId] handleCreateDigitalId called");
-    console.log("[CreateDigitalId] walletPreference:", walletPreference);
-    console.log("[CreateDigitalId] service:", service);
+    console.log("[CreateDigitalId] walletType:", walletType);
+    console.log("[CreateDigitalId] isConnected:", isConnected);
+    console.log("[CreateDigitalId] service available:", !!service);
+    console.log("[CreateDigitalId] service.createIdentity available:", !!(service && service.createIdentity));
 
     const trimmedDisplayName = displayName.trim();
     const trimmedAccountNumber = accountNumber.trim();
@@ -76,9 +85,16 @@ function CreateDigitalId({ service }) {
     if (!validateDigitalID(trimmedDisplayName, walletAddress, trimmedAccountNumber, service)) {
       return; // Early return if validation fails
     }
+    
+    // Check if wallet is connected
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
 
     try {
-      if (walletPreference === WalletPreference.MANAGED) {
+      // Check if we're using DFNS managed wallet
+      if (walletType === 'managed' && (!service || !service.createIdentity)) {
         // Handle MANAGED wallet preference using DFNSService
         toast
           .promise(
@@ -161,22 +177,39 @@ function CreateDigitalId({ service }) {
           .catch((error) => {
             console.error("Error after attempting to create Digital ID:", error);
           });
-      } else if (walletPreference === WalletPreference.PRIVATE || walletPreference === null || walletPreference === undefined) {
-        // Handle PRIVATE wallet preference or when no preference is set (default to PRIVATE for testing)
+      } else if (walletType === 'private' && service && service.createIdentity) {
+        // Handle private wallet (DEV, MetaMask, Freighter)
+        console.log("[CreateDigitalId] Using private wallet mode");
+        console.log("[CreateDigitalId] Service available, proceeding with blockchain call");
         toast
           .promise(
             (async () => {
               // Step 1: Create identity
-              await service.createIdentity(walletAddress);
+              console.log("[CreateDigitalId] Creating identity for:", walletAddress);
+              const createResult = await service.createIdentity(walletAddress);
+              console.log("[CreateDigitalId] Create identity result:", createResult);
+              
+              // Verify the transaction was successful
+              if (!createResult || (!createResult.identityAddress && !createResult.txHash)) {
+                throw new Error('Identity creation did not return expected result');
+              }
 
               // Step 2: Get identity details
+              console.log("[CreateDigitalId] Getting identity details");
               const identity = await service.getIdentity(walletAddress);
-              console.log("gotten identity; ", identity);
+              console.log("[CreateDigitalId] Got identity:", identity);
+              
               // Step 3: Add identity
-              await service.addIdentity(walletAddress, identity);
+              console.log("[CreateDigitalId] Adding identity to registry");
+              const addResult = await service.addIdentity(walletAddress, identity);
+              console.log("[CreateDigitalId] Add identity result:", addResult);
+              
+              // Add a small delay to ensure blockchain state is updated
+              await new Promise(resolve => setTimeout(resolve, 2000));
 
-              // Step 4: Update identity
+              // Step 4: Update identity in Parse (optional - don't fail if this errors)
               try {
+                console.log("[CreateDigitalId] Updating identity in Parse");
                 const currentChain = await service.getCurrentChain();
                 await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
                   displayName: trimmedDisplayName,
@@ -187,35 +220,44 @@ function CreateDigitalId({ service }) {
                   chain: currentChain, // Add the current chain to segregate identities
                 });
               } catch (error) {
-                // Handle the error gracefully and continue
-                console.error("Error updating identity:", error);
+                // Handle the error gracefully and continue - Parse update is optional
+                console.log("[CreateDigitalId] Parse update failed (non-critical):", error.message);
               }
 
-              // Step 5: Approve user if needed
+              // Step 5: Approve user if needed (optional)
               if (searchParams.has("walletAddress")) {
-                const userExists = await service.isUser(walletAddress.toLocaleLowerCase()); // Check if the user exists
-                if (userExists) {
-                  await service.approveUser(walletAddress.toLocaleLowerCase());
-                } else {
-                  // Handle the case where the user doesn't exist
-                  toast.error(`User with wallet address ${walletAddress} does not exist.`);
+                try {
+                  const userExists = await service.isUser(walletAddress.toLocaleLowerCase());
+                  if (userExists) {
+                    await service.approveUser(walletAddress.toLocaleLowerCase());
+                  }
+                } catch (error) {
+                  console.log("[CreateDigitalId] User approval failed (non-critical):", error.message);
                 }
               }
+              
+              console.log("[CreateDigitalId] Identity creation completed successfully");
+              return { success: true, walletAddress };
             })(),
             {
               pending: "Creating Digital Identity...",
               success: "Digital Identity created successfully",
               error: {
-                render: ({ data }) => <div>{data?.reason || "An error occurred while creating Digital Identity"}</div>,
+                render: ({ data }) => <div>{data?.message || data?.reason || "An error occurred while creating Digital Identity"}</div>,
               },
             }
           )
-          .then(() => {
+          .then((result) => {
+            console.log("[CreateDigitalId] Navigation to /identities");
             navigate("/identities");
           })
           .catch((error) => {
-            console.error("Error after attempting to create Digital ID:", error);
+            console.error("[CreateDigitalId] Error after attempting to create Digital ID:", error);
           });
+      } else {
+        // This should not happen with the wallet-agnostic approach
+        console.error("[CreateDigitalId] Unable to determine how to proceed. WalletType:", walletType, "Service:", !!service);
+        toast.error("Unable to process request. Please ensure wallet is connected.");
       }
     } catch (error) {
       toast.error("Error: " + error.message || error);
@@ -228,10 +270,10 @@ function CreateDigitalId({ service }) {
         className="bg-transparent"
         items={[
           {
-            title: <Link to={"/"}>Home</Link>,
+            title: <Link href={"/"}>Home</Link>,
           },
           {
-            title: <Link to={"/identities"}>Identities</Link>,
+            title: <Link href={"/identities"}>Identities</Link>,
           },
           {
             title: "Add",

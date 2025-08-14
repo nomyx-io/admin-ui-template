@@ -1,0 +1,154 @@
+/* Unified dark theme styles for all portals */
+/* Based on Mintify's dark theme design */
+
+/* Input fields with dark background */
+.ant-input,
+.ant-input-password,
+.ant-input-affix-wrapper {
+  background-color: #141414 !important;
+  color: #DCDCDC !important;
+  border-color: #484848 !important;
+}
+
+.ant-input::placeholder,
+.ant-input-password input::placeholder {
+  color: #626262 !important;
+}
+
+/* Dark background for input wrappers */
+.ant-input-affix-wrapper,
+.ant-input-password {
+  background-color: #141414 !important;
+}
+
+.ant-input-affix-wrapper input,
+.ant-input-password input {
+  background-color: transparent !important;
+  color: #DCDCDC !important;
+}
+
+/* Icons in inputs */
+.ant-input-prefix,
+.ant-input-suffix {
+  color: #626262 !important;
+}
+
+/* Modal styling */
+.ant-modal-content,
+.ant-modal-title {
+  background-color: #141414 !important;
+  color: #DCDCDC !important;
+}
+
+.ant-modal-content input,
+.ant-modal-content textarea {
+  background-color: #141414 !important;
+  color: #DCDCDC !important;
+}
+
+/* Card styling for dark theme */
+.ant-card {
+  background-color: #141414 !important;
+  border-color: #484848 !important;
+}
+
+.ant-card-body {
+  color: #DCDCDC !important;
+}
+
+/* Button styling */
+.ant-btn {
+  border-color: #484848 !important;
+}
+
+.ant-btn-primary {
+  background-color: #1568DB !important;
+  border-color: #1568DB !important;
+}
+
+/* Select dropdown styling */
+.ant-select {
+  background-color: #141414 !important;
+  color: #DCDCDC !important;
+}
+
+.ant-select-selector {
+  background-color: #141414 !important;
+  border-color: #484848 !important;
+  color: #DCDCDC !important;
+}
+
+.ant-select-dropdown,
+.ant-select-item-option {
+  background-color: #141414 !important;
+  color: #DCDCDC !important;
+}
+
+/* Text elements */
+label,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.ant-card h2,
+.ant-card p {
+  color: #DCDCDC !important;
+}
+
+/* Divider styling */
+.ant-divider {
+  border-color: #484848 !important;
+}
+
+.ant-divider-inner-text {
+  color: #626262 !important;
+}
+
+/* Links */
+a {
+  color: #1568DB !important;
+}
+
+/* Focus states */
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  border-color: #1568DB !important;
+  box-shadow: none !important;
+}
+
+/* Hover states */
+.ant-input:hover,
+.ant-input-affix-wrapper:hover {
+  border-color: #626262 !important;
+}
+
+/* Form validation */
+.ant-form-item-has-error .ant-input,
+.ant-form-item-has-error .ant-input-affix-wrapper {
+  border-color: #ff4d4f !important;
+}
+
+/* Icons */
+.anticon {
+  color: #DCDCDC !important;
+}
+
+/* Specific styles for login card */
+.login-card {
+  background-color: rgba(20, 20, 20, 0.95) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Ensure proper styling for password visibility toggle */
+.ant-input-password-icon {
+  color: #626262 !important;
+}
+
+.ant-input-password-icon:hover {
+  color: #DCDCDC !important;
+}

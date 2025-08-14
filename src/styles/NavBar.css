@@ -1,0 +1,108 @@
+/* Professional NavBar Styling */
+nav {
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 1000;
+    overflow: visible !important;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+nav ul {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0 24px;
+    height: 64px;
+    overflow: visible !important;
+}
+
+nav li {
+    margin: 0;
+    padding: 0;
+    overflow: visible !important;
+}
+
+/* Logo styling */
+nav li:first-child {
+    margin-right: 48px;
+}
+
+nav li:first-child img {
+    height: 32px;
+    width: auto;
+}
+
+/* Navigation links */
+nav li a {
+    color: #262626;
+    text-decoration: none;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 400;
+    transition: color 0.3s;
+    display: inline-block;
+    line-height: 64px;
+}
+
+nav li a:hover {
+    color: #1890ff;
+}
+
+/* Active link styling */
+nav li a.active {
+    color: #1890ff;
+    font-weight: 500;
+}
+
+/* Last item (chain selector and logout) container */
+nav li:last-child {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+}
+
+/* Blockchain selection container */
+nav .blockchain-selection-container {
+    position: relative;
+    z-index: 1100;
+}
+
+/* Logout button styling */
+nav button {
+    height: 32px;
+    padding: 0 16px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Dropdown menus */
+nav [class*="blockchain-dropdown"],
+nav [class*="chain-selector"],
+nav [class*="dropdown-menu"],
+nav [role="listbox"] {
+    z-index: 9999 !important;
+    position: relative;
+}
+
+/* Dropdown overlays */
+nav > * > * > div[style*="position: absolute"],
+nav > * > * > div[style*="position: fixed"] {
+    z-index: 9999 !important;
+}
+
+/* Ensure dropdown menus in the blockchain selector appear above everything */
+nav li:last-child [class*="dropdown"],
+nav li:last-child [class*="menu"],
+nav li:last-child [class*="options"] {
+    z-index: 9999 !important;
+}
+
+/* Main content area */
+main {
+    position: relative;
+    z-index: 1;
+}

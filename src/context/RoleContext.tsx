@@ -1,4 +1,4 @@
-import { createContext, useContext, Dispatch, SetStateAction } from "react";
+import React, { createContext, useContext, useState, Dispatch, SetStateAction } from "react";
 
 import { WalletPreference } from "../utils/Constants";
 
@@ -31,3 +31,24 @@ export const RoleContext = createContext<RoleContextType>(defaultContext);
 
 // Optional: Create a custom hook for easier consumption
 export const useRoleContext = () => useContext(RoleContext);
+
+// Create and export the RoleProvider component
+export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [role, setRole] = useState<string[]>([]);
+  const [walletPreference, setWalletPreference] = useState<WalletPreference | null>(null);
+  const [dfnsToken, setDfnsToken] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+
+  const value: RoleContextType = {
+    role,
+    setRole,
+    walletPreference,
+    setWalletPreference,
+    dfnsToken,
+    setDfnsToken,
+    user,
+    setUser,
+  };
+
+  return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
+};

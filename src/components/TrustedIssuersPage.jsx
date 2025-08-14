@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
@@ -99,7 +99,7 @@ const TrustedIssuersPage = ({ service }) => {
       const claimTopicsString = attributes.claimTopics?.map((obj) => obj["topic"]).join(",") || "N/A";
 
       trustedIssuers.push({
-        id: item.id || "unknown",
+        id: attributes.issuer || item.id || "unknown",  // Use address as ID for routing
         claimTopics: claimTopicsString,
         address: attributes.issuer || "N/A",
         trustedIssuer: attributes.verifierName || "Unknown Issuer",
@@ -217,10 +217,11 @@ const TrustedIssuersPage = ({ service }) => {
   const handleAction = async (event, name, record) => {
     switch (name) {
       case NomyxAction.CreateTrustedIssuer:
-        navigate("create");
+        navigate("/issuers/create");
         break;
       case NomyxAction.UpdateClaimTopics:
-        navigate("/issuers/" + record.id);
+        // Use address as the ID for navigation
+        navigate("/issuers/" + encodeURIComponent(record.address));
         break;
       case NomyxAction.RemoveTrustedIssuer:
         removeTrustedIssuer(record.address);

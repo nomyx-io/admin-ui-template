@@ -1,0 +1,37 @@
+npm warn ignoring workspace config at /Users/nologik/nomyx/parse-projects/portals/admin-ui-template/.npmrc
+
+> admin-portal@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.31
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+(node:54399) [DEP_WEBPACK_EXTERNALS_FUNCTION_PARAMETERS] DeprecationWarning: The externals-function should be defined like ({context, request}, cb) => { ... }
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Failed to compile.
+
+./src/components/signup/PasswordForm.jsx
+Module not found: Can't resolve '../hooks/useNextRouter'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/components/SignUpPage.jsx
+./src/pages/signup.tsx
+
+./src/components/signup/SignUpForm.jsx
+Module not found: Can't resolve '../hooks/useNextRouter'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/components/SignUpPage.jsx
+./src/pages/signup.tsx
+
+
+> Build failed because of webpack errors
+npm error Lifecycle script `build` failed with error:
+npm error Error: command failed
+npm error   in workspace: admin-portal@0.1.0
+npm error   at location: /Users/nologik/nomyx/parse-projects/portals/admin-ui-template

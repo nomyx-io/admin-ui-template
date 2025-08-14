@@ -1,0 +1,71 @@
+{
+  "stellar-testnet": {
+    "networkName": "standalone",
+    "rpcUrl": "http://localhost:8000/soroban/rpc",
+    "horizonUrl": "http://localhost:8000",
+    "passphrase": "Standalone Network ; February 2017",
+    "contracts": {
+      "DiamondFactory": "CADO76R3FZ7J6TVVN5FTJND6RY3FVF3F5KSSTHV7WPFTAED3LTULTNZ7",
+      "Diamond": "",
+      "DiamondProxy": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES",
+      "IdentityFactory": "",
+      "facets": {
+        "ClaimTopicsRegistry": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES",
+        "TrustedIssuersRegistry": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES",
+        "IdentityRegistry": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES",
+        "IdentityFactory": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES",
+        "GemforceMinter": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES",
+        "CarbonCredit": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES",
+        "Marketplace": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES",
+        "TradeDeal": "CB7PPCLV47KKITMEG2BUHUB55M73GYIUCLR7PH54FWFZMXT5KT52KAES"
+      },
+      "wasmHashes": {
+        "DiamondProxy": "3e4c9df93a6677357afc9495444955938851c6b29bcf9949b4e1bf5d74574494",
+        "ClaimTopicsRegistry": "689eb9fead7573de38209e50b35e616e4da0641f44d08968551d7af36b093472",
+        "TrustedIssuersRegistry": "32b26f09231fe424b2d039ee92a21d50116fe600008bce7d0f05c008fd1ecc46",
+        "IdentityRegistry": "5993eab9b7c1ca6c2c0c8f3bee5488c62ac0f6e592e71d4609db09dab87d4408",
+        "IdentityFactory": "771eb71511387e15dcd3d0ee489f1572159a53f2443f662bf92cf4d89eb00a00",
+        "GemforceMinter": "bd3bc08dd848d78826d349cc753f68080081afa36bab817c15a923bdbe7f7155",
+        "CarbonCredit": "45b550450757d99d88c9a0c51b8a06fa022ab404a305b478b18707fbe58145ae",
+        "Marketplace": "3460425d7219350619f33f319313775e03ffed8d6f290b13d768cd4aa2c38391",
+        "TradeDeal": "35fb65ca61e718d822af90c4ce0ba32cc12ce976f77f0e064fe5f7c9d95930a5"
+      }
+    },
+    "deployedAt": "2025-07-16T13:04:35.140Z"
+  },
+  "ethereum-local": {
+    "networkName": "localhost",
+    "chainId": 31337,
+    "rpcUrl": "http://127.0.0.1:8545",
+    "horizonUrl": "",
+    "passphrase": "",
+    "contracts": {
+      "DiamondFactory": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "Diamond": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+      "DiamondProxy": "",
+      "IdentityFactory": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+      "facets": {
+        "ClaimTopicsRegistryFacet": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+        "TrustedIssuersRegistryFacet": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "IdentityRegistryFacet": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+        "GemforceMinterFacet": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+        "MarketplaceFacet": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+        "CarbonCreditFacet": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        "TradeDealFacet": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+        "ClaimTopicsRegistry": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+        "TrustedIssuersRegistry": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+        "IdentityRegistry": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+        "GemforceMinter": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+        "Marketplace": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+        "CarbonCredit": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+        "TradeDeal": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7"
+      },
+      "wasmHashes": {},
+      "ClaimTopicsRegistry": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+      "TrustedIssuersRegistry": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+      "IdentityRegistry": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7",
+      "GemforceMinter": "0x936583286Dcef3EFC64AB199C0a08Eccf1a5b9b7"
+    },
+    "deployedAt": "2025-07-16T13:02:59.957Z"
+  }
+}

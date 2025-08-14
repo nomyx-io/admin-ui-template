@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/static/css/main.7307bcbb.css",
+    "main.js": "/static/js/main.5f50e13e.js",
+    "static/media/index.cjs": "/static/media/index.146b2372be4cafa3f729.cjs",
+    "static/media/nomyx_logo_light.png": "/static/media/nomyx_logo_light.7178037a3c0797182609.png",
+    "static/media/nomyx_logo_dark.png": "/static/media/nomyx_logo_dark.9900dc3879f21a81edb9.png",
+    "static/media/nomyx_logo_black.svg": "/static/media/nomyx_logo_black.699848eb3b81f2599420c30e1f327d3a.svg",
+    "index.html": "/index.html",
+    "main.7307bcbb.css.map": "/static/css/main.7307bcbb.css.map",
+    "main.5f50e13e.js.map": "/static/js/main.5f50e13e.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.7307bcbb.css",
+    "static/js/main.5f50e13e.js"
+  ]
+}

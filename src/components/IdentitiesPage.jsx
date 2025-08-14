@@ -1,16 +1,15 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
 import { Tabs } from "antd";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
-import { RoleContext } from "../context/RoleContext"; // Import RoleContext
+import { RoleContext } from "../context/RoleContext"; // Import RoleContext for user/dfnsToken only
+import { useBlockchainManager } from "../nomyx-components"; // Import wallet-agnostic hook from index
 import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
 import { WalletPreference } from "../utils/Constants";
-
-const { TabPane } = Tabs;
 
 const IdentitiesPage = ({ service }) => {
   const navigate = useNavigate();
@@ -19,7 +18,11 @@ const IdentitiesPage = ({ service }) => {
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [currentChain, setCurrentChain] = useState(null);
-  const { walletPreference, user, dfnsToken } = useContext(RoleContext);
+  // Get user and dfnsToken from RoleContext (for DFNS operations)
+  const { user, dfnsToken } = useContext(RoleContext);
+  
+  // Get wallet state from BlockchainSelectionManager (wallet-agnostic)
+  const { isConnected, account, getWalletType } = useBlockchainManager();
 
   const fetchData = useCallback(
     async (tab) => {
@@ -39,7 +42,9 @@ const IdentitiesPage = ({ service }) => {
                 // Map active identities fields
                 const claimsArray = identity.attributes.claims || [];
                 identidyObj.claims = claimsArray.join(", "); // Convert claims array to comma-separated string
-                identidyObj.displayName = identity.attributes.displayName || "";
+                // Ensure displayName is a string, not an object
+                const rawDisplayName = identity.attributes.displayName || identity.displayName || "";
+                identidyObj.displayName = typeof rawDisplayName === 'string' ? rawDisplayName : String(rawDisplayName);
                 identidyObj.kyc_id = identity.attributes.accountNumber || "";
                 // Handle both string and object address formats for backward compatibility
                 const address = identity.attributes.address;
@@ -172,8 +177,17 @@ const IdentitiesPage = ({ service }) => {
   };
 
   const handleRemoveIdentity = async (event, action, record) => {
-    console.log("[IdentitiesPage] handleRemoveIdentity called with:", { walletPreference, record });
-    if (walletPreference === WalletPreference.MANAGED) {
+    // Get wallet type from BlockchainSelectionManager (wallet-agnostic)
+    const walletType = getWalletType();
+    console.log("[IdentitiesPage] handleRemoveIdentity called with:", { walletType, isConnected, record });
+    
+    // Check if wallet is connected
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    
+    if (walletType === 'managed') {
       const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       const identities = [record.identityAddress];
       for (const identity of identities) {
@@ -231,7 +245,7 @@ const IdentitiesPage = ({ service }) => {
           console.error(`Error removing identity ${identity}:`, error);
         }
       }
-    } else if (walletPreference === WalletPreference.PRIVATE) {
+    } else if (walletType === 'private') {
       toast.promise(
         async () => {
           const identities = [record.identityAddress];
@@ -259,34 +273,9 @@ const IdentitiesPage = ({ service }) => {
         }
       );
     } else {
-      console.log("[IdentitiesPage] Wallet preference not handled:", walletPreference);
-      // Fallback to private wallet behavior for dev mode
-      toast.promise(
-        async () => {
-          const identities = [record.identityAddress];
-
-          for (const identity of identities) {
-            // Step 1: Call removeIdentity (blockchain)
-            await service.removeIdentity(identity);
-            // Step 2: Call unregisterIdentity (blockchain)
-            await service.unregisterIdentity(identity);
-            // Step 3: Soft remove from database
-            await service.softRemoveUser(record);
-          }
-
-          // After successful removal, trigger a refresh of the component
-          setRefreshTrigger((prev) => !prev);
-        },
-        {
-          pending: `Removing ${record?.displayName}...`,
-          success: `Successfully removed ${record?.displayName}`,
-          error: {
-            render({ data }) {
-              return <div>{data?.reason || `An error occurred while removing ${record?.displayName}`}</div>;
-            },
-          },
-        }
-      );
+      // This should not happen with the wallet-agnostic approach
+      console.error("[IdentitiesPage] Unknown wallet type:", walletType);
+      toast.error("Unable to determine wallet type");
     }
   };
 
@@ -370,52 +359,66 @@ const IdentitiesPage = ({ service }) => {
     }
   };
 
+  const tabItems = [
+    {
+      key: "Identities",
+      label: "Identities",
+      children: (
+        <ObjectList
+          title="Identities"
+          description="Identities represent individuals that can be related to Compliance Rules"
+          columns={columns}
+          actions={actions}
+          globalActions={globalActions}
+          search={search}
+          data={identities}
+          pageSize={10}
+          onAction={handleAction}
+          onGlobalAction={handleAction}
+        />
+      ),
+    },
+    {
+      key: "Pending",
+      label: "Pending",
+      children: (
+        <ObjectList
+          title="Pending"
+          description="Identities that have yet to be approved or denied"
+          columns={pendingColumns}
+          actions={pendingActions}
+          globalActions={globalActions}
+          search={search}
+          data={pendingIdentities}
+          pageSize={10}
+          onAction={handleAction}
+          onGlobalAction={handleAction}
+        />
+      ),
+    },
+    {
+      key: "Claims",
+      label: "Add Rules",
+      children: (
+        <ObjectList
+          title="Add Rules"
+          description="Identies that have yet to be related to Compliance Rules"
+          columns={columns}
+          actions={claimsActions}
+          globalActions={globalActions}
+          search={search}
+          data={identities}
+          pageSize={10}
+          onAction={handleAction}
+          onGlobalAction={handleAction}
+        />
+      ),
+    },
+  ];
+
   return (
     <>
-      <Tabs activeKey={activeTab} onChange={handleTabChange}>
-        <TabPane tab="Identities" key="Identities">
-          <ObjectList
-            title="Identities"
-            description="Identities represent individuals that can be related to Compliance Rules"
-            columns={columns}
-            actions={actions}
-            globalActions={globalActions}
-            search={search}
-            data={identities}
-            pageSize={10}
-            onAction={handleAction}
-            onGlobalAction={handleAction}
-          />
-        </TabPane>
-        <TabPane tab="Pending" key="Pending">
-          <ObjectList
-            title="Pending"
-            description="Identities that have yet to be approved or denied"
-            columns={pendingColumns}
-            actions={pendingActions}
-            globalActions={globalActions}
-            search={search}
-            data={pendingIdentities}
-            pageSize={10}
-            onAction={handleAction}
-            onGlobalAction={handleAction}
-          />
-        </TabPane>
-        <TabPane tab="Add Rules" key="Claims">
-          <ObjectList
-            title="Add Rules"
-            description="Identies that have yet to be related to Compliance Rules"
-            columns={columns}
-            actions={claimsActions}
-            globalActions={globalActions}
-            search={search}
-            data={identities}
-            pageSize={10}
-            onAction={handleAction}
-            onGlobalAction={handleAction}
-          />
-        </TabPane>
-      </Tabs>
+      <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} />
     </>
   );
 };
