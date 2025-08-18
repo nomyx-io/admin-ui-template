@@ -34,6 +34,7 @@ export enum WalletProvider {
     ALBEDO = 'albedo',
     XBULL = 'xbull',
     DEV = 'dev',
+    DFNS = 'dfns',
 }
 
 export interface WalletConnectionState {

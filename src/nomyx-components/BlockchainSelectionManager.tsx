@@ -28,7 +28,7 @@ const WalletStateContext = createContext<WalletStateContextValue | null>(null);
 
 /**
  * useBlockchainManager Hook
- * 
+ *
  * This is the primary interface for components to interact with the blockchain.
  * It provides a wallet-agnostic interface that hides implementation details.
  */
@@ -689,7 +689,7 @@ export const BlockchainSelectionManager = ({
                         const chainType = selectedChainId.split('-')[0];
                         const devAccount = chainType === 'ethereum'
                             ? '0x742d35Cc6634C0532925a3b844Bc9e7595f2bd9e'  // Dev Ethereum account
-                            : 'GBZXN7PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI';  // Dev Stellar account
+                            : 'SD3HOSPJMIWP7PRGQFOGH4MLXUA3376X7GUV6O7A6BK45ISJZ2I6YQ4V';  // Dev Stellar account
 
                         const provider = chainType === 'ethereum' ? WalletProvider.METAMASK : WalletProvider.FREIGHTER;
 
@@ -729,10 +729,10 @@ export const BlockchainSelectionManager = ({
             const chainType = newChainId.split('-')[0];
             const devAccount = chainType === 'ethereum'
                 ? '0x75d26bd184b6947aBaBc8C82103004F899a40b69'  // Dev Ethereum account (shortened)
-                : 'GBZXN7PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI';  // Dev Stellar account
-            
+                : 'SD3HOSPJMIWP7PRGQFOGH4MLXUA3376X7GUV6O7A6BK45ISJZ2I6YQ4V';  // Dev Stellar account
+
             console.log(`[BlockchainSelectionManager] Updating dev wallet address for ${newChainId}: ${devAccount.substring(0, 10)}...`);
-            
+
             // Update wallet state with new address for the new chain
             setWalletState({
                 isConnected: true,
@@ -742,10 +742,10 @@ export const BlockchainSelectionManager = ({
                 walletProvider: WalletProvider.DEV,
                 error: null
             });
-            
+
             // Call chain change
             onChainChange(newChainId);
-            
+
             // Notify wallet connection with new address
             if (onWalletConnect) {
                 onWalletConnect(devAccount, WalletProvider.DEV);
@@ -776,7 +776,7 @@ export const BlockchainSelectionManager = ({
                 const chainType = selectedChainId.split('-')[0];
                 const devAccount = chainType === 'ethereum'
                     ? '0x75d26bd184b6947aBaBc8C82103004F899a40b69'
-                    : 'GBZXN7PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI';
+                    : 'SD3HOSPJMIWP7PRGQFOGH4MLXUA3376X7GUV6O7A6BK45ISJZ2I6YQ4V';
 
                 console.log(`[BlockchainSelectionManager] Wallet selected: ${provider} Account: ${devAccount.substring(0, 10)}... Chain type: ${chainType}`);
 
@@ -908,12 +908,12 @@ export const BlockchainSelectionManager = ({
 
     // Initialize blockchain service state
     const [blockchainService, setBlockchainService] = useState<any>(null);
-    
+
     // Initialize blockchain service when chain changes
     useEffect(() => {
         const initService = async () => {
             if (!selectedChainId) return;
-            
+
             try {
                 const { createBlockchainService } = await import('@nomyx/shared');
                 const service = createBlockchainService(selectedChainId);
@@ -923,10 +923,10 @@ export const BlockchainSelectionManager = ({
                 console.error('[BlockchainSelectionManager] Failed to initialize blockchain service:', error);
             }
         };
-        
+
         initService();
     }, [selectedChainId]);
-    
+
     /**
      * Wallet-agnostic transaction signing method
      */
@@ -934,16 +934,16 @@ export const BlockchainSelectionManager = ({
         if (!walletState.isConnected || !walletState.walletProvider) {
             throw new Error('No wallet connected');
         }
-        
+
         console.log(`[BlockchainSelectionManager] Signing transaction with ${walletState.walletProvider}`);
-        
+
         // Handle different wallet types
         switch (walletState.walletProvider) {
             case WalletProvider.DEV:
                 // For DEV wallet, transactions are auto-signed
                 console.log('[BlockchainSelectionManager] DEV wallet: auto-signing transaction');
                 return transaction;
-                
+
             case WalletProvider.METAMASK:
                 // For MetaMask, use window.ethereum
                 if (!(window as any).ethereum) {
@@ -953,24 +953,24 @@ export const BlockchainSelectionManager = ({
                     method: 'eth_sendTransaction',
                     params: [transaction]
                 });
-                
+
             case WalletProvider.FREIGHTER:
                 // For Freighter, use freighter API
                 if (!(window as any).freighter) {
                     throw new Error('Freighter not available');
                 }
                 return await (window as any).freighter.signTransaction(transaction);
-                
+
             case WalletProvider.DFNS:
                 // For DFNS, this would be handled by the backend
                 console.log('[BlockchainSelectionManager] DFNS wallet: transaction will be signed on backend');
                 return transaction;
-                
+
             default:
                 throw new Error(`Unsupported wallet provider: ${walletState.walletProvider}`);
         }
     }, [walletState.isConnected, walletState.walletProvider]);
-    
+
     /**
      * Wallet-agnostic message signing method
      */
@@ -978,14 +978,14 @@ export const BlockchainSelectionManager = ({
         if (!walletState.isConnected || !walletState.walletProvider) {
             throw new Error('No wallet connected');
         }
-        
+
         console.log(`[BlockchainSelectionManager] Signing message with ${walletState.walletProvider}`);
-        
+
         switch (walletState.walletProvider) {
             case WalletProvider.DEV:
                 // For DEV wallet, return a mock signature
                 return `dev-signature-${Date.now()}`;
-                
+
             case WalletProvider.METAMASK:
                 if (!(window as any).ethereum) {
                     throw new Error('MetaMask not available');
@@ -994,37 +994,37 @@ export const BlockchainSelectionManager = ({
                     method: 'personal_sign',
                     params: [message, walletState.account]
                 });
-                
+
             case WalletProvider.FREIGHTER:
                 if (!(window as any).freighter) {
                     throw new Error('Freighter not available');
                 }
                 return await (window as any).freighter.signMessage(message);
-                
+
             case WalletProvider.DFNS:
                 // DFNS signing would be handled differently
                 return `dfns-signature-${Date.now()}`;
-                
+
             default:
                 throw new Error(`Unsupported wallet provider: ${walletState.walletProvider}`);
         }
     }, [walletState.isConnected, walletState.walletProvider, walletState.account]);
-    
+
     /**
      * Get wallet type without exposing implementation details
      */
     const getWalletType = useCallback((): 'private' | 'managed' | null => {
         if (!walletState.walletProvider) return null;
-        
+
         // DFNS is managed, all others are private
         if (walletState.walletProvider === WalletProvider.DFNS) {
             return 'managed';
         }
-        
+
         // DEV is always private (not DFNS)
         return 'private';
     }, [walletState.walletProvider]);
-    
+
     // Create the wallet state context value
     const walletStateContextValue: WalletStateContextValue = {
         isConnected: walletState.isConnected,
@@ -1052,9 +1052,9 @@ export const BlockchainSelectionManager = ({
     const networkInfo = getNetworkInfo();
 
     // Detect dark mode (can be overridden by prop)
-    const isDarkMode = darkMode !== undefined ? darkMode : 
-        (typeof window !== 'undefined' && 
-         (document.documentElement.classList.contains('dark') || 
+    const isDarkMode = darkMode !== undefined ? darkMode :
+        (typeof window !== 'undefined' &&
+         (document.documentElement.classList.contains('dark') ||
           window.matchMedia('(prefers-color-scheme: dark)').matches));
 
     // Get theme colors
@@ -1132,7 +1132,7 @@ export const BlockchainSelectionManager = ({
                             />
                         </svg>
                     </button>
-                    
+
                     {/* Chain Selector as blue button dropdown */}
                     <div className="chain-dropdown-container" style={{ position: 'relative', display: 'inline-block' }}>
                         <button
@@ -1172,26 +1172,26 @@ export const BlockchainSelectionManager = ({
                         >
                             {isLoadingChainSwitch ? (
                                 <>
-                                    <svg 
-                                        style={{ 
-                                            width: '14px', 
-                                            height: '14px', 
-                                            animation: 'spin 1s linear infinite' 
-                                        }} 
-                                        fill="none" 
+                                    <svg
+                                        style={{
+                                            width: '14px',
+                                            height: '14px',
+                                            animation: 'spin 1s linear infinite'
+                                        }}
+                                        fill="none"
                                         viewBox="0 0 24 24"
                                     >
-                                        <circle 
-                                            style={{ opacity: 0.25 }} 
-                                            cx="12" 
-                                            cy="12" 
-                                            r="10" 
-                                            stroke="currentColor" 
+                                        <circle
+                                            style={{ opacity: 0.25 }}
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
                                             strokeWidth="4"
                                         />
-                                        <path 
-                                            style={{ opacity: 0.75 }} 
-                                            fill="currentColor" 
+                                        <path
+                                            style={{ opacity: 0.75 }}
+                                            fill="currentColor"
                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                         />
                                     </svg>
@@ -1273,7 +1273,7 @@ export const BlockchainSelectionManager = ({
                             </button>
                         </div>
                     </div>
-                    
+
                     {/* Wallet Connection Button */}
                     {showConnectButton && (
                         walletState.isConnected ? (
@@ -1624,14 +1624,14 @@ export const BlockchainSelectionManager = ({
                                     e.currentTarget.style.backgroundColor = '#dc2626';
                                 }}
                             >
-                                <svg 
-                                    width="16" 
-                                    height="16" 
-                                    viewBox="0 0 24 24" 
-                                    fill="none" 
-                                    stroke="currentColor" 
-                                    strokeWidth="2" 
-                                    strokeLinecap="round" 
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
                                     strokeLinejoin="round"
                                 >
                                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>

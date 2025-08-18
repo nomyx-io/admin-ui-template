@@ -6,7 +6,7 @@ import NomyxLogo from "../assets/nomyx_logo_black.svg";
 import { RoleContext } from "../context/RoleContext";
 import { useUniversalWallet } from "../context/UniversalWalletContext";
 import { WalletPreference } from "../utils/Constants";
-import "../styles/NavBar.css";
+
 
 interface NavBarProps {
   onConnect: () => void;
@@ -17,23 +17,23 @@ interface NavBarProps {
   onChainChange: (chainId: string) => void;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ 
-  onConnect, 
-  onDisconnect, 
-  onLogout, 
+const NavBar: React.FC<NavBarProps> = ({
+  onConnect,
+  onDisconnect,
+  onLogout,
   role,
   selectedChainId,
   onChainChange
 }) => {
   const { walletPreference } = useContext(RoleContext);
-  const { 
-    selectedChain, 
-    setSelectedChain, 
-    connect, 
-    disconnect, 
-    isConnected, 
+  const {
+    selectedChain,
+    setSelectedChain,
+    connect,
+    disconnect,
+    isConnected,
     account,
-    walletProvider 
+    walletProvider
   } = useUniversalWallet();
 
   // Handle logout
@@ -45,10 +45,10 @@ const NavBar: React.FC<NavBarProps> = ({
     try {
       // Update the unified wallet context
       setSelectedChain(chainKey);
-      
+
       // Call parent handler which will handle BlockchainService initialization
       onChainChange(chainKey);
-      
+
       console.log(`[NavBar] Chain switch requested: ${chainKey}`);
     } catch (error) {
       console.error('[NavBar] Error switching chain:', error);
@@ -127,7 +127,7 @@ const NavBar: React.FC<NavBarProps> = ({
             showNetworkInfo={false}
             showLogoutButton={false}
           />
-          
+
           {/* Logout Button */}
           <Button onClick={handleLogout} className="bg-red-500 text-white">
             Logout

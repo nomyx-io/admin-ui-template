@@ -25,9 +25,9 @@ export default function TopicsPage() {
         console.log("[TopicsPage] Blockchain service initialized successfully");
         setBlockchainService(service);
         setError(null);
-      } catch (error) {
+      } catch (error: any) {
         console.error("[TopicsPage] Failed to initialize blockchain service:", error);
-        setError(error.message || "Failed to initialize blockchain service");
+        setError(error?.message || "Failed to initialize blockchain service");
         // Try to initialize with a fallback service that doesn't require chain config
         try {
           const service = new BlockchainService();
@@ -48,11 +48,11 @@ export default function TopicsPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div style={{ 
-          minHeight: "400px", 
-          display: "flex", 
-          justifyContent: "center", 
-          alignItems: "center" 
+        <div style={{
+          minHeight: "400px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
         }}>
           <Spin size="large" />
         </div>

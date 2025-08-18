@@ -10,6 +10,8 @@ import Parse from "parse";
 
 import "react-toastify/dist/ReactToastify.css";
 import "../index.css";
+import "../styles/NavBar.css";
+import "../components/ObjectList.css";
 
 // Initialize Parse
 if (typeof window !== "undefined") {
@@ -23,13 +25,7 @@ if (typeof window !== "undefined") {
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <AntdRegistry>
-      <ConfigProvider
-        theme={{
-          token: {
-            colorPrimary: "#1890ff",
-          },
-        }}
-      >
+      <ConfigProvider>
         <RoleProvider>
           <UniversalWalletProvider>
             <BlockchainManagerProvider>

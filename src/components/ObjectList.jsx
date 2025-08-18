@@ -1,4 +1,4 @@
-import "./ObjectList.css";
+
 
 import { useState, useEffect } from "react";
 
@@ -181,10 +181,10 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                     const value = getValue(fieldName, record);
                     // Handle objects that might be rendered as React children
                     let displayValue = value;
-                    
+
                     // Special handling for claimTopics array with objects
                     if (fieldName === "claimTopics" && Array.isArray(value)) {
-                      displayValue = value.map(item => 
+                      displayValue = value.map(item =>
                         typeof item === 'object' ? (item.topic || item.toString()) : item
                       ).join(", ");
                     } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {

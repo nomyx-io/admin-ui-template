@@ -4,18 +4,18 @@ import { Button } from "antd";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import NomyxLogo from "../assets/nomyx_logo_black.svg";
-import "../styles/NavBar.css";
+
 
 // Dynamically import BlockchainSelectionManager to avoid SSR issues
 const BlockchainSelectionManager = dynamic(
   () => import("@nomyx/shared").then(mod => mod.BlockchainSelectionManager),
-  { 
+  {
     ssr: false,
     loading: () => (
-      <select 
+      <select
         disabled
-        style={{ 
-          marginRight: '10px', 
+        style={{
+          marginRight: '10px',
           padding: '4px 8px',
           borderRadius: '4px',
           border: '1px solid #d9d9d9'
@@ -34,14 +34,14 @@ interface NavBarProps {
   showWalletConnect?: boolean;
 }
 
-const NextNavBar: React.FC<NavBarProps> = ({ 
-  onLogout, 
+const NextNavBar: React.FC<NavBarProps> = ({
+  onLogout,
   selectedChainId,
   onChainChange,
   showWalletConnect = false
 }) => {
   const router = useRouter();
-  
+
   const handleChainChange = async (chainKey: string) => {
     try {
       onChainChange(chainKey);

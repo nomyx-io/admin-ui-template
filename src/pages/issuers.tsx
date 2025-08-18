@@ -26,9 +26,9 @@ export default function IssuersPage() {
         console.log("[IssuersPage] Blockchain service initialized successfully");
         setBlockchainService(service);
         setError(null);
-      } catch (error) {
+      } catch (error: any) {
         console.error("[IssuersPage] Failed to initialize blockchain service:", error);
-        setError(error.message || "Failed to initialize blockchain service");
+        setError(error?.message || "Failed to initialize blockchain service");
         // Try to initialize with a fallback service
         try {
           const service = new BlockchainService();
@@ -49,11 +49,11 @@ export default function IssuersPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div style={{ 
-          minHeight: "400px", 
-          display: "flex", 
-          justifyContent: "center", 
-          alignItems: "center" 
+        <div style={{
+          minHeight: "400px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
         }}>
           <Spin size="large" />
         </div>

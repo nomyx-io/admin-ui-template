@@ -21,19 +21,19 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       console.log("[Admin Login] Login attempt:", email);
-      
+
       // For development/testing, allow admin@example.com with password123
       if (email === "admin@example.com" && password === "password123") {
         // Mock successful login
         const mockToken = "dev-token-" + Date.now();
-        
+
         // Store the session token
         localStorage.setItem("sessionToken", mockToken);
-        
+
         // Store token expiration (30 minutes from now)
         const expirationTime = Date.now() + 60 * 30 * 1000;
         localStorage.setItem("tokenExpiration", expirationTime.toString());
-        
+
         // Store user info
         localStorage.setItem("user", JSON.stringify({
           email: email,
@@ -42,12 +42,12 @@ export default function LoginPage() {
         }));
 
         console.log("[Admin Login] Dev login successful, redirecting to dashboard");
-        
+
         // Redirect to dashboard
         router.push("/dashboard");
         return;
       }
-      
+
       // Try actual Parse authentication
       try {
         const response = await axios.post(
@@ -67,18 +67,18 @@ export default function LoginPage() {
         if (result?.access_token) {
           // Store the session token
           localStorage.setItem("sessionToken", result.access_token);
-          
+
           // Store token expiration (30 minutes from now)
           const expirationTime = Date.now() + 60 * 30 * 1000;
           localStorage.setItem("tokenExpiration", expirationTime.toString());
-          
+
           // Store user info if needed
           if (result.user) {
             localStorage.setItem("user", JSON.stringify(result.user));
           }
 
           console.log("[Admin Login] Login successful, redirecting to dashboard");
-          
+
           // Redirect to dashboard
           router.push("/dashboard");
         } else {
@@ -110,7 +110,7 @@ export default function LoginPage() {
         onDisconnect={() => console.log("Disconnect")}
         service={null}
         selectedChainId="ethereum-local"
-        onChainChange={(chainId) => console.log("Chain change:", chainId)}
+        onChainChange={(chainId: string) => console.log("Chain change:", chainId)}
       />
     </LoginLayout>
   );

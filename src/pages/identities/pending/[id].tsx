@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Spin, Card, Descriptions, Button, Tag, Space } from "antd";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+import { Spin, Card, Button, Space } from "antd";
+
 import BlockchainService from "../../../services/BlockchainService";
 import IdentityService from "../../../services/IdentityService";
 import AppLayout from "../../../components/AppLayout";
@@ -73,11 +73,11 @@ export default function ViewPendingIdentityPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div style={{ 
-          minHeight: "400px", 
-          display: "flex", 
-          justifyContent: "center", 
-          alignItems: "center" 
+        <div style={{
+          minHeight: "400px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
         }}>
           <Spin size="large" />
         </div>
@@ -89,14 +89,13 @@ export default function ViewPendingIdentityPage() {
     <AppLayout>
       <div style={{ padding: "24px" }}>
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <Button 
-            icon={<ArrowLeftOutlined />} 
+          <Button
             onClick={() => router.push("/identities")}
           >
             Back to Identities
           </Button>
 
-          <Card 
+          <Card
             title="Pending Identity Details"
             extra={
               <Space>
@@ -110,37 +109,39 @@ export default function ViewPendingIdentityPage() {
             }
           >
             {identityData ? (
-              <Descriptions bordered column={1}>
-                <Descriptions.Item label="ID">{identityData.id}</Descriptions.Item>
-                <Descriptions.Item label="Display Name">
-                  {identityData.displayName || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Wallet Address">
-                  <code>{identityData.identityAddress || identityData.walletAddress || "N/A"}</code>
-                </Descriptions.Item>
-                <Descriptions.Item label="KYC ID">
-                  {identityData.kyc_id || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Type">
-                  <Tag>{identityData.type || "N/A"}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color="orange">{identityData.status || "PENDING"}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="PEP Matched">
-                  <Tag color={identityData.pepMatched ? "red" : "green"}>
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: '6px' }}>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9', backgroundColor: '#fafafa' }}>
+                  <strong>ID:</strong> {identityData.id}
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Display Name:</strong> {identityData.displayName || "N/A"}
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Wallet Address:</strong> <code>{identityData.identityAddress || identityData.walletAddress || "N/A"}</code>
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>KYC ID:</strong> {identityData.kyc_id || "N/A"}
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Type:</strong> <span style={{ padding: '2px 8px', backgroundColor: '#f0f0f0', borderRadius: '4px', fontSize: '12px' }}>{identityData.type || "N/A"}</span>
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Status:</strong> <span style={{ padding: '2px 8px', backgroundColor: '#ffd591', color: '#d46b08', borderRadius: '4px', fontSize: '12px' }}>{identityData.status || "PENDING"}</span>
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>PEP Matched:</strong> <span style={{ padding: '2px 8px', backgroundColor: identityData.pepMatched ? '#ffccc7' : '#d9f7be', color: identityData.pepMatched ? '#cf1322' : '#389e0d', borderRadius: '4px', fontSize: '12px' }}>
                     {identityData.pepMatched ? "Yes" : "No"}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Watchlist Matched">
-                  <Tag color={identityData.watchlistMatched ? "red" : "green"}>
+                  </span>
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Watchlist Matched:</strong> <span style={{ padding: '2px 8px', backgroundColor: identityData.watchlistMatched ? '#ffccc7' : '#d9f7be', color: identityData.watchlistMatched ? '#cf1322' : '#389e0d', borderRadius: '4px', fontSize: '12px' }}>
                     {identityData.watchlistMatched ? "Yes" : "No"}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Created At">
-                  {identityData.createdAt ? new Date(identityData.createdAt).toLocaleString() : "N/A"}
-                </Descriptions.Item>
-              </Descriptions>
+                  </span>
+                </div>
+                <div style={{ padding: '16px' }}>
+                  <strong>Created At:</strong> {identityData.createdAt ? new Date(identityData.createdAt).toLocaleString() : "N/A"}
+                </div>
+              </div>
             ) : (
               <div style={{ textAlign: "center", padding: "40px" }}>
                 <Spin />

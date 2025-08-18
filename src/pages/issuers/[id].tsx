@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Spin, Card, Descriptions, Button, Tag, Space } from "antd";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+import { Spin, Card, Button, Space } from "antd";
+
 import BlockchainService from "../../services/BlockchainService";
 import AppLayout from "../../components/AppLayout";
 
@@ -48,12 +48,12 @@ export default function ViewIssuerPage() {
           // ID is actually the issuer address - fetch all issuers and find the matching one
           const decodedAddress = decodeURIComponent(id as string);
           const allIssuers = await blockchainService.getTrustedIssuers();
-          
+
           // Find the issuer with matching address
-          const issuer = allIssuers?.find((i: any) => 
+          const issuer = allIssuers?.find((i: any) =>
             i.attributes?.issuer === decodedAddress
           );
-          
+
           if (issuer) {
             setIssuerData(issuer);
           } else {
@@ -71,11 +71,11 @@ export default function ViewIssuerPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div style={{ 
-          minHeight: "400px", 
-          display: "flex", 
-          justifyContent: "center", 
-          alignItems: "center" 
+        <div style={{
+          minHeight: "400px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
         }}>
           <Spin size="large" />
         </div>
@@ -87,8 +87,7 @@ export default function ViewIssuerPage() {
     <AppLayout>
       <div style={{ padding: "24px" }}>
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <Button 
-            icon={<ArrowLeftOutlined />} 
+          <Button
             onClick={() => router.push("/issuers")}
           >
             Back to Trusted Issuers
@@ -96,33 +95,35 @@ export default function ViewIssuerPage() {
 
           <Card title="Trusted Issuer Details">
             {issuerData ? (
-              <Descriptions bordered column={1}>
-                <Descriptions.Item label="ID">{issuerData.id || id}</Descriptions.Item>
-                <Descriptions.Item label="Name">
-                  {issuerData.attributes?.name || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Address">
-                  <code>{issuerData.attributes?.issuer || issuerData.attributes?.address || "N/A"}</code>
-                </Descriptions.Item>
-                <Descriptions.Item label="Claim Topics">
-                  {issuerData.attributes?.claimTopics?.map((topic: any) => (
-                    <Tag key={typeof topic === 'object' ? topic.topic || JSON.stringify(topic) : topic}>
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: '6px' }}>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9', backgroundColor: '#fafafa' }}>
+                  <strong>ID:</strong> {issuerData.id || id}
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Name:</strong> {issuerData.attributes?.name || "N/A"}
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Address:</strong> <code>{issuerData.attributes?.issuer || issuerData.attributes?.address || "N/A"}</code>
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Claim Topics:</strong> {issuerData.attributes?.claimTopics?.map((topic: any) => (
+                    <span key={typeof topic === 'object' ? topic.topic || JSON.stringify(topic) : topic} style={{ display: 'inline-block', padding: '2px 8px', backgroundColor: '#f0f0f0', borderRadius: '4px', fontSize: '12px', margin: '2px' }}>
                       {typeof topic === 'object' ? topic.topic || JSON.stringify(topic) : topic}
-                    </Tag>
+                    </span>
                   )) || "No claim topics"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color={issuerData.attributes?.active ? "green" : "red"}>
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Status:</strong> <span style={{ padding: '2px 8px', backgroundColor: issuerData.attributes?.active ? '#d9f7be' : '#ffccc7', color: issuerData.attributes?.active ? '#389e0d' : '#cf1322', borderRadius: '4px', fontSize: '12px' }}>
                     {issuerData.attributes?.active ? "Active" : "Inactive"}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Created At">
-                  {issuerData.createdAt ? new Date(issuerData.createdAt).toLocaleString() : "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Updated At">
-                  {issuerData.updatedAt ? new Date(issuerData.updatedAt).toLocaleString() : "N/A"}
-                </Descriptions.Item>
-              </Descriptions>
+                  </span>
+                </div>
+                <div style={{ padding: '16px', borderBottom: '1px solid #d9d9d9' }}>
+                  <strong>Created At:</strong> {issuerData.createdAt ? new Date(issuerData.createdAt).toLocaleString() : "N/A"}
+                </div>
+                <div style={{ padding: '16px' }}>
+                  <strong>Updated At:</strong> {issuerData.updatedAt ? new Date(issuerData.updatedAt).toLocaleString() : "N/A"}
+                </div>
+              </div>
             ) : (
               <div style={{ textAlign: "center", padding: "40px" }}>
                 <Spin />
