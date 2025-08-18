@@ -831,6 +831,7 @@ class BlockchainService {
       throw error;
     }
   }
+
 }
 
 export default BlockchainService;

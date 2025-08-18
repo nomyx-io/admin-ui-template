@@ -73,11 +73,6 @@ const NextNavBar: React.FC<NavBarProps> = ({
           </Link>
         </li>
         <li>
-          <Link href="/mint" className={isActive('/mint')}>
-            Mint
-          </Link>
-        </li>
-        <li>
           <ClientBlockchainSelector
             selectedChainId={selectedChainId}
             onChainChange={handleChainChange}
