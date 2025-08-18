@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Spin } from "antd";
-import BlockchainService from "../services/BlockchainService";
+import { useBlockchainService } from "../hooks/useBlockchainService";
 import IdentityService from "../services/IdentityService";
 import AppLayout from "../components/AppLayout";
 
@@ -11,42 +11,18 @@ const IdentitiesPage = dynamic(() => import("../components/IdentitiesPage"), {
 });
 
 export default function Identities() {
+  const { blockchainService, loading: serviceLoading } = useBlockchainService();
   const [identityService, setIdentityService] = useState<IdentityService | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (blockchainService && !serviceLoading) {
+      console.log("[IdentitiesPage] Initializing identity service with blockchain service");
+      const service = new IdentityService(blockchainService);
+      setIdentityService(service);
+    }
+  }, [blockchainService, serviceLoading]);
 
-    // Initialize services
-    const initService = async () => {
-      try {
-        const selectedChain = localStorage.getItem("nomyx-selected-chain") || "ethereum-local";
-        console.log("[IdentitiesPage] Initializing blockchain service for:", selectedChain);
-        const blockchainService = new BlockchainService();
-        await blockchainService.initialize(selectedChain);
-        console.log("[IdentitiesPage] Blockchain service initialized successfully");
-        const service = new IdentityService(blockchainService);
-        setIdentityService(service);
-      } catch (error) {
-        console.error("[IdentitiesPage] Failed to initialize identity service:", error);
-        // Try to initialize with a fallback service
-        try {
-          const blockchainService = new BlockchainService();
-          blockchainService.initialized = true;
-          blockchainService.currentChain = localStorage.getItem("nomyx-selected-chain") || "ethereum-local";
-          const service = new IdentityService(blockchainService);
-          setIdentityService(service);
-        } catch (fallbackError) {
-          console.error("[IdentitiesPage] Fallback initialization also failed:", fallbackError);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initService();
-  }, []);
-
-  if (loading) {
+  if (serviceLoading) {
     return (
       <AppLayout>
         <div style={{ 

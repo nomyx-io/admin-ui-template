@@ -1,7 +1,2 @@
-export function createBlockchainSelectionManager(React: any) {
-    // Import the component directly (it has its own React import)
-    const { BlockchainSelectionManager } = require('./BlockchainSelectionManager');
-    
-    // Return the component directly
-    return BlockchainSelectionManager;
-}
+// Re-export the factory from @nomyx/shared
+export { createBlockchainSelectionManager } from '@nomyx/shared';

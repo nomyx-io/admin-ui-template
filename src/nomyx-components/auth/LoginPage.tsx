@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
-import { Spin, Layout, Card, Radio, Form, Input, Button } from "antd";
+import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
+import { Spin, Layout, Card, Radio, Form, Input, Button, Select, Space, message, Modal, Tooltip, Badge } from "antd";
 import { toast } from "react-toastify";
-import { BlockchainSelectionManager } from "../BlockchainSelectionManager";
+import { createBlockchainSelectionManager } from "@nomyx/shared";
 import { LoginPreference } from "./types";
 
 export interface LoginPageProps {
@@ -202,7 +202,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 marginRight: "calc((100vw - 550px) / 2)", // Aligns with login card's right edge
               }}
             >
-              <BlockchainSelectionManager
+              {(() => {
+                const BSM = useMemo(() => createBlockchainSelectionManager(React, {
+                  useState, useEffect, useCallback: React.useCallback, useRef,
+                  Select, Button, Card, Space, message, Modal, Tooltip, Badge
+                }), []);
+                return <BSM
                 selectedChainId={selectedChainId}
                 onChainChange={onChainChange}
                 onWalletConnect={handleWalletConnect}
@@ -211,6 +216,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 showNetworkInfo={true}
                 showConnectButton={true}
               />
+              })()}
             </div>
           )}
 

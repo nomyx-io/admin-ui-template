@@ -6,7 +6,7 @@ import Link from "next/link"; import { useNavigate, useParams, useLocation } fro
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
-import { useBlockchainManager } from "../context/BlockchainManagerContext"; // Use wallet-agnostic hook from context
+import { BlockchainServiceManager } from "@nomyx/shared";
 import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
@@ -23,8 +23,36 @@ function CreateTrustedIssuer({ service }) {
   // Get user and dfnsToken from RoleContext (for DFNS operations)
   const { user, dfnsToken } = useContext(RoleContext);
   
-  // Get wallet state from BlockchainSelectionManager (wallet-agnostic)
-  const { isConnected, account, getWalletType } = useBlockchainManager();
+  // Get wallet state from BlockchainServiceManager
+  const manager = BlockchainServiceManager.getInstance();
+  const [isConnected, setIsConnected] = React.useState(false);
+  const [account, setAccount] = React.useState(null);
+  
+  React.useEffect(() => {
+    const updateWalletState = () => {
+      if (manager && manager.isServiceInitialized()) {
+        setIsConnected(manager.isWalletConnected());
+        setAccount(manager.getWalletAddress());
+      }
+    };
+    
+    updateWalletState();
+    
+    // Listen for wallet events
+    const handleWalletUpdate = () => updateWalletState();
+    manager.on('wallet:connected', handleWalletUpdate);
+    manager.on('wallet:disconnected', handleWalletUpdate);
+    
+    return () => {
+      manager.off('wallet:connected', handleWalletUpdate);
+      manager.off('wallet:disconnected', handleWalletUpdate);
+    };
+  }, []);
+  
+  const getWalletType = () => {
+    const provider = manager.getWalletProvider();
+    return provider ? 'private' : null;  // Simplified for now
+  };
 
   let id = location.pathname.split("/")[2];
   useEffect(() => {
@@ -156,15 +184,54 @@ function CreateTrustedIssuer({ service }) {
       return;
     }
     
-    // Check if wallet is connected
-    if (!isConnected) {
+    // For local development, we can proceed without wallet connection
+    const isLocalDev = typeof window !== 'undefined' && 
+                       (window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1');
+    
+    // Check if wallet is connected (skip for local dev)
+    if (!isLocalDev && !isConnected) {
       toast.error("Please connect your wallet first");
       return;
     }
 
     try {
+      // For local development or when service.addTrustedIssuer is available
+      if (isLocalDev && service && service.addTrustedIssuer) {
+        console.log("[CreateTrustedIssuer] Using local development mode");
+        toast
+          .promise(
+            (async () => {
+              const result = await service.addTrustedIssuer(
+                walletAddress,
+                targetKeys,
+                trimmedVerifierName
+              );
+              
+              console.log(`[CreateTrustedIssuer] Add trusted issuer result:`, result);
+              if (!result || (!result.success && !result.txHash && !result.transactionHash)) {
+                throw new Error('Transaction did not return a success confirmation');
+              }
+              
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              navigate("/issuers");
+            })(),
+            {
+              pending: "Adding Trusted Issuer...",
+              success: `Successfully Added Trusted Issuer ${walletAddress}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${walletAddress}`}</div>;
+                },
+              },
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to add Trusted Issuer:", error);
+          });
+      }
       // Check if we're using DFNS managed wallet
-      if (walletType === 'managed' && (!service || !service.addTrustedIssuer)) {
+      else if (walletType === 'managed' && (!service || !service.addTrustedIssuer)) {
         // Handle MANAGED wallet preference using DFNSService
         toast
           .promise(
@@ -213,11 +280,11 @@ function CreateTrustedIssuer({ service }) {
               if (!service || typeof service.addTrustedIssuer !== "function") {
                 throw new Error("addTrustedIssuer method not available on service");
               }
-              const result = await service.addTrustedIssuer({
-                address: walletAddress,
-                claimTopics: targetKeys,
-                verifierName: trimmedVerifierName,
-              });
+              const result = await service.addTrustedIssuer(
+                walletAddress,
+                targetKeys,
+                trimmedVerifierName
+              );
               
               // Verify the transaction was successful
               console.log(`[CreateTrustedIssuer] Add trusted issuer result:`, result);

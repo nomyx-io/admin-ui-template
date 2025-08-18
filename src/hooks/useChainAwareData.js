@@ -26,10 +26,11 @@ export const useChainAwareData = (service, fetchDataFn, dependencies = []) => {
       setLoading(true);
       setError(null);
       
-      // Get current chain
+      // Get current chain ID (string) instead of chain object
       const chain = await service.getCurrentChain();
-      setCurrentChain(chain);
-      console.log(`[useChainAwareData] Fetching data for chain: ${chain}`);
+      const chainId = chain?.chainKey || chain?.id || chain;
+      setCurrentChain(chainId);
+      console.log(`[useChainAwareData] Fetching data for chain: ${chainId}`);
       
       // Fetch the data
       const result = await fetchDataFn(service);
@@ -55,8 +56,10 @@ export const useChainAwareData = (service, fetchDataFn, dependencies = []) => {
     const checkChainChange = async () => {
       try {
         const chain = await service.getCurrentChain();
-        if (chain !== currentChain && currentChain !== null) {
-          console.log(`[useChainAwareData] Chain changed from ${currentChain} to ${chain}, refreshing data...`);
+        const chainId = chain?.chainKey || chain?.id || chain;
+        // Compare chain IDs as strings instead of objects
+        if (chainId !== currentChain && currentChain !== null) {
+          console.log(`[useChainAwareData] Chain changed from ${currentChain} to ${chainId}, refreshing data...`);
           fetchData();
         }
       } catch (error) {
@@ -64,8 +67,8 @@ export const useChainAwareData = (service, fetchDataFn, dependencies = []) => {
       }
     };
     
-    // Check for chain changes periodically
-    const interval = setInterval(checkChainChange, 1000);
+    // Check for chain changes periodically (reduced frequency to avoid loops)
+    const interval = setInterval(checkChainChange, 5000);
     
     return () => clearInterval(interval);
   }, [service, currentChain, fetchData]);

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Spin } from "antd";
-import BlockchainService from "../../services/BlockchainService";
+import { useBlockchainService } from "../../hooks/useBlockchainService";
 import IdentityService from "../../services/IdentityService";
 import AppLayout from "../../components/AppLayout";
 
@@ -11,39 +11,18 @@ const DigitalIdentityDetailPage = dynamic(() => import("../../components/Digital
 });
 
 export default function ViewIdentityPage() {
+  const { blockchainService, loading: serviceLoading, error } = useBlockchainService();
   const [identityService, setIdentityService] = useState<IdentityService | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize services
-    const initService = async () => {
-      try {
-        const selectedChain = localStorage.getItem("nomyx-selected-chain") || "ethereum-local";
-        console.log("[ViewIdentityPage] Initializing blockchain service for:", selectedChain);
-        const blockchainService = new BlockchainService();
-        await blockchainService.initialize(selectedChain);
-        console.log("[ViewIdentityPage] Blockchain service initialized successfully");
-        const service = new IdentityService(blockchainService);
-        setIdentityService(service);
-      } catch (error) {
-        console.error("[ViewIdentityPage] Failed to initialize identity service:", error);
-        // Try to initialize with a fallback service
-        try {
-          const blockchainService = new BlockchainService();
-          blockchainService.initialized = true;
-          blockchainService.currentChain = localStorage.getItem("nomyx-selected-chain") || "ethereum-local";
-          const service = new IdentityService(blockchainService);
-          setIdentityService(service);
-        } catch (fallbackError) {
-          console.error("[ViewIdentityPage] Fallback initialization also failed:", fallbackError);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initService();
-  }, []);
+    // Initialize identity service when blockchain service is ready
+    if (blockchainService && !serviceLoading) {
+      const service = new IdentityService(blockchainService);
+      setIdentityService(service);
+      setLoading(false);
+    }
+  }, [blockchainService, serviceLoading]);
 
   if (loading) {
     return (

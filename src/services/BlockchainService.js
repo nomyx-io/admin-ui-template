@@ -127,7 +127,7 @@ class BlockchainService {
 
     try {
       // For Stellar, try to get detailed topics with names
-      if (this.currentChain === "stellar-testnet" && typeof this.unifiedService.getClaimTopicsDetailed === "function") {
+      if (this.currentChain?.includes("stellar") && typeof this.unifiedService.getClaimTopicsDetailed === "function") {
         console.log(`[Admin BlockchainService] Getting detailed claim topics for Stellar`);
         const detailedTopics = await this.unifiedService.getClaimTopicsDetailed();
         console.log(`[Admin BlockchainService] Retrieved ${detailedTopics.length} detailed claim topics`);
@@ -188,7 +188,7 @@ class BlockchainService {
 
     try {
       // For Stellar, pass the display name if available
-      if (this.currentChain === "stellar-testnet" && displayName) {
+      if (this.currentChain?.includes("stellar") && displayName) {
         console.log(`[Admin BlockchainService] Adding claim topic with name: ${displayName}`);
         const result = await this.unifiedService.addClaimTopic(topicId, displayName);
         console.log(`[Admin BlockchainService] Claim topic added successfully:`, result);

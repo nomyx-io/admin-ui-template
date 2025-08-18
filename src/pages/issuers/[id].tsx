@@ -1,45 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Spin, Card, Descriptions, Button, Tag, Space } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import BlockchainService from "../../services/BlockchainService";
+import { useBlockchainService } from "../../hooks/useBlockchainService";
 import AppLayout from "../../components/AppLayout";
 
 export default function ViewIssuerPage() {
   const router = useRouter();
   const { id } = router.query;
-  const [blockchainService, setBlockchainService] = useState<BlockchainService | null>(null);
+  const { blockchainService, loading, error } = useBlockchainService();
   const [issuerData, setIssuerData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Initialize blockchain service
-    const initService = async () => {
-      try {
-        const selectedChain = localStorage.getItem("nomyx-selected-chain") || "ethereum-local";
-        console.log("[ViewIssuerPage] Initializing blockchain service for:", selectedChain);
-        const service = new BlockchainService();
-        await service.initialize(selectedChain);
-        console.log("[ViewIssuerPage] Blockchain service initialized successfully");
-        setBlockchainService(service);
-      } catch (error) {
-        console.error("[ViewIssuerPage] Failed to initialize blockchain service:", error);
-        // Try to initialize with a fallback service
-        try {
-          const service = new BlockchainService();
-          service.initialized = true;
-          service.currentChain = localStorage.getItem("nomyx-selected-chain") || "ethereum-local";
-          setBlockchainService(service);
-        } catch (fallbackError) {
-          console.error("[ViewIssuerPage] Fallback initialization also failed:", fallbackError);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initService();
-  }, []);
 
   useEffect(() => {
     const loadIssuerData = async () => {
@@ -49,9 +19,11 @@ export default function ViewIssuerPage() {
           const decodedAddress = decodeURIComponent(id as string);
           const allIssuers = await blockchainService.getTrustedIssuers();
           
-          // Find the issuer with matching address
+          // Find the issuer with matching address (handle both Ethereum and Stellar formats)
           const issuer = allIssuers?.find((i: any) => 
-            i.attributes?.issuer === decodedAddress
+            i.attributes?.issuer === decodedAddress || // Ethereum format
+            i.issuer === decodedAddress || // Stellar format
+            i.issuer_address === decodedAddress // Alternative Stellar format
           );
           
           if (issuer) {
@@ -99,21 +71,21 @@ export default function ViewIssuerPage() {
               <Descriptions bordered column={1}>
                 <Descriptions.Item label="ID">{issuerData.id || id}</Descriptions.Item>
                 <Descriptions.Item label="Name">
-                  {issuerData.attributes?.name || "N/A"}
+                  {issuerData.attributes?.name || issuerData.name || issuerData.verifierName || "N/A"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Address">
-                  <code>{issuerData.attributes?.issuer || issuerData.attributes?.address || "N/A"}</code>
+                  <code>{issuerData.attributes?.issuer || issuerData.attributes?.address || issuerData.issuer || issuerData.issuer_address || "N/A"}</code>
                 </Descriptions.Item>
                 <Descriptions.Item label="Claim Topics">
-                  {issuerData.attributes?.claimTopics?.map((topic: any) => (
+                  {(issuerData.attributes?.claimTopics || issuerData.claimTopics || issuerData.claim_topics)?.map((topic: any) => (
                     <Tag key={typeof topic === 'object' ? topic.topic || JSON.stringify(topic) : topic}>
                       {typeof topic === 'object' ? topic.topic || JSON.stringify(topic) : topic}
                     </Tag>
                   )) || "No claim topics"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Status">
-                  <Tag color={issuerData.attributes?.active ? "green" : "red"}>
-                    {issuerData.attributes?.active ? "Active" : "Inactive"}
+                  <Tag color={(issuerData.attributes?.active ?? issuerData.active ?? true) ? "green" : "red"}>
+                    {(issuerData.attributes?.active ?? issuerData.active ?? true) ? "Active" : "Inactive"}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Created At">

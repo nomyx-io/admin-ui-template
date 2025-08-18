@@ -1,9 +1,10 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "antd";
 import { useRouter } from "next/router";
 import ClientBlockchainSelector from "./ClientBlockchainSelector";
 import NomyxLogo from "../assets/nomyx_logo_black.svg";
+import { BlockchainServiceManager } from "@nomyx/shared";
 import "../styles/NavBar.css";
 
 interface NavBarProps {
@@ -87,6 +88,8 @@ const NextNavBar: React.FC<NavBarProps> = ({
             isConnected={isWalletConnected}
             walletAddress={walletAddress}
             onWalletConnect={handleWalletConnect}
+            isLoggedIn={true}
+            showUI={true}
           />
           <Button onClick={onLogout}>Logout</Button>
         </li>

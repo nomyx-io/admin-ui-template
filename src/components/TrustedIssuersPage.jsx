@@ -89,20 +89,38 @@ const TrustedIssuersPage = ({ service }) => {
   const trustedIssuers = [];
   if (rawIssuers) {
     rawIssuers.forEach((item) => {
-      // Add defensive checks to prevent undefined property access
-      if (!item || !item.attributes) {
+      // Handle both wrapped (Ethereum) and unwrapped (Stellar) data formats
+      let issuerData;
+      
+      if (item && item.attributes) {
+        // Ethereum format with attributes wrapper
+        issuerData = item.attributes;
+      } else if (item && (item.issuerAddress || item.issuer_address || item.name)) {
+        // Stellar format without wrapper
+        issuerData = {
+          issuer: item.issuerAddress || item.issuer_address,
+          verifierName: item.name || `Issuer ${(item.issuerAddress || item.issuer_address || '').substring(0, 8)}...`,
+          claimTopics: item.claimTopics || item.claim_topics || []
+        };
+      } else {
         console.warn("[TrustedIssuersPage] Skipping malformed issuer item:", item);
         return;
       }
 
-      const { attributes } = item;
-      const claimTopicsString = attributes.claimTopics?.map((obj) => obj["topic"]).join(",") || "N/A";
+      // Handle claim topics - they may be numbers or objects with topic property
+      let claimTopicsString = "N/A";
+      if (issuerData.claimTopics && Array.isArray(issuerData.claimTopics)) {
+        claimTopicsString = issuerData.claimTopics
+          .map((topic) => typeof topic === 'object' ? topic.topic : topic)
+          .filter(t => t !== undefined && t !== null)
+          .join(",") || "N/A";
+      }
 
       trustedIssuers.push({
-        id: attributes.issuer || item.id || "unknown",  // Use address as ID for routing
+        id: issuerData.issuer || item.id || "unknown",  // Use address as ID for routing
         claimTopics: claimTopicsString,
-        address: attributes.issuer || "N/A",
-        trustedIssuer: attributes.verifierName || "Unknown Issuer",
+        address: issuerData.issuer || "N/A",
+        trustedIssuer: issuerData.verifierName || issuerData.name || "Unknown Issuer",
       });
     });
   }

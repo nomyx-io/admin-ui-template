@@ -1,48 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Spin, Card, Descriptions, Button, Tag, Space } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import BlockchainService from "../../../services/BlockchainService";
+import { useBlockchainService } from "../../../hooks/useBlockchainService";
 import IdentityService from "../../../services/IdentityService";
 import AppLayout from "../../../components/AppLayout";
 
 export default function ViewPendingIdentityPage() {
   const router = useRouter();
   const { id } = router.query;
+  const { blockchainService, loading: serviceLoading, error } = useBlockchainService();
   const [identityService, setIdentityService] = useState<IdentityService | null>(null);
   const [identityData, setIdentityData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize services
-    const initService = async () => {
-      try {
-        const selectedChain = localStorage.getItem("nomyx-selected-chain") || "ethereum-local";
-        console.log("[ViewPendingIdentityPage] Initializing blockchain service for:", selectedChain);
-        const blockchainService = new BlockchainService();
-        await blockchainService.initialize(selectedChain);
-        console.log("[ViewPendingIdentityPage] Blockchain service initialized successfully");
-        const service = new IdentityService(blockchainService);
-        setIdentityService(service);
-      } catch (error) {
-        console.error("[ViewPendingIdentityPage] Failed to initialize identity service:", error);
-        // Try to initialize with a fallback service
-        try {
-          const blockchainService = new BlockchainService();
-          blockchainService.initialized = true;
-          blockchainService.currentChain = localStorage.getItem("nomyx-selected-chain") || "ethereum-local";
-          const service = new IdentityService(blockchainService);
-          setIdentityService(service);
-        } catch (fallbackError) {
-          console.error("[ViewPendingIdentityPage] Fallback initialization also failed:", fallbackError);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initService();
-  }, []);
+    // Initialize identity service when blockchain service is ready
+    if (blockchainService && !serviceLoading) {
+      const service = new IdentityService(blockchainService);
+      setIdentityService(service);
+      setLoading(false);
+    }
+  }, [blockchainService, serviceLoading]);
 
   useEffect(() => {
     const loadIdentityData = async () => {

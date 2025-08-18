@@ -1,5 +1,5 @@
 // Component exports
-export { BlockchainSelectionManager, useBlockchainManager } from './BlockchainSelectionManager';
+export { createBlockchainSelectionManager } from './BlockchainSelectionManager.factory';
 export { ChainSelector } from './ChainSelector';
 export { ConnectButton } from './ConnectButton';
 export { WalletSelectionModal } from './WalletSelectionModal';

@@ -171,9 +171,9 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
           </tr>
         </thead>
         <tbody>
-          {pageData.map((record) => {
+          {pageData.map((record, index) => {
             return (
-              <tr key={record.id}>
+              <tr key={record.id || `row-${index}`}>
                 {columns.map((column) => {
                   let fieldName = typeof column === "object" ? column.name : column;
                   let key = fieldName + "-" + record.id;

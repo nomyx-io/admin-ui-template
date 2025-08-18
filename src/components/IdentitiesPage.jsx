@@ -6,10 +6,10 @@ import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
 import { RoleContext } from "../context/RoleContext"; // Import RoleContext for user/dfnsToken only
-import { useBlockchainManager } from "../nomyx-components"; // Import wallet-agnostic hook from index
 import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
 import { WalletPreference } from "../utils/Constants";
+import { BlockchainServiceManager } from "@nomyx/shared";
 
 const IdentitiesPage = ({ service }) => {
   const navigate = useNavigate();
@@ -21,8 +21,37 @@ const IdentitiesPage = ({ service }) => {
   // Get user and dfnsToken from RoleContext (for DFNS operations)
   const { user, dfnsToken } = useContext(RoleContext);
   
-  // Get wallet state from BlockchainSelectionManager (wallet-agnostic)
-  const { isConnected, account, getWalletType } = useBlockchainManager();
+  // Get wallet state from BlockchainServiceManager
+  const [isConnected, setIsConnected] = useState(false);
+  const [account, setAccount] = useState(null);
+  
+  useEffect(() => {
+    const manager = BlockchainServiceManager.getInstance();
+    const checkWallet = () => {
+      setIsConnected(manager.isWalletConnected());
+      setAccount(manager.getWalletAddress());
+    };
+    
+    checkWallet();
+    
+    const handleWalletConnected = () => checkWallet();
+    const handleWalletDisconnected = () => checkWallet();
+    
+    manager.on('wallet:connected', handleWalletConnected);
+    manager.on('wallet:disconnected', handleWalletDisconnected);
+    
+    return () => {
+      manager.off('wallet:connected', handleWalletConnected);
+      manager.off('wallet:disconnected', handleWalletDisconnected);
+    };
+  }, []);
+  
+  const getWalletType = () => {
+    // Get wallet type from manager if needed
+    const manager = BlockchainServiceManager.getInstance();
+    const walletInfo = manager.getWalletInfo();
+    return walletInfo?.walletType || 'unknown';
+  };
 
   const fetchData = useCallback(
     async (tab) => {

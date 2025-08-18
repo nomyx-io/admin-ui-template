@@ -5,7 +5,7 @@ import Link from "next/link"; import { useNavigate, useParams, useLocation } fro
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext"; // Import RoleContext for user/dfnsToken
-import { useBlockchainManager } from "../context/BlockchainManagerContext"; // Use wallet-agnostic hook from context
+import { BlockchainServiceManager } from "@nomyx/shared";
 import DfnsService from "../services/DfnsService";
 import { awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
@@ -18,8 +18,36 @@ function CreateDigitalId({ service }) {
   // Get user and dfnsToken from RoleContext (for DFNS operations)
   const { user, dfnsToken } = useContext(RoleContext);
   
-  // Get wallet state from BlockchainSelectionManager (wallet-agnostic)
-  const { isConnected, account, getWalletType } = useBlockchainManager();
+  // Get wallet state from BlockchainServiceManager
+  const manager = BlockchainServiceManager.getInstance();
+  const [isConnected, setIsConnected] = useState(false);
+  const [account, setAccount] = useState(null);
+  
+  useEffect(() => {
+    const updateWalletState = () => {
+      if (manager && manager.isServiceInitialized()) {
+        setIsConnected(manager.isWalletConnected());
+        setAccount(manager.getWalletAddress());
+      }
+    };
+    
+    updateWalletState();
+    
+    // Listen for wallet events
+    const handleWalletUpdate = () => updateWalletState();
+    manager.on('wallet:connected', handleWalletUpdate);
+    manager.on('wallet:disconnected', handleWalletUpdate);
+    
+    return () => {
+      manager.off('wallet:connected', handleWalletUpdate);
+      manager.off('wallet:disconnected', handleWalletUpdate);
+    };
+  }, []);
+  
+  const getWalletType = () => {
+    const provider = manager.getWalletProvider();
+    return provider ? 'private' : null;  // Simplified for now
+  };
 
   const [displayName, setDisplayName] = useState(searchParams.get("displayName") || "");
   const [walletAddress, setWalletAddress] = useState(searchParams.get("walletAddress") || "");
@@ -86,15 +114,62 @@ function CreateDigitalId({ service }) {
       return; // Early return if validation fails
     }
     
-    // Check if wallet is connected
-    if (!isConnected) {
+    // For local development, we can proceed without wallet connection
+    const isLocalDev = typeof window !== 'undefined' && 
+                       (window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1');
+    
+    // Check if wallet is connected (skip for local dev)
+    if (!isLocalDev && !isConnected) {
       toast.error("Please connect your wallet first");
       return;
     }
 
     try {
+      // For local development or when service.createIdentity is available
+      if (isLocalDev && service && service.createIdentity) {
+        console.log("[CreateDigitalId] Using local development mode");
+        toast
+          .promise(
+            (async () => {
+              // For Stellar, createIdentity already adds it to the registry
+              const createResult = await service.createIdentity({ owner: walletAddress });
+              console.log(`[CreateDigitalId] Create identity result:`, createResult);
+              
+              if (!createResult || (!createResult.identityAddress && !createResult.txHash)) {
+                throw new Error('Failed to create identity');
+              }
+              
+              // Check if this is an existing identity (not newly created)
+              const identityAddress = Array.isArray(createResult.identityAddress) 
+                ? createResult.identityAddress[0] 
+                : createResult.identityAddress;
+              
+              if (identityAddress && identityAddress.startsWith('existing_identity_')) {
+                console.log(`[CreateDigitalId] Using existing identity: ${identityAddress}`);
+              } else {
+                console.log(`[CreateDigitalId] Successfully created new identity: ${identityAddress}`);
+              }
+              
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              navigate("/identities");
+            })(),
+            {
+              pending: "Creating Digital Identity...",
+              success: `Successfully Created Digital Identity ${walletAddress}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while creating Digital Identity ${walletAddress}`}</div>;
+                },
+              },
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to create Digital Identity:", error);
+          });
+      }
       // Check if we're using DFNS managed wallet
-      if (walletType === 'managed' && (!service || !service.createIdentity)) {
+      else if (walletType === 'managed' && (!service || !service.createIdentity)) {
         // Handle MANAGED wallet preference using DFNSService
         toast
           .promise(

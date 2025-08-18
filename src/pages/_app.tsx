@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import type { AppProps } from "next/app";
 import ConfigProvider from "antd/es/config-provider";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 const { ToastContainer } = require("react-toastify");
 import { RoleProvider } from "../context/RoleContext";
-import { UniversalWalletProvider } from "../context/UniversalWalletContext";
+import { BlockchainServiceManager } from "@nomyx/shared";
 import Parse from "parse";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -20,6 +20,24 @@ if (typeof window !== "undefined") {
 }
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const serviceManager = useRef(BlockchainServiceManager.getInstance()).current;
+  
+  // Initialize service manager on mount
+  useEffect(() => {
+    const initServices = async () => {
+      try {
+        if (!serviceManager.isServiceInitialized()) {
+          // Get saved chain preference or default to ethereum-local
+          const savedChain = localStorage.getItem("nomyx-selected-chain") || 'ethereum-local';
+          await serviceManager.initialize(savedChain);
+        }
+      } catch (error) {
+        console.error('[Admin Portal] Failed to initialize blockchain services:', error);
+      }
+    };
+    initServices();
+  }, []);
+
   return (
     <AntdRegistry>
       <ConfigProvider
@@ -30,20 +48,18 @@ function MyApp({ Component, pageProps }: AppProps) {
         }}
       >
         <RoleProvider>
-          <UniversalWalletProvider>
-            <Component {...pageProps} />
-            <ToastContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-            />
-          </UniversalWalletProvider>
+          <Component {...pageProps} />
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
         </RoleProvider>
       </ConfigProvider>
     </AntdRegistry>
