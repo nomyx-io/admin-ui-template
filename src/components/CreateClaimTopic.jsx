@@ -76,8 +76,8 @@ function CreateClaimTopic({ service }) {
             })(),
             {
               pending: "Creating Compliance Rule...",
-              success: `Successfully created Compliance Rule ${hiddenName}`,
-              error: `An error occurred while Creating Compliance Rule ${hiddenName}`,
+              success: `Successfully created ${displayName} compliance rule`,
+              error: `An error occurred while Creating Compliance Rule ${displayName}`,
             }
           )
           .catch((error) => {
@@ -96,8 +96,8 @@ function CreateClaimTopic({ service }) {
             })(),
             {
               pending: "Creating Compliance Rule...",
-              success: `Successfully created Compliance Rule ${hiddenName}`,
-              error: `An error occurred while creating Compliance Rule ${hiddenName}`,
+              success: `Successfully created ${displayName} compliance rule`,
+              error: `An error occurred while creating Compliance Rule ${displayName}`,
             }
           )
           .then(() => {

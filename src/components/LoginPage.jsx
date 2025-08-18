@@ -60,7 +60,8 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
 
   const handleConnect = async ({ address, connector, isReconnected }) => {
     console.log("Connected with address: ", address);
-    if (!isConnectTriggered) {
+    // Only proceed with connection if user has selected wallet login
+    if (loginPreference === LoginPreference.WALLET && !isConnectTriggered) {
       console.log("Connect Triggered");
       setIsConnectTriggered(true);
       await onConnect(address, connector);
@@ -73,6 +74,7 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
     navigate("/", { replace: true }); // Redirect to root path upon disconnect
   };
 
+  // Set up account handlers at the top level as required by wagmi
   useAccount({
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,
@@ -104,7 +106,6 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
 
             <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">
               {/* The heading at the top */}
-              <h1 className="text-right font-bold text-xl mb-4 w-full mt-8 mr-4">NomyxID</h1>
 
               {/* The container that will hold the button in the middle */}
 

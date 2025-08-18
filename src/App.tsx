@@ -17,6 +17,7 @@ import CreateClaimTopic from "./components/CreateClaimTopic.jsx";
 import CreateDigitalId from "./components/CreateDigitalId.jsx";
 import CreatePassword from "./components/CreatePasswordPage.jsx";
 import CreateTrustedIssuer from "./components/CreateTrustedIssuer.jsx";
+import CSPMeta from "./components/CSPMeta.jsx";
 import DigitalIdentityDetailView from "./components/DigitalIdentityDetailPage.jsx";
 import EditClaims from "./components/EditClaims.jsx";
 import EditClaimsSummaryView from "./components/EditClaimsSummaryView.jsx";
@@ -125,7 +126,7 @@ const { connectors } = getDefaultWallets({
 });
 
 const wagmiConfig = createConfig({
-  autoConnect: true,
+  autoConnect: false,
   connectors,
   publicClient,
 });
@@ -320,7 +321,7 @@ function App() {
       // Initialize Parse
       parseInitialize();
     } else {
-      toast.error("Sorry, you are not authorized!");
+      toast.error("Incorrect username / password");
       setForceLogout(true);
     }
   };
@@ -330,38 +331,38 @@ function App() {
   }, []);
 
   async function setupProvider(): Promise<ethers.providers.Provider | null> {
-    //let provider: ethers.providers.Provider | null = null;
+    let newProvider: ethers.providers.Provider | null = null;
     console.log("🔍 Checking for wallet provider...");
+
     if (typeof window !== "undefined" && (window as any).ethereum) {
       try {
-        console.log("🟢 Requesting wallet connection...");
-        await (window as any).ethereum.request({ method: "eth_requestAccounts" });
-
-        console.log("🟢 Wallet connected! Using Web3 provider...");
-        provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        console.log("🟢 Web3 provider available, but not connecting automatically...");
+        // Create provider without requesting accounts
+        newProvider = new ethers.providers.Web3Provider((window as any).ethereum);
       } catch (error) {
-        console.error("❌ Wallet connection error:", error);
+        console.error("❌ Wallet provider error:", error);
       }
     }
 
-    // ✅ Fallback to RPC provider if no wallet is detected
-    if (!provider) {
+    if (!newProvider) {
       const rpcUrl = process.env.REACT_APP_RPC_URL;
       if (rpcUrl) {
         console.log("⚠️ No wallet detected. Using RPC provider instead:", rpcUrl);
-        provider = await new ethers.providers.StaticJsonRpcProvider(rpcUrl);
-        if (provider instanceof ethers.providers.StaticJsonRpcProvider) {
-          provider.polling = false;
-          provider._pollingInterval = Infinity;
+        newProvider = new ethers.providers.StaticJsonRpcProvider(rpcUrl);
+        if (newProvider instanceof ethers.providers.StaticJsonRpcProvider) {
+          newProvider.polling = false;
+          newProvider._pollingInterval = Infinity;
         }
-      } else {
-        console.error("❌ No provider available! Please connect a wallet or set an RPC URL.");
-        return null;
       }
     }
 
-    console.log("✅ Provider successfully initialized:", provider);
-    return provider;
+    if (newProvider) {
+      setProvider(newProvider);
+      return newProvider;
+    }
+
+    console.error("❌ No provider available! Please connect a wallet or set an RPC URL.");
+    return null;
   }
 
   const restoreSession = async () => {
@@ -422,6 +423,12 @@ function App() {
     setBlockchainService(null);
   };
 
+  useEffect(() => {
+    if (provider && isConnected) {
+      initializeBlockchainService(provider);
+    }
+  }, [provider, isConnected]);
+
   if (initializing) {
     return (
       <div className="z-50 h-screen w-screen flex justify-center items-center">
@@ -432,6 +439,7 @@ function App() {
 
   return (
     <WagmiConfig config={wagmiConfig}>
+      {/* <CSPMeta /> */}
       <RainbowKitProvider chains={chains}>
         <RoleContext.Provider value={{ role, setRole, walletPreference, setWalletPreference, dfnsToken, setDfnsToken, user, setUser }}>
           {/* Loading Spinner Overlay */}
@@ -487,7 +495,13 @@ function App() {
                     path="/topics"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
-                        <ClaimTopicsPage service={blockchainService} />
+                        {blockchainService ? (
+                          <ClaimTopicsPage service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -495,8 +509,13 @@ function App() {
                     path="/topics/create"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
-                        {" "}
-                        <CreateClaimTopic service={blockchainService} />
+                        {blockchainService ? (
+                          <CreateClaimTopic service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -504,7 +523,13 @@ function App() {
                     path="/topics/:topicId"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
-                        <ViewClaimTopic service={blockchainService} />
+                        {blockchainService ? (
+                          <ViewClaimTopic service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -512,7 +537,13 @@ function App() {
                     path="/issuers"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
-                        <TrustedIssuersPage service={blockchainService} />
+                        {blockchainService ? (
+                          <TrustedIssuersPage service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -520,7 +551,13 @@ function App() {
                     path="/issuers/create"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
-                        <CreateTrustedIssuer service={blockchainService} />
+                        {blockchainService ? (
+                          <CreateTrustedIssuer service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -528,7 +565,13 @@ function App() {
                     path="/issuers/:issuerId"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
-                        <CreateTrustedIssuer service={blockchainService} />
+                        {blockchainService ? (
+                          <CreateTrustedIssuer service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -536,7 +579,13 @@ function App() {
                     path="/identities"
                     element={
                       <Protected role={"TrustedIssuer"} roles={role}>
-                        <IdentitiesPage service={blockchainService} />
+                        {blockchainService ? (
+                          <IdentitiesPage service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -544,7 +593,13 @@ function App() {
                     path="/identities/create"
                     element={
                       <Protected role={"TrustedIssuer"} roles={role}>
-                        <CreateDigitalId service={blockchainService} />
+                        {blockchainService ? (
+                          <CreateDigitalId service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -552,7 +607,13 @@ function App() {
                     path="/identities/:identityId/:userId?"
                     element={
                       <Protected role={"TrustedIssuer"} roles={role}>
-                        <DigitalIdentityDetailView service={blockchainService} />
+                        {blockchainService ? (
+                          <DigitalIdentityDetailView service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -560,7 +621,13 @@ function App() {
                     path="/identities/:identityId/edit"
                     element={
                       <Protected role={"TrustedIssuer"} roles={role}>
-                        <EditClaims service={blockchainService} />
+                        {blockchainService ? (
+                          <EditClaims service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -568,7 +635,13 @@ function App() {
                     path="/identities/:identity/edit/summary"
                     element={
                       <Protected role={"TrustedIssuer"} roles={role}>
-                        <EditClaimsSummaryView service={blockchainService} />
+                        {blockchainService ? (
+                          <EditClaimsSummaryView service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
@@ -576,7 +649,13 @@ function App() {
                     path="/mint"
                     element={
                       <Protected role={"TrustedIssuer"} roles={role}>
-                        <MintPage service={blockchainService} />
+                        {blockchainService ? (
+                          <MintPage service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
                       </Protected>
                     }
                   />
