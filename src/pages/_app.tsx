@@ -5,7 +5,6 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 const { ToastContainer } = require("react-toastify");
 import { RoleProvider } from "../context/RoleContext";
 import { UniversalWalletProvider } from "../context/UniversalWalletContext";
-import { BlockchainManagerProvider } from "../context/BlockchainManagerContext";
 import Parse from "parse";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -32,9 +31,8 @@ function MyApp({ Component, pageProps }: AppProps) {
       >
         <RoleProvider>
           <UniversalWalletProvider>
-            <BlockchainManagerProvider>
-              <Component {...pageProps} />
-              <ToastContainer
+            <Component {...pageProps} />
+            <ToastContainer
               position="top-right"
               autoClose={5000}
               hideProgressBar={false}
@@ -45,7 +43,6 @@ function MyApp({ Component, pageProps }: AppProps) {
               draggable
               pauseOnHover
             />
-            </BlockchainManagerProvider>
           </UniversalWalletProvider>
         </RoleProvider>
       </ConfigProvider>

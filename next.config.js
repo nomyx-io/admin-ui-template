@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [
+    "@nomyx/shared",
     "antd",
     "@ant-design/icons",
     "@ant-design/icons-svg",

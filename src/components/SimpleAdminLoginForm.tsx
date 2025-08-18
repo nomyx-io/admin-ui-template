@@ -4,22 +4,23 @@ import { UserOutlined, LockOutlined, WalletOutlined } from "@ant-design/icons";
 import { createUnifiedLoginForm } from "@nomyx/shared";
 
 // Create UnifiedLoginForm with all required dependencies
-const UnifiedLoginForm = createUnifiedLoginForm(
-  React,
+const UnifiedLoginForm = createUnifiedLoginForm(React, {
   useState,
   useEffect,
-  Form.useForm,
+  useForm: Form.useForm,
   Form,
   Input,
   Button,
   Card,
+  message,
+  Spin: undefined,
+  Radio: undefined,
   Space,
   Divider,
-  message,
   UserOutlined,
   LockOutlined,
   WalletOutlined
-);
+});
 
 interface SimpleAdminLoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;

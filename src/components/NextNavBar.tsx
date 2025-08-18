@@ -2,30 +2,9 @@ import React, { useContext } from "react";
 import Link from "next/link";
 import { Button } from "antd";
 import { useRouter } from "next/router";
-import dynamic from "next/dynamic";
+import ClientBlockchainSelector from "./ClientBlockchainSelector";
 import NomyxLogo from "../assets/nomyx_logo_black.svg";
 import "../styles/NavBar.css";
-
-// Dynamically import BlockchainSelectionManager to avoid SSR issues
-const BlockchainSelectionManager = dynamic(
-  () => import("@nomyx/shared").then(mod => mod.BlockchainSelectionManager),
-  { 
-    ssr: false,
-    loading: () => (
-      <select 
-        disabled
-        style={{ 
-          marginRight: '10px', 
-          padding: '4px 8px',
-          borderRadius: '4px',
-          border: '1px solid #d9d9d9'
-        }}
-      >
-        <option>Loading...</option>
-      </select>
-    )
-  }
-);
 
 interface NavBarProps {
   onLogout: () => void;
@@ -41,6 +20,8 @@ const NextNavBar: React.FC<NavBarProps> = ({
   showWalletConnect = false
 }) => {
   const router = useRouter();
+  const [isWalletConnected, setIsWalletConnected] = React.useState(false);
+  const [walletAddress, setWalletAddress] = React.useState<string>('');
   
   const handleChainChange = async (chainKey: string) => {
     try {
@@ -49,6 +30,15 @@ const NextNavBar: React.FC<NavBarProps> = ({
     } catch (error) {
       console.error('[NavBar] Error switching chain:', error);
     }
+  };
+
+  const handleWalletConnect = (walletType: string, address?: string) => {
+    console.log(`[NavBar] Wallet connected: ${walletType} with address ${address}`);
+    setIsWalletConnected(true);
+    if (address) {
+      setWalletAddress(address);
+    }
+    // You can add additional wallet connection logic here
   };
 
   const isActive = (path: string) => {
@@ -87,13 +77,16 @@ const NextNavBar: React.FC<NavBarProps> = ({
           </Link>
         </li>
         <li>
-          <BlockchainSelectionManager
+          <ClientBlockchainSelector
             selectedChainId={selectedChainId}
             onChainChange={handleChainChange}
             showConnectButton={showWalletConnect}
             showNetworkInfo={true}
             compact={true}
             headerMode={false}
+            isConnected={isWalletConnected}
+            walletAddress={walletAddress}
+            onWalletConnect={handleWalletConnect}
           />
           <Button onClick={onLogout}>Logout</Button>
         </li>

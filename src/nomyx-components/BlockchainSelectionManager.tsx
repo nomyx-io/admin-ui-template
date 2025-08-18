@@ -502,35 +502,24 @@ export const BlockchainSelectionManager = ({
                 console.warn('[BlockchainSelectionManager] ChainConfigService failed, will try HTTP fetch:', serviceError);
             }
 
-            // Fallback to HTTP fetch if ChainConfigService fails
-            try {
-                // In Next.js, files in the public directory are served from the root
-                const response = await fetch('/config/chainConfig.json');
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch chain config: ${response.status} ${response.statusText}`);
-                }
-                const configs = await response.json();
-                console.log('[BlockchainSelectionManager] Loaded chain configs from HTTP:', configs);
-                setChainConfigs(configs);
-            } catch (error) {
-                console.error('[BlockchainSelectionManager] Failed to load chain configs from HTTP:', error);
+            // Fallback to default configs if ChainConfigService fails
+            console.warn('[BlockchainSelectionManager] ChainConfigService failed, using defaults');
 
-                // Set minimal default configs if all methods fail
-                const defaultConfigs: ChainConfigs = {
-                    'ethereum-local': {
-                        type: 'ethereum',
-                        networkName: 'localhost',
-                        rpcUrl: 'http://127.0.0.1:8545'
-                    },
-                    'stellar-testnet': {
-                        type: 'stellar',
-                        networkName: 'testnet',
-                        rpcUrl: 'https://soroban-testnet.stellar.org'
-                    }
-                };
-                console.log('[BlockchainSelectionManager] Using default chain configs:', defaultConfigs);
-                setChainConfigs(defaultConfigs);
-            }
+            // Set minimal default configs if all methods fail
+            const defaultConfigs: ChainConfigs = {
+                'ethereum-local': {
+                    type: 'ethereum',
+                    networkName: 'localhost',
+                    rpcUrl: 'http://127.0.0.1:8545'
+                },
+                'stellar-testnet': {
+                    type: 'stellar',
+                    networkName: 'testnet',
+                    rpcUrl: 'https://soroban-testnet.stellar.org'
+                }
+            };
+            console.log('[BlockchainSelectionManager] Using default chain configs:', defaultConfigs);
+            setChainConfigs(defaultConfigs);
         };
         loadChainConfigs();
     }, []);
@@ -1081,10 +1070,11 @@ export const BlockchainSelectionManager = ({
                             setDiamondLoupeInfo(null);
                             if (!chainConfigs) {
                                 try {
-                                    const response = await fetch('/config/chainConfig.json');
-                                    if (response.ok) {
-                                        const configs = await response.json();
-                                        setChainConfigs(configs);
+                                    // Try to reload from ChainConfigService
+                                    const configService = new ChainConfigService();
+                                    const chains = await configService.getAllChains();
+                                    if (chains && Object.keys(chains).length > 0) {
+                                        setChainConfigs(chains);
                                     }
                                 } catch (error) {
                                     console.error('[BlockchainSelectionManager] Failed to load chain configs:', error);
@@ -1514,13 +1504,6 @@ export const BlockchainSelectionManager = ({
                                     // Reload chain configs if not loaded
                                     if (!chainConfigs) {
                                         try {
-                                            const response = await fetch('/config/chainConfig.json');
-                                            if (response.ok) {
-                                                const configs = await response.json();
-                                                console.log('[BlockchainSelectionManager] Reloaded chain configs on modal open:', configs);
-                                                setChainConfigs(configs);
-                                            } else {
-                                                // Try ChainConfigService as fallback
                                                 const { ChainConfigService } = await import('@nomyx/shared');
                                                 const configService = new ChainConfigService();
                                                 const chains = await configService.getAllChains();
