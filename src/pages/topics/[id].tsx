@@ -1,7 +1,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { Spin } from "antd";
-import { useBlockchainService } from "../hooks/useBlockchainService";
+import { useBlockchainService } from "../../hooks/useBlockchainService";
 import AppLayout from "../../components/AppLayout";
 
 // Dynamically import to avoid SSR issues
