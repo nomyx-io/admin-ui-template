@@ -1,6 +1,9 @@
 import React from "react";
 
-import { Row, Col, Card, Typography } from "antd";
+import { Card } from "antd";
+import Typography from "antd/es/typography";
+import Row from "antd/es/row";
+import Col from "antd/es/col";
 
 import NomyxLogo from "../assets/nomyx_logo_light.png";
 

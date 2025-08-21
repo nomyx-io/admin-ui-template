@@ -1,5 +1,9 @@
 import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
-import { Spin, Layout, Card, Radio, Form, Input, Button, Select, Space, message, Modal, Tooltip, Badge } from "antd";
+import { Spin, Layout, Card, Radio, Form, Input, Button, Space, message } from "antd";
+import Badge from "antd/es/badge";
+import Tooltip from "antd/es/tooltip";
+import Select from "antd/es/select";
+import Modal from "antd/es/modal";
 import { toast } from "react-toastify";
 import { createBlockchainSelectionManager } from "@nomyx/shared";
 import { LoginPreference } from "./types";
@@ -206,7 +210,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 const BSM = useMemo(() => createBlockchainSelectionManager(React, {
                   useState, useEffect, useCallback: React.useCallback, useRef,
                   Select, Button, Card, Space, message, Modal, Tooltip, Badge
-                }), []);
+                }) as React.ComponentType<any>, []);
                 return <BSM
                 selectedChainId={selectedChainId}
                 onChainChange={onChainChange}
@@ -434,3 +438,4 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 };
 
 export default LoginPage;
+

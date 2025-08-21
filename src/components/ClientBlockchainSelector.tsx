@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Select, Button, Space, Modal, Tooltip, Badge, message } from "antd";
+import { Button, Space, message } from "antd";
+import Badge from "antd/es/badge";
+import Tooltip from "antd/es/tooltip";
+import Select from "antd/es/select";
+import Modal from "antd/es/modal";
 
 // Client-only wrapper for BlockchainSelectionManager
 const ClientBlockchainSelector = (props: any) => {
@@ -37,3 +41,4 @@ const ClientBlockchainSelector = (props: any) => {
 };
 
 export default ClientBlockchainSelector;
+

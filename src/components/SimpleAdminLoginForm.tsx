@@ -20,7 +20,7 @@ const UnifiedLoginForm = createUnifiedLoginForm(React, {
   UserOutlined,
   LockOutlined,
   WalletOutlined
-});
+}) as React.ComponentType<any>;
 
 interface SimpleAdminLoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;

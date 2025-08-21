@@ -30,7 +30,7 @@ export function useBlockchainService() {
         setError(null);
       } catch (err) {
         console.error('[useBlockchainService] Failed to get service:', err);
-        setError(err.message || 'Failed to initialize blockchain service');
+        setError(err instanceof Error ? err.message : 'Failed to initialize blockchain service');
       } finally {
         setLoading(false);
       }

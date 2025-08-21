@@ -10,7 +10,7 @@ const CreatePasswordPage = dynamic(() => import("../components/CreatePasswordPag
 export default function CreatePassword() {
   return (
     <LoginLayout>
-      <CreatePasswordPage />
+      <CreatePasswordPage service={null} />
     </LoginLayout>
   );
 }

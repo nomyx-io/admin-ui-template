@@ -109,8 +109,10 @@ function CreateDigitalId({ service }) {
 
     const trimmedDisplayName = displayName.trim();
     const trimmedAccountNumber = accountNumber.trim();
+    // Use connected account address if available, otherwise use form input
+    const addressToValidate = account || walletAddress;
 
-    if (!validateDigitalID(trimmedDisplayName, walletAddress, trimmedAccountNumber, service)) {
+    if (!validateDigitalID(trimmedDisplayName, addressToValidate, trimmedAccountNumber, service)) {
       return; // Early return if validation fails
     }
     
@@ -129,11 +131,14 @@ function CreateDigitalId({ service }) {
       // For local development or when service.createIdentity is available
       if (isLocalDev && service && service.createIdentity) {
         console.log("[CreateDigitalId] Using local development mode");
+        // Use connected account address if available, otherwise use form input
+        const addressToUse = account || walletAddress;
+        console.log("[CreateDigitalId] Using address:", addressToUse);
         toast
           .promise(
             (async () => {
               // For Stellar, createIdentity already adds it to the registry
-              const createResult = await service.createIdentity({ owner: walletAddress });
+              const createResult = await service.createIdentity(addressToUse);
               console.log(`[CreateDigitalId] Create identity result:`, createResult);
               
               if (!createResult || (!createResult.identityAddress && !createResult.txHash)) {

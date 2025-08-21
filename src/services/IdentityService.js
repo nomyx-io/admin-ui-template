@@ -33,7 +33,7 @@ class IdentityService {
   }
 
   async createIdentity(address) {
-    return this.blockchainService.createIdentity(address);
+    return this.blockchainService.createIdentity({ owner: address });
   }
 
   async getIdentity(address) {

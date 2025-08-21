@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Spin, Card, Descriptions, Button, Tag, Space } from "antd";
+import { Spin, Card, Button, Space } from "antd";
+import Tag from "antd/es/tag";
+import Descriptions from "antd/es/descriptions";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useBlockchainService } from "../../../hooks/useBlockchainService";
 import IdentityService from "../../../services/IdentityService";

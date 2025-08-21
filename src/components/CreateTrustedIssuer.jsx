@@ -1,7 +1,7 @@
 import React, { useEffect, useContext } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
-import { Transfer } from "antd";
+import Transfer from "antd/es/transfer";
 import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 

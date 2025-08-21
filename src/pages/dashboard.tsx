@@ -1,13 +1,15 @@
 import React from "react";
 import { useRouter } from "next/router";
-import { Card, Row, Col, Statistic, Button, Space, Typography } from "antd";
+import { Card, Button, Space } from "antd";
+import Statistic from "antd/es/statistic";
+import Typography from "antd/es/typography";
+import Row from "antd/es/row";
+import Col from "antd/es/col";
 import { 
-  UserOutlined, 
-  SafetyOutlined, 
-  FileTextOutlined,
+  UserOutlined,
+  LockOutlined,
   CheckCircleOutlined,
-  GlobalOutlined,
-  SettingOutlined
+  GlobalOutlined
 } from "@ant-design/icons";
 import AppLayout from "../components/AppLayout";
 
@@ -77,7 +79,7 @@ export default function DashboardPage() {
               <Statistic
                 title="Trusted Issuers"
                 value={0}
-                prefix={<SafetyOutlined />}
+                prefix={<LockOutlined />}
               />
               <Button 
                 type="link" 
@@ -94,7 +96,7 @@ export default function DashboardPage() {
               <Statistic
                 title="Claim Topics"
                 value={0}
-                prefix={<FileTextOutlined />}
+                prefix={<GlobalOutlined />}
               />
               <Button 
                 type="link" 

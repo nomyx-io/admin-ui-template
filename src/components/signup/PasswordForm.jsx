@@ -4,7 +4,8 @@ import React, { useState } from "react";
 
 import { CheckOutlined } from "@ant-design/icons";
 import { Card, Form, Input, Button } from "antd";
-import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter"; // Import Link from react-router-dom
+import Link from "next/link";
+import { useNavigate, useParams, useLocation } from "../../hooks/useNextRouter";
 
 import nomyxLogo from "../../assets/nomyx_logo_white.svg"; // Adjust the path as needed
 

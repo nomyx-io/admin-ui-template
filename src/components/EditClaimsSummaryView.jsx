@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import { Button, Input, Tooltip } from "antd";
+import { Button, Input } from "antd";
+import Tooltip from "antd/es/tooltip";
 import { useNavigate, useParams } from "../hooks/useNextRouter";
 
 import { ClaimCard } from "./ClaimCard";
