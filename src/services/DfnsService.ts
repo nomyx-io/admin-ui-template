@@ -1,6 +1,9 @@
 import { WebAuthnSigner } from "@dfns/sdk-browser";
 import Parse from "parse";
 
+// WebAuthn relying party ID should match the current domain
+// Falls back to window.location.hostname if REACT_APP_DFNS_RELYING_PARTY is not set
+
 class DfnsService {
   private static _instance: DfnsService;
 
@@ -40,7 +43,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsAddClaimTopicComplete", {
@@ -90,7 +98,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsAddTrustedIssuerComplete", {
@@ -139,7 +152,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsRemoveTrustedIssuerComplete", {
@@ -189,7 +207,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsUpdateIssuerClaimTopicsComplete", {
@@ -238,7 +261,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsCreateIdentityComplete", {
@@ -309,7 +337,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsAddIdentityComplete", {
@@ -359,7 +392,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsSetClaimsComplete", {
@@ -410,7 +448,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsAddClaimComplete", {
@@ -460,7 +503,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsRemoveClaimComplete", {
@@ -509,7 +557,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsGemforceMintComplete", {
@@ -558,7 +611,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsRemoveIdentityComplete", {
@@ -607,7 +665,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsUnregisterIdentityComplete", {
@@ -656,7 +719,12 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
+      const webauthn = new WebAuthnSigner({
+        relyingParty: {
+          id: process.env.REACT_APP_DFNS_RELYING_PARTY!,
+          name: "Nomyx Admin Portal",
+        },
+      });
       const assertion = await webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsCompleteTransferOwnership", {
