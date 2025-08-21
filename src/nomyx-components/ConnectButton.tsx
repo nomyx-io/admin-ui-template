@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ConnectButtonProps } from './types';
+import { Setting2, Link2 } from 'iconsax-react';
 
 // Default styles that can be overridden
 const defaultStyles = {
@@ -132,7 +133,7 @@ export const ConnectButton = ({
             return (
                 <>
                     {isDev && (
-                        <span style={{ fontSize: '16px' }} title="Dev Mode">🔧</span>
+                        <Setting2 size="16" title="Dev Mode" style={{ marginRight: '4px' }} />
                     )}
                     <span style={{
                         width: '8px',

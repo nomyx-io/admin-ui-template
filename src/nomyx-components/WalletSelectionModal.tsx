@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WalletSelectionModalProps, WalletProvider } from './types';
 import { getWalletsForChain } from './utils/walletConfig';
+import { Setting2 } from 'iconsax-react';
 
 // Default styles that can be overridden
 const defaultStyles = {
@@ -115,13 +116,8 @@ export const WalletSelectionModal = ({
     onClose,
     selectedChain,
     onWalletSelect
-}: {
-    visible: boolean;
-    onClose: () => void;
-    selectedChain: string;
-    onWalletSelect: (provider: any) => void;
 }) => {
-    const [hoveredWallet, setHoveredWallet] = useState<string | null>(null);
+    const [hoveredWallet, setHoveredWallet] = useState(null);
     const [installedWallets, setInstalledWallets] = useState(new Set());
     const isDev = process.env.NODE_ENV === 'development';
 
@@ -222,10 +218,9 @@ export const WalletSelectionModal = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                backgroundColor: '#f3f4f6',
-                                fontSize: '24px'
+                                backgroundColor: '#f3f4f6'
                             }}>
-                                🔧
+                                <Setting2 size="24" color="#6b7280" />
                             </div>
                             <div style={defaultStyles.walletInfo}>
                                 <div style={defaultStyles.walletName}>Dev Wallet</div>

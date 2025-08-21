@@ -9,6 +9,8 @@ class IdentityService {
     this.blockchainService = blockchainService;
     this.parseClient = ParseClient;
     this.Parse = Parse;
+    this.parseAuthFailed = false; // Cache Parse auth status to avoid repeated failures
+    this.lastParseAttempt = 0; // Track last Parse attempt time
   }
 
   // Delegate blockchain operations to BlockchainService
@@ -50,82 +52,109 @@ class IdentityService {
 
   // Identity-specific Parse operations
   async getActiveIdentities(chain = null) {
-    try {
-      const Identity = this.Parse.Object.extend("Identity");
-      const query = new this.Parse.Query(Identity);
-      query.equalTo("status", "active");
-      
-      // Filter by chain if provided
-      if (chain) {
-        query.equalTo("chain", chain);
-      }
-      
-      query.descending("createdAt");
-      query.limit(1000); // Adjust limit as needed
-      
-      const results = await query.find();
-      return results.map(identity => ({
-        id: identity.id,
-        attributes: identity.attributes,
-        className: identity.className,
-        createdAt: identity.createdAt,
-        updatedAt: identity.updatedAt
-      }));
-    } catch (error) {
-      // Handle authentication errors - Parse operations require auth we don't have
-      // This is expected behavior - we'll use blockchain data instead
-      if (error.code === 119 || error.code === 403 || error.code === 209 || 
-          error.message?.includes('unauthorized') || error.message?.includes('Forbidden') ||
-          error.message?.includes('Invalid session token')) {
-        console.log("[IdentityService] Parse authentication not available. Using blockchain data.");
+    // Skip Parse if we know auth has failed recently (within last 5 minutes)
+    const now = Date.now();
+    const skipParse = this.parseAuthFailed && (now - this.lastParseAttempt) < 300000; // 5 minutes
+    
+    if (!skipParse) {
+      try {
+        const Identity = this.Parse.Object.extend("Identity");
+        const query = new this.Parse.Query(Identity);
+        query.equalTo("status", "active");
         
-        // Always fetch fresh data from blockchain
-        try {
-          // Force fresh fetch from blockchain by clearing any cache
-          if (this.blockchainService.clearIdentityCache) {
-            await this.blockchainService.clearIdentityCache();
-          }
-          
-          const blockchainIdentities = await this.blockchainService.getIdentities();
-          if (blockchainIdentities && Array.isArray(blockchainIdentities)) {
-            return blockchainIdentities.map((identity, index) => {
-              // Handle both object and string formats
-              const identityAddress = typeof identity === 'string' 
-                ? identity 
-                : (identity.identityAddress || identity.userAddress || identity.address || '');
-              
-              const addressStr = String(identityAddress);
-              const displayName = addressStr 
-                ? `Identity ${addressStr.substring(0, 6)}...${addressStr.substring(addressStr.length - 4)}`
-                : 'Unknown Identity';
-              
-              return {
-                id: `blockchain-${Date.now()}-${index}`, // Add timestamp to force re-render
-                attributes: {
-                  address: identityAddress,
-                  identityAddress: identityAddress,
-                  displayName: displayName,
-                  status: typeof identity === 'object' ? (identity.status || "active") : "active",
-                  chain: chain,
-                  claims: []
-                },
-                className: "Identity",
-                createdAt: new Date(),
-                updatedAt: new Date()
-              };
-            });
-          }
-        } catch (blockchainError) {
-          console.log("[IdentityService] Blockchain fetch also failed:", blockchainError.message);
+        // Filter by chain if provided
+        if (chain) {
+          query.equalTo("chain", chain);
         }
-        return [];
+        
+        query.descending("createdAt");
+        query.limit(1000); // Adjust limit as needed
+        
+        const results = await query.find();
+        
+        // If we get here, Parse auth is working
+        this.parseAuthFailed = false;
+        
+        return results.map(identity => ({
+          id: identity.id,
+          attributes: identity.attributes,
+          className: identity.className,
+          createdAt: identity.createdAt,
+          updatedAt: identity.updatedAt
+        }));
+      } catch (error) {
+        // Handle authentication errors - Parse operations require auth we don't have
+        // This is expected behavior - we'll use blockchain data instead
+        if (error.code === 119 || error.code === 403 || error.code === 209 || 
+            error.message?.includes('unauthorized') || error.message?.includes('Forbidden') ||
+            error.message?.includes('Invalid session token')) {
+          
+          // Mark Parse auth as failed and record the time
+          this.parseAuthFailed = true;
+          this.lastParseAttempt = now;
+          
+          // Only log once every 5 minutes to reduce console noise
+          if ((now - this.lastParseAttempt) > 300000) {
+            console.log("[IdentityService] Parse authentication not available. Using blockchain data.");
+          }
+        } else {
+          console.error("[IdentityService] Error fetching active identities:", error);
+        }
       }
-      console.error("[IdentityService] Error fetching active identities:", error);
-      return [];
     }
+    
+    // Fall back to blockchain data
+    try {
+      // Force fresh fetch from blockchain by clearing any cache
+      if (this.blockchainService.clearIdentityCache) {
+        await this.blockchainService.clearIdentityCache();
+      }
+      
+      const blockchainIdentities = await this.blockchainService.getIdentities();
+      if (blockchainIdentities && Array.isArray(blockchainIdentities)) {
+        return blockchainIdentities.map((identity, index) => {
+          // Handle both object and string formats
+          const identityAddress = typeof identity === 'string' 
+            ? identity 
+            : (identity.identityAddress || identity.userAddress || identity.address || '');
+          
+          const addressStr = String(identityAddress);
+          const displayName = addressStr 
+            ? `Identity ${addressStr.substring(0, 6)}...${addressStr.substring(addressStr.length - 4)}`
+            : 'Unknown Identity';
+          
+          return {
+            id: `blockchain-${Date.now()}-${index}`, // Add timestamp to force re-render
+            attributes: {
+              address: identityAddress,
+              identityAddress: identityAddress,
+              displayName: displayName,
+              status: typeof identity === 'object' ? (identity.status || "active") : "active",
+              chain: chain,
+              claims: []
+            },
+            className: "Identity",
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+        });
+      }
+    } catch (blockchainError) {
+      console.log("[IdentityService] Blockchain fetch also failed:", blockchainError.message);
+    }
+    return [];
   }
 
   async getPendingIdentities() {
+    // Skip Parse if we know auth has failed recently (within last 5 minutes)
+    const now = Date.now();
+    const skipParse = this.parseAuthFailed && (now - this.lastParseAttempt) < 300000; // 5 minutes
+    
+    if (skipParse) {
+      // Return empty array without attempting Parse
+      return [];
+    }
+    
     try {
       const Identity = this.Parse.Object.extend("Identity");
       const query = new this.Parse.Query(Identity);
@@ -134,6 +163,10 @@ class IdentityService {
       query.limit(1000); // Adjust limit as needed
       
       const results = await query.find();
+      
+      // If we get here, Parse auth is working
+      this.parseAuthFailed = false;
+      
       return results.map(identity => ({
         id: identity.id,
         attributes: identity.attributes,
@@ -145,7 +178,14 @@ class IdentityService {
       // Handle 403 Forbidden errors (Identity class requires authentication not available in browser)
       // This is expected in development environments without Parse Master Key
       if (error.code === 119 || error.code === 403 || error.message?.includes('unauthorized') || error.message?.includes('Forbidden')) {
-        console.log("[IdentityService] Identity class requires authentication (expected in development). No pending identities available.");
+        // Mark Parse auth as failed and record the time
+        this.parseAuthFailed = true;
+        this.lastParseAttempt = now;
+        
+        // Only log once every 5 minutes to reduce console noise
+        if ((now - this.lastParseAttempt) > 300000) {
+          console.log("[IdentityService] Identity class requires authentication (expected in development). No pending identities available.");
+        }
         return [];
       }
       console.error("[IdentityService] Error fetching pending identities:", error);

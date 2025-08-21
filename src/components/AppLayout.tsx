@@ -3,7 +3,10 @@ import { useRouter } from "next/router";
 import { Spin } from "antd";
 import dynamic from "next/dynamic";
 
-const NextNavBar = dynamic(() => import("./NextNavBar"), { ssr: false });
+const NextNavBar = dynamic(() => import("./NextNavBar"), { 
+  ssr: false,
+  loading: () => <div style={{ height: 60 }} /> 
+}) as React.ComponentType<any>;
 
 interface AppLayoutProps {
   children: React.ReactNode;

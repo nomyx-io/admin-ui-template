@@ -13,11 +13,12 @@ import { BlockchainServiceManager } from "@nomyx/shared";
 
 const IdentitiesPage = ({ service }) => {
   const navigate = useNavigate();
-  const [identities, setIdentities] = useState([]);
-  const [pendingIdentities, setPendingIdentities] = useState([]);
+  const [identities, setIdentities] = useState(undefined); // undefined = loading
+  const [pendingIdentities, setPendingIdentities] = useState(undefined); // undefined = loading
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [currentChain, setCurrentChain] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   // Get user and dfnsToken from RoleContext (for DFNS operations)
   const { user, dfnsToken } = useContext(RoleContext);
   
@@ -55,6 +56,7 @@ const IdentitiesPage = ({ service }) => {
 
   const fetchData = useCallback(
     async (tab) => {
+      setIsLoading(true);
       try {
         let fetchedIdentities = [];
         if (service) {
@@ -148,6 +150,8 @@ const IdentitiesPage = ({ service }) => {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
       }
     },
     [service]
@@ -169,8 +173,9 @@ const IdentitiesPage = ({ service }) => {
       }
     };
 
-    // Check for chain changes periodically
-    const interval = setInterval(checkChainChange, 1000);
+    // Check for chain changes less frequently (every 10 seconds instead of 1 second)
+    // This reduces Parse authentication errors and improves performance
+    const interval = setInterval(checkChainChange, 10000);
 
     return () => clearInterval(interval);
   }, [service, currentChain, activeTab, fetchData]);

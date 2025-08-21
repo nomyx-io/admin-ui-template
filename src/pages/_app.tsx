@@ -5,6 +5,7 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 const { ToastContainer } = require("react-toastify");
 import { RoleProvider } from "../context/RoleContext";
 import { BlockchainServiceManager } from "@nomyx/shared";
+import ErrorBoundary from "../components/ErrorBoundary";
 import Parse from "parse";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -39,30 +40,32 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, []);
 
   return (
-    <AntdRegistry>
-      <ConfigProvider
-        theme={{
-          token: {
-            colorPrimary: "#1890ff",
-          },
-        }}
-      >
-        <RoleProvider>
-          <Component {...pageProps} />
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-          />
-        </RoleProvider>
-      </ConfigProvider>
-    </AntdRegistry>
+    <ErrorBoundary>
+      <AntdRegistry>
+        <ConfigProvider
+          theme={{
+            token: {
+              colorPrimary: "#1890ff",
+            },
+          }}
+        >
+          <RoleProvider>
+            <Component {...pageProps} />
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
+          </RoleProvider>
+        </ConfigProvider>
+      </AntdRegistry>
+    </ErrorBoundary>
   );
 }
 

@@ -6,6 +6,7 @@ import ReactPaginate from "react-paginate";
 
 import { WarningIcon } from "../assets/icons";
 import { getValue, recursiveSearch } from "../utils";
+import { TableSkeleton } from "./LoadingSkeleton";
 
 export const ConfirmationDialog = ({ message, onConfirm, onCancel }) => {
   const handleConfirm = (event) => {
@@ -41,7 +42,7 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
   const [searchText, setSearchText] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [dialogContent, setDialogContent] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAction = (event, action, confirm, object) => {
     event.preventDefault();
@@ -92,13 +93,15 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
     setPageCount(Math.ceil(filteredData.length / pageSize));
   }, [itemOffset, pageSize, showDialog, data, filteredData, searchText]);
 
+  // Set loading state based on data availability
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // Show loading when data is undefined or being fetched
+    if (data === undefined) {
+      setIsLoading(true);
+    } else {
       setIsLoading(false);
-    }, 1000); // 2 second timeout
-
-    return () => clearTimeout(timer); // Clear timeout if the component is unmounted
-  }, []);
+    }
+  }, [data]);
 
   return (
     <div className="container">
@@ -147,30 +150,36 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
         </section>
       </header>
 
-      <table>
-        <thead>
-          <tr>
-            {columns.map((column) => {
-              let fieldName = column;
-              let label = column;
-              let style = {};
+      {isLoading ? (
+        <TableSkeleton 
+          columns={columns.length + (actions && actions.length > 0 ? 1 : 0)} 
+          rows={pageSize} 
+        />
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              {columns.map((column) => {
+                let fieldName = column;
+                let label = column;
+                let style = {};
 
-              if (typeof column === "object") {
-                fieldName = column.name;
-                label = column.label;
-                style = column.width ? { width: column.width } : {};
-              }
+                if (typeof column === "object") {
+                  fieldName = column.name;
+                  label = column.label;
+                  style = column.width ? { width: column.width } : {};
+                }
 
-              return (
-                <th key={fieldName} style={style}>
-                  {label}
-                </th>
-              );
-            })}
-            {actions && actions.length > 0 && <th key={title + "-actions"}>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
+                return (
+                  <th key={fieldName} style={style}>
+                    {label}
+                  </th>
+                );
+              })}
+              {actions && actions.length > 0 && <th key={title + "-actions"}>Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
           {pageData.map((record, index) => {
             return (
               <tr key={record.id || `row-${index}`}>
@@ -242,13 +251,13 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
               </tr>
             );
           })}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      )}
 
-      {pageData.length === 0 && isLoading && (
+      {pageData.length === 0 && !isLoading && (
         <div className="empty">
-          {/* A simple loading timout to be replaced by more robust Loading notifications*/}
-          <p>Loading {title}...</p>
+          <p>No {title.toLowerCase()} found</p>
         </div>
       )}
 

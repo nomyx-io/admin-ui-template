@@ -268,13 +268,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         border: "none",
                         backgroundColor: "transparent",
                       }}
-                      headStyle={{
-                        backgroundColor: "transparent",
-                        border: "none",
-                        padding: "0",
-                      }}
-                      bodyStyle={{
-                        padding: "24px 0 0 0",
+                      styles={{
+                        header: {
+                          backgroundColor: "transparent",
+                          border: "none",
+                          padding: "0",
+                        },
+                        body: {
+                          padding: "24px 0 0 0",
+                        }
                       }}
                       className="signup-card wallet-setup-radio-group"
                       extra={
