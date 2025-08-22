@@ -3,7 +3,9 @@ import { useRouter } from "next/router";
 import { Spin, Card, Button, Space } from "antd";
 import Tag from "antd/es/tag";
 import Descriptions from "antd/es/descriptions";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+import ArrowLeftOutlined from "@ant-design/icons/ArrowLeftOutlined";
+// React 19 compatibility workarounds for icons
+const ArrowLeftOutlinedIcon = ArrowLeftOutlined as any;
 import { useBlockchainService } from "../../../hooks/useBlockchainService";
 import IdentityService from "../../../services/IdentityService";
 import AppLayout from "../../../components/AppLayout";
@@ -71,7 +73,7 @@ export default function ViewPendingIdentityPage() {
       <div style={{ padding: "24px" }}>
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
           <Button 
-            icon={<ArrowLeftOutlined />} 
+            icon={<ArrowLeftOutlinedIcon />} 
             onClick={() => router.push("/identities")}
           >
             Back to Identities

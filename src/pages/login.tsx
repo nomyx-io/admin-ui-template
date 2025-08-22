@@ -110,7 +110,7 @@ export default function LoginPage() {
         onDisconnect={() => console.log("Disconnect")}
         service={null}
         selectedChainId="ethereum-local"
-        onChainChange={(chainId) => console.log("Chain change:", chainId)}
+        onChainChange={(chainId: string) => console.log("Chain change:", chainId)}
       />
     </LoginLayout>
   );

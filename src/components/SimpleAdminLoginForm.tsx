@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Form, Input, Button, Card, Space, Divider, message } from "antd";
-import { UserOutlined, LockOutlined, WalletOutlined } from "@ant-design/icons";
+import UserOutlined from "@ant-design/icons/UserOutlined";
+import LockOutlined from "@ant-design/icons/LockOutlined";
+import WalletOutlined from "@ant-design/icons/WalletOutlined";
 import { createUnifiedLoginForm } from "@nomyx/shared";
+// React 19 compatibility workarounds for icons
+const UserOutlinedIcon = UserOutlined as any;
+const LockOutlinedIcon = LockOutlined as any;
+const WalletOutlinedIcon = WalletOutlined as any;
 
 // Create UnifiedLoginForm with all required dependencies
 const UnifiedLoginForm = createUnifiedLoginForm(React, {
@@ -24,11 +30,12 @@ const UnifiedLoginForm = createUnifiedLoginForm(React, {
 
 interface SimpleAdminLoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
+  onConnect?: (address: string, provider: any) => Promise<void>;
   onWalletConnect?: () => Promise<void>;
   [key: string]: any; // Allow additional props
 }
 
-const SimpleAdminLoginForm: React.FC<SimpleAdminLoginFormProps> = ({ onLogin, onWalletConnect, ...rest }) => {
+const SimpleAdminLoginForm: React.FC<SimpleAdminLoginFormProps> = ({ onLogin, onConnect, onWalletConnect, ...rest }) => {
   const logo = (
     <img 
       src="/images/nomyx_logo_white.svg" 
@@ -45,7 +52,8 @@ const SimpleAdminLoginForm: React.FC<SimpleAdminLoginFormProps> = ({ onLogin, on
   return (
     <UnifiedLoginForm
       onLogin={onLogin}
-      onWalletConnect={onWalletConnect}
+      onConnect={onConnect}
+      onWalletConnect={onWalletConnect || onConnect}
       title="Admin Portal Login"
       subtitle="Sign in with your administrator credentials"
       showSignUpLink={false}
@@ -56,6 +64,7 @@ const SimpleAdminLoginForm: React.FC<SimpleAdminLoginFormProps> = ({ onLogin, on
       backgroundColor="transparent"
       backgroundImage=""
       cardBackgroundColor="rgba(20, 20, 20, 0.95)"
+      {...rest}
     />
   );
 };

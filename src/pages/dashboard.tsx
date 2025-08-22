@@ -5,12 +5,15 @@ import Statistic from "antd/es/statistic";
 import Typography from "antd/es/typography";
 import Row from "antd/es/row";
 import Col from "antd/es/col";
-import { 
-  UserOutlined,
-  LockOutlined,
-  CheckCircleOutlined,
-  GlobalOutlined
-} from "@ant-design/icons";
+import UserOutlined from "@ant-design/icons/UserOutlined";
+import LockOutlined from "@ant-design/icons/LockOutlined";
+import CheckCircleOutlined from "@ant-design/icons/CheckCircleOutlined";
+import GlobalOutlined from "@ant-design/icons/GlobalOutlined";
+// React 19 compatibility workarounds for icons
+const UserOutlinedIcon = UserOutlined as any;
+const LockOutlinedIcon = LockOutlined as any;
+const CheckCircleOutlinedIcon = CheckCircleOutlined as any;
+const GlobalOutlinedIcon = GlobalOutlined as any;
 import AppLayout from "../components/AppLayout";
 
 const { Paragraph } = Typography;
@@ -62,7 +65,7 @@ export default function DashboardPage() {
               <Statistic
                 title="Digital Identities"
                 value={0}
-                prefix={<UserOutlined />}
+                prefix={<UserOutlinedIcon />}
               />
               <Button 
                 type="link" 
@@ -79,7 +82,7 @@ export default function DashboardPage() {
               <Statistic
                 title="Trusted Issuers"
                 value={0}
-                prefix={<LockOutlined />}
+                prefix={<LockOutlinedIcon />}
               />
               <Button 
                 type="link" 
@@ -96,7 +99,7 @@ export default function DashboardPage() {
               <Statistic
                 title="Claim Topics"
                 value={0}
-                prefix={<GlobalOutlined />}
+                prefix={<GlobalOutlinedIcon />}
               />
               <Button 
                 type="link" 
@@ -113,7 +116,7 @@ export default function DashboardPage() {
               <Statistic
                 title="Active Claims"
                 value={0}
-                prefix={<CheckCircleOutlined />}
+                prefix={<CheckCircleOutlinedIcon />}
               />
               <Button 
                 type="link" 
