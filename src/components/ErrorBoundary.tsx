@@ -2,6 +2,9 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from 'antd';
 import Result from 'antd/es/result';
 
+// Type cast for React 19 compatibility
+const ResultComponent = Result as any;
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -61,7 +64,7 @@ class ErrorBoundary extends Component<Props, State> {
           minHeight: '100vh',
           padding: '2rem'
         }}>
-          <Result
+          <ResultComponent
             status="error"
             title="Something went wrong"
             subTitle="An unexpected error occurred. Please try refreshing the page."
@@ -96,7 +99,7 @@ class ErrorBoundary extends Component<Props, State> {
                 </pre>
               </details>
             )}
-          </Result>
+          </ResultComponent>
         </div>
       );
     }

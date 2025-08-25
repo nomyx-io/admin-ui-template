@@ -147,8 +147,8 @@ const RemoveClaimDialog = ({ visible, onClose, onSubmit }) => {
 const ClaimsList = ({ claims }) => {
   return (
     <div className="mt-4">
-      {claims.map((claim) => (
-        <ClaimListItem claim={claim} />
+      {claims.map((claim, index) => (
+        <ClaimListItem key={index} claim={claim} />
       ))}
     </div>
   );
