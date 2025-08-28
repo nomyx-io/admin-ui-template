@@ -8,6 +8,7 @@ import { useAccount, useDisconnect } from "wagmi";
 
 import logoDark from "../assets/nomyx_logo_dark.png";
 import logoLight from "../assets/nomyx_logo_light.png";
+import tcrLogo from "../assets/the_coin_ramp_logo.jpg";
 import { RoleContext } from "../context/RoleContext";
 import bg from "../images/BlackPaintBackground.webp";
 import { LoginPreference } from "../utils/Constants";
@@ -84,9 +85,7 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
     <div
       className="relative w-full min-h-screen overflow-hidden flex flex-col"
       style={{
-        backgroundImage: "url('/images/nomyx_banner.svg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        backgroundColor: "#1E90FF",
       }}
     >
       {isConnected ? (
@@ -95,12 +94,18 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
         </div>
       ) : (
         <>
-          <h1 className="text-right font-bold text-xl mb-4 w-full mt-8 !-ml-10 text-white">NomyxID</h1>
           <div className="flex flex-1 flex-col lg:flex-row">
             {/* Left Side */}
             <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-4 md:px-6 my-10">
               <div className="w-full max-w-2xl">
-                <img src={logoDark} alt="Logo" width={630} height={240} priority />
+                <div className="w-full flex justify-center items-center my-6">
+                  <img
+                    src={tcrLogo}
+                    alt="The Coin Ramp Logo"
+                    className="w-2/5 md:w-2/5 lg:w-3/5 max-w-[500px] h-auto"
+                    style={{ objectFit: "contain" }}
+                  />
+                </div>
               </div>
             </div>
 
