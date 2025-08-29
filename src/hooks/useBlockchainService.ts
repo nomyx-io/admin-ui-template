@@ -2,8 +2,32 @@ import { useEffect, useState } from 'react';
 import { BlockchainServiceManager, UnifiedBlockchainService } from '@nomyx/shared';
 
 /**
+ * CRITICAL: SINGLE SOURCE OF TRUTH REQUIREMENT
+ * ============================================
+ * This hook MUST use BlockchainServiceManager.getInstance() as the single source of truth.
+ * 
+ * DO NOT:
+ * - Create new instances with createBlockchainService() 
+ * - Bypass BlockchainServiceManager
+ * - Create separate blockchain service instances
+ * 
+ * WHY THIS MATTERS:
+ * - Ensures wallet connections are consistent within the portal
+ * - Maintains chain selection state across all components
+ * - Prevents state desynchronization in the 5-part workflow
+ * - Guarantees all components use the same blockchain adapter instance
+ * 
+ * The 5-part workflow (Admin -> Mintify -> Customer -> Mintify -> Customer) 
+ * requires consistent blockchain state management within each portal.
+ * 
+ * @see BlockchainServiceManager in @nomyx/shared
+ */
+
+/**
  * Hook to access the blockchain service from the singleton manager
  * Returns the service and loading state
+ * 
+ * IMPORTANT: This is the ONLY way components should access blockchain services
  */
 export function useBlockchainService() {
   const [service, setService] = useState<UnifiedBlockchainService | null>(null);
@@ -22,7 +46,7 @@ export function useBlockchainService() {
           await manager.initialize(defaultChain);
         }
         
-        const blockchainService = manager.getBlockchainService();
+        const blockchainService = await manager.getBlockchainService();
         const currentChain = manager.getCurrentChainId() || '';
         
         setService(blockchainService);
@@ -40,9 +64,10 @@ export function useBlockchainService() {
 
     // Subscribe to chain changes
     const manager = BlockchainServiceManager.getInstance();
-    const handleChainChange = (data: any) => {
+    const handleChainChange = async (data: any) => {
       setSelectedChain(data.chainId);
-      setService(manager.getBlockchainService());
+      const service = await manager.getBlockchainService();
+      setService(service);
     };
 
     manager.on('chain:changed', handleChainChange);

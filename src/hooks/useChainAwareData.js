@@ -27,8 +27,9 @@ export const useChainAwareData = (service, fetchDataFn, dependencies = []) => {
       setError(null);
       
       // Get current chain ID (string) instead of chain object
-      const chain = await service.getCurrentChain();
-      const chainId = chain?.chainKey || chain?.id || chain;
+      // The getCurrentChain method returns ChainInfo synchronously
+      const chain = service.getCurrentChain ? service.getCurrentChain() : null;
+      const chainId = chain?.chainKey || chain?.id || chain || 'ethereum-local';
       setCurrentChain(chainId);
       console.log(`[useChainAwareData] Fetching data for chain: ${chainId}`);
       
@@ -55,8 +56,8 @@ export const useChainAwareData = (service, fetchDataFn, dependencies = []) => {
     
     const checkChainChange = async () => {
       try {
-        const chain = await service.getCurrentChain();
-        const chainId = chain?.chainKey || chain?.id || chain;
+        const chain = service.getCurrentChain ? service.getCurrentChain() : null;
+        const chainId = chain?.chainKey || chain?.id || chain || 'ethereum-local';
         // Compare chain IDs as strings instead of objects
         if (chainId !== currentChain && currentChain !== null) {
           console.log(`[useChainAwareData] Chain changed from ${currentChain} to ${chainId}, refreshing data...`);

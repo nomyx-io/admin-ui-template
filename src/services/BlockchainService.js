@@ -1,8 +1,30 @@
-import { createBlockchainService, UnifiedBlockchainService, ChainConfigService } from "@nomyx/shared";
+import { BlockchainServiceManager, UnifiedBlockchainService, ChainConfigService } from "@nomyx/shared";
 import PubSub from "pubsub-js";
 
 import ParseClient from "../services/ParseClient"; // Import the singleton instance
 import { NomyxEvent } from "../utils/Constants";
+
+/**
+ * CRITICAL: SINGLE SOURCE OF TRUTH REQUIREMENT
+ * ============================================
+ * This service MUST use BlockchainServiceManager.getInstance() as the single source of truth.
+ * 
+ * DO NOT:
+ * - Create new instances with createBlockchainService() 
+ * - Bypass BlockchainServiceManager
+ * - Create separate blockchain service instances
+ * 
+ * WHY THIS MATTERS:
+ * - Ensures wallet connections are consistent within the portal
+ * - Maintains chain selection state across all components
+ * - Prevents state desynchronization in the 5-part workflow
+ * - Guarantees all components use the same blockchain adapter instance
+ * 
+ * The 5-part workflow (Admin -> Mintify -> Customer -> Mintify -> Customer) 
+ * requires consistent blockchain state management within each portal.
+ * 
+ * @see BlockchainServiceManager in @nomyx/shared
+ */
 
 /**
  * Blockchain-Agnostic BlockchainService for Admin Portal
@@ -10,15 +32,15 @@ import { NomyxEvent } from "../utils/Constants";
  * This service provides a unified API for blockchain operations across
  * Ethereum and Stellar networks using the nomyx-ts library.
  *
- * This is now a thin wrapper around UnifiedBlockchainService that adds
- * admin portal specific functionality.
+ * This is a wrapper around BlockchainServiceManager that adds
+ * admin portal specific functionality while maintaining the singleton pattern.
  */
 
 class BlockchainService {
   constructor() {
     this.chainConfigService = new ChainConfigService();
-    this.unifiedService = null;
-    this.currentChain = null;
+    // CRITICAL: Use the singleton BlockchainServiceManager - NEVER create new instances
+    this.manager = BlockchainServiceManager.getInstance();
     this.initialized = false;
   }
 
@@ -34,13 +56,19 @@ class BlockchainService {
         throw new Error(`Invalid chain configuration for ${chainId}: ${combinedConfig.errors.join(", ")}`);
       }
 
-      // Create UnifiedBlockchainService instance for this chain
-      this.unifiedService = createBlockchainService(chainId);
-      this.currentChain = chainId;
+      // Initialize the BlockchainServiceManager with this chain
+      if (!this.manager.isServiceInitialized()) {
+        await this.manager.initialize(chainId);
+      } else {
+        // Manager's switchChain already handles checking if we're on the same chain
+        await this.manager.switchChain(chainId);
+      }
+      
       this.initialized = true;
 
-      console.log(`[Admin BlockchainService] Successfully initialized nomyx-ts UnifiedBlockchainService for ${chainId}`);
-      console.log(`[Admin BlockchainService] Chain info:`, this.unifiedService.getChainInfo());
+      const service = await this.manager.getBlockchainService();
+      console.log(`[Admin BlockchainService] Successfully initialized BlockchainServiceManager for ${chainId}`);
+      console.log(`[Admin BlockchainService] Chain info:`, service.getChainInfo());
 
       return true;
     } catch (error) {
@@ -49,9 +77,35 @@ class BlockchainService {
     }
   }
 
+  /**
+   * Get the underlying blockchain service from the manager
+   * CRITICAL: Always use this method to get the service - ensures singleton pattern
+   */
+  async getService() {
+    const service = await this.manager.getBlockchainService();
+    if (!service) {
+      throw new Error('[Admin BlockchainService] BlockchainService not initialized in manager');
+    }
+    return service;
+  }
+
+  async getCurrentChain() {
+    // Return the current chain ID from the manager
+    return this.manager.getCurrentChainId();
+  }
+
   async switchChain(chainId) {
     console.log(`[Admin BlockchainService] Switching to chain: ${chainId}`);
-    return await this.initialize(chainId);
+    // Delegate to manager which handles the check internally
+    await this.manager.switchChain(chainId);
+    
+    // Only reinitialize our service reference if the switch actually happened
+    if (this.manager.getCurrentChainId() === chainId) {
+      this.initialized = true;
+      this.chainInfo = await this.getChainInfo();
+      console.log(`[Admin BlockchainService] Successfully switched to ${chainId}`);
+      console.log(`[Admin BlockchainService] Chain info:`, this.chainInfo);
+    }
   }
 
   async validateChain(chainId) {
@@ -74,17 +128,31 @@ class BlockchainService {
   }
 
   getCurrentChain() {
-    return this.currentChain;
+    // Use the manager to get current chain
+    return this.manager.getCurrentChainId();
   }
 
   // Address validation
-  isValidAddress(address) {
-    if (!this.initialized || !this.unifiedService) {
+  async isValidAddress(address) {
+    if (!this.initialized) {
       console.error(`[Admin BlockchainService] Service not initialized for address validation`);
       return false;
     }
 
-    return this.unifiedService.isValidAddress(address);
+    // Get service asynchronously
+    try {
+      const service = await this.manager.getBlockchainService();
+      if (service && typeof service.isValidAddress === 'function') {
+        return service.isValidAddress(address);
+      }
+    } catch (error) {
+      console.warn('[Admin BlockchainService] Could not get service for address validation:', error);
+    }
+    
+    // Fallback validation
+    if (address.startsWith('0x') && address.length === 42) return true;
+    if ((address.startsWith('G') || address.startsWith('C')) && address.length === 56) return true;
+    return false;
   }
 
   getContractAddress(contractName) {
@@ -94,7 +162,8 @@ class BlockchainService {
     }
 
     // Get chain config to access contract addresses
-    const chainConfig = this.chainConfigService.getChainConfig(this.currentChain);
+    const currentChain = this.manager.getCurrentChainId();
+    const chainConfig = this.chainConfigService.getChainConfig(currentChain);
     const contracts = chainConfig?.contracts;
 
     // Handle facets
@@ -112,7 +181,8 @@ class BlockchainService {
       return {};
     }
 
-    const chainConfig = this.chainConfigService.getChainConfig(this.currentChain);
+    const currentChain = this.manager.getCurrentChainId();
+    const chainConfig = this.chainConfigService.getChainConfig(currentChain);
     return chainConfig?.contracts || {};
   }
 
@@ -120,16 +190,19 @@ class BlockchainService {
   async getClaimTopics() {
     console.log(`[Admin BlockchainService] Getting claim topics via nomyx-ts`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       console.warn("[Admin BlockchainService] Service not fully initialized, returning empty array");
       return [];
     }
 
     try {
+      const service = await this.getService();
+      const currentChain = this.manager.getCurrentChainId();
+      
       // For Stellar, try to get detailed topics with names
-      if (this.currentChain?.includes("stellar") && typeof this.unifiedService.getClaimTopicsDetailed === "function") {
+      if (currentChain?.includes("stellar") && typeof service.getClaimTopicsDetailed === "function") {
         console.log(`[Admin BlockchainService] Getting detailed claim topics for Stellar`);
-        const detailedTopics = await this.unifiedService.getClaimTopicsDetailed();
+        const detailedTopics = await service.getClaimTopicsDetailed();
         console.log(`[Admin BlockchainService] Retrieved ${detailedTopics.length} detailed claim topics`);
 
         // Convert detailed topics to admin portal format
@@ -143,7 +216,7 @@ class BlockchainService {
       }
 
       // Fallback to basic topics for other chains or if detailed method not available
-      const topics = await this.unifiedService.getClaimTopics();
+      const topics = await service.getClaimTopics();
       console.log(`[Admin BlockchainService] Retrieved ${topics.length} claim topics`);
 
       // Convert to admin portal format (matching UI expectations)
@@ -164,12 +237,13 @@ class BlockchainService {
   async getNextClaimTopicId() {
     console.log(`[Admin BlockchainService] Getting next claim topic ID via nomyx-ts`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      const nextId = await this.unifiedService.getNextClaimTopicId();
+      const service = await this.getService();
+      const nextId = await service.getNextClaimTopicId();
       console.log(`[Admin BlockchainService] Next claim topic ID: ${nextId}`);
       return nextId;
     } catch (error) {
@@ -182,15 +256,18 @@ class BlockchainService {
   async addClaimTopic(topicId, displayName) {
     console.log(`[Admin BlockchainService] Adding claim topic ${topicId} via nomyx-ts`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
+      const service = await this.getService();
+      const currentChain = this.manager.getCurrentChainId();
+      
       // For Stellar, pass the display name if available
-      if (this.currentChain?.includes("stellar") && displayName) {
+      if (currentChain?.includes("stellar") && displayName) {
         console.log(`[Admin BlockchainService] Adding claim topic with name: ${displayName}`);
-        const result = await this.unifiedService.addClaimTopic(topicId, displayName);
+        const result = await service.addClaimTopic(topicId, displayName);
         console.log(`[Admin BlockchainService] Claim topic added successfully:`, result);
 
         return {
@@ -202,7 +279,7 @@ class BlockchainService {
       }
 
       // For other chains or if no display name, use standard method
-      const result = await this.unifiedService.addClaimTopic(topicId);
+      const result = await service.addClaimTopic(topicId);
       console.log(`[Admin BlockchainService] Claim topic added successfully:`, result);
 
       return {
@@ -219,12 +296,13 @@ class BlockchainService {
   async removeClaimTopic(topicId) {
     console.log(`[Admin BlockchainService] Removing claim topic ${topicId} via nomyx-ts`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      const result = await this.unifiedService.removeClaimTopic(topicId);
+      const service = await this.getService();
+      const result = await service.removeClaimTopic(topicId);
       console.log(`[Admin BlockchainService] Claim topic removed successfully:`, result);
 
       return {
@@ -244,13 +322,14 @@ class BlockchainService {
   async getTrustedIssuers() {
     console.log(`[Admin BlockchainService] Getting trusted issuers via nomyx-ts`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       console.warn("[Admin BlockchainService] Service not fully initialized, returning empty array");
       return [];
     }
 
     try {
-      const issuers = await this.unifiedService.getTrustedIssuers();
+      const service = await this.getService();
+      const issuers = await service.getTrustedIssuers();
       console.log(`[Admin BlockchainService] Retrieved ${issuers.length} trusted issuers`);
 
       // Standardize the format for UI consistency across blockchains
@@ -296,15 +375,18 @@ class BlockchainService {
   async addTrustedIssuer(issuer) {
     console.log(`[Admin BlockchainService] Adding trusted issuer via nomyx-ts:`, issuer);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
+      const service = await this.getService();
+      const currentChain = this.manager.getCurrentChainId();
+      
       // For Stellar, pass the name if available
-      if (this.currentChain === "stellar-testnet" && issuer.verifierName) {
+      if (currentChain === "stellar-testnet" && issuer.verifierName) {
         console.log(`[Admin BlockchainService] Adding trusted issuer with name: ${issuer.verifierName}`);
-        const result = await this.unifiedService.addTrustedIssuer(issuer.address, issuer.claimTopics, issuer.verifierName);
+        const result = await service.addTrustedIssuer(issuer.address, issuer.claimTopics, issuer.verifierName);
         console.log(`[Admin BlockchainService] Trusted issuer added successfully:`, result);
 
         return {
@@ -317,7 +399,7 @@ class BlockchainService {
       }
 
       // For other chains or if no name provided, use standard method
-      const result = await this.unifiedService.addTrustedIssuer(issuer.address, issuer.claimTopics);
+      const result = await service.addTrustedIssuer(issuer.address, issuer.claimTopics);
       console.log(`[Admin BlockchainService] Trusted issuer added successfully:`, result);
 
       return {
@@ -335,7 +417,7 @@ class BlockchainService {
       } else if (error.message && error.message.includes("not initialized")) {
         throw new Error(`Blockchain service not properly initialized. Please check your chain configuration.`);
       } else if (error.message && error.message.includes("Invalid address")) {
-        throw new Error(`Invalid issuer address format for ${this.currentChain} chain.`);
+        throw new Error(`Invalid issuer address format for ${currentChain} chain.`);
       }
 
       throw error;
@@ -345,12 +427,13 @@ class BlockchainService {
   async removeTrustedIssuer(issuerAddress) {
     console.log(`[Admin BlockchainService] Removing trusted issuer via nomyx-ts:`, issuerAddress);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      const result = await this.unifiedService.removeTrustedIssuer(issuerAddress);
+      const service = await this.getService();
+      const result = await service.removeTrustedIssuer(issuerAddress);
       console.log(`[Admin BlockchainService] Trusted issuer removed successfully:`, result);
 
       return {
@@ -367,7 +450,7 @@ class BlockchainService {
   async getTrustedIssuersByObjectId(id) {
     console.log(`[Admin BlockchainService] Getting trusted issuer by ID: ${id}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
@@ -392,19 +475,21 @@ class BlockchainService {
   async updateTrustedIssuer(issuerData) {
     console.log(`[Admin BlockchainService] Updating trusted issuer metadata:`, issuerData);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
+      const service = await this.getService();
+      const currentChain = this.manager.getCurrentChainId();
+      
       // For Stellar blockchain, we can update the name directly on-chain
-      const currentChain = this.currentChain || "";
       if (currentChain.includes("stellar") && issuerData.verifierName && issuerData.issuer) {
         console.log(`[Admin BlockchainService] Updating trusted issuer name on Stellar blockchain`);
 
         // Check if the unified service has the updateTrustedIssuerName method
-        if (typeof this.unifiedService.updateTrustedIssuerName === "function") {
-          const result = await this.unifiedService.updateTrustedIssuerName(issuerData.issuer, issuerData.verifierName);
+        if (typeof service.updateTrustedIssuerName === "function") {
+          const result = await service.updateTrustedIssuerName(issuerData.issuer, issuerData.verifierName);
           console.log(`[Admin BlockchainService] Trusted issuer name updated on blockchain:`, result);
 
           return {
@@ -430,28 +515,30 @@ class BlockchainService {
   async updateIssuerClaimTopics(issuerAddress, claimTopics) {
     console.log(`[Admin BlockchainService] Updating issuer claim topics on blockchain:`, issuerAddress, claimTopics);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
+      const service = await this.getService();
+      const currentChain = this.manager.getCurrentChainId();
+      
       // For Stellar, we can update claim topics directly without removing/re-adding
-      const currentChain = this.currentChain || "";
       let result;
 
-      if (currentChain.includes("stellar") && typeof this.unifiedService.updateIssuerClaimTopics === "function") {
+      if (currentChain.includes("stellar") && typeof service.updateIssuerClaimTopics === "function") {
         console.log(`[Admin BlockchainService] Using direct claim topics update for Stellar`);
-        result = await this.unifiedService.updateIssuerClaimTopics(issuerAddress, claimTopics);
+        result = await service.updateIssuerClaimTopics(issuerAddress, claimTopics);
         console.log(`[Admin BlockchainService] Issuer claim topics updated successfully:`, result);
       } else {
         // For other chains, fall back to remove/add approach
         console.log(`[Admin BlockchainService] Using remove/add approach for claim topics update`);
 
         // First remove the issuer
-        await this.unifiedService.removeTrustedIssuer(issuerAddress);
+        await service.removeTrustedIssuer(issuerAddress);
 
         // Then add it back with new claim topics
-        result = await this.unifiedService.addTrustedIssuer(issuerAddress, claimTopics);
+        result = await service.addTrustedIssuer(issuerAddress, claimTopics);
         console.log(`[Admin BlockchainService] Issuer claim topics updated successfully:`, result);
       }
 
@@ -472,7 +559,7 @@ class BlockchainService {
       } else if (error.message && error.message.includes("not initialized")) {
         throw new Error(`Blockchain service not properly initialized. Please check your chain configuration.`);
       } else if (error.message && error.message.includes("Invalid address")) {
-        throw new Error(`Invalid issuer address format for ${this.currentChain} chain.`);
+        throw new Error(`Invalid issuer address format for ${currentChain} chain.`);
       }
 
       throw error;
@@ -482,13 +569,14 @@ class BlockchainService {
   async getIdentities() {
     console.log(`[Admin BlockchainService] Getting identities via nomyx-ts`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       console.warn("[Admin BlockchainService] Service not fully initialized, returning empty array");
       return [];
     }
 
     try {
-      const identities = await this.unifiedService.getIdentities();
+      const service = await this.getService();
+      const identities = await service.getIdentities();
       console.log(`[Admin BlockchainService] Retrieved ${identities.length} identities`);
 
       return identities;
@@ -499,7 +587,7 @@ class BlockchainService {
       if (error.message && error.message.includes("Workflow")) {
         console.warn(`[Admin BlockchainService] Workflow system not implemented for getting identities. Returning empty array.`);
       } else if (error.message && error.message.includes("not implemented")) {
-        console.warn(`[Admin BlockchainService] Identity retrieval not yet implemented for ${this.currentChain} chain. Returning empty array.`);
+        console.warn(`[Admin BlockchainService] Identity retrieval not yet implemented for ${currentChain} chain. Returning empty array.`);
       }
 
       // Return empty array on error to prevent UI crashes
@@ -510,7 +598,7 @@ class BlockchainService {
   async getClaimTopicById(topicId) {
     console.log(`[Admin BlockchainService] Getting claim topic by ID: ${topicId}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
@@ -535,7 +623,7 @@ class BlockchainService {
   async getTrustedIssuersForClaimTopics(topicId) {
     console.log(`[Admin BlockchainService] Getting trusted issuers for claim topic: ${topicId}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
@@ -566,12 +654,13 @@ class BlockchainService {
   async createIdentity(ownerAddress) {
     console.log(`[Admin BlockchainService] Creating identity via nomyx-ts:`, ownerAddress);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      const result = await this.unifiedService.createIdentity({ owner: ownerAddress });
+      const service = await this.getService();
+      const result = await service.createIdentity({ owner: ownerAddress });
       console.log(`[Admin BlockchainService] Identity created successfully:`, result);
 
       return {
@@ -589,9 +678,9 @@ class BlockchainService {
       } else if (error.message && error.message.includes("not initialized")) {
         throw new Error(`Blockchain service not properly initialized. Please check your chain configuration.`);
       } else if (error.message && error.message.includes("Invalid address")) {
-        throw new Error(`Invalid owner address format for ${this.currentChain} chain.`);
+        throw new Error(`Invalid owner address format for ${currentChain} chain.`);
       } else if (error.message && error.message.includes("not implemented")) {
-        throw new Error(`Identity creation is not yet implemented for ${this.currentChain} chain.`);
+        throw new Error(`Identity creation is not yet implemented for ${currentChain} chain.`);
       }
 
       throw error;
@@ -601,14 +690,16 @@ class BlockchainService {
   async removeIdentity(address) {
     console.log(`[Admin BlockchainService] Removing identity via nomyx-ts:`, address);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
+      const service = await this.getService();
+      
       // Check if method exists in UnifiedBlockchainService
-      if ("removeIdentity" in this.unifiedService && typeof this.unifiedService.removeIdentity === "function") {
-        const result = await this.unifiedService.removeIdentity(address);
+      if ("removeIdentity" in service && typeof service.removeIdentity === "function") {
+        const result = await service.removeIdentity(address);
         console.log(`[Admin BlockchainService] Identity removed successfully:`, result);
         return result;
       }
@@ -628,14 +719,16 @@ class BlockchainService {
   async unregisterIdentity(address) {
     console.log(`[Admin BlockchainService] Unregistering identity via nomyx-ts:`, address);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
+      const service = await this.getService();
+      
       // Check if method exists in UnifiedBlockchainService
-      if ("unregisterIdentity" in this.unifiedService && typeof this.unifiedService.unregisterIdentity === "function") {
-        const result = await this.unifiedService.unregisterIdentity(address);
+      if ("unregisterIdentity" in service && typeof service.unregisterIdentity === "function") {
+        const result = await service.unregisterIdentity(address);
         console.log(`[Admin BlockchainService] Identity unregistered successfully:`, result);
         return result;
       }
@@ -655,14 +748,16 @@ class BlockchainService {
   async getIdentity(address) {
     console.log(`[Admin BlockchainService] Getting identity for address: ${address}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
+      const service = await this.getService();
+      
       // Check if UnifiedBlockchainService has getIdentity method
-      if (typeof this.unifiedService.getIdentity === "function") {
-        const result = await this.unifiedService.getIdentity(address);
+      if (typeof service.getIdentity === "function") {
+        const result = await service.getIdentity(address);
         console.log(`[Admin BlockchainService] Retrieved identity:`, result);
         return result;
       } else {
@@ -677,7 +772,7 @@ class BlockchainService {
         console.warn(`[Admin BlockchainService] Workflow system not implemented for getting identity. Returning null.`);
         return null;
       } else if (error.message && error.message.includes("not implemented")) {
-        console.warn(`[Admin BlockchainService] Get identity not yet implemented for ${this.currentChain} chain. Returning null.`);
+        console.warn(`[Admin BlockchainService] Get identity not yet implemented for ${currentChain} chain. Returning null.`);
         return null;
       }
 
@@ -688,19 +783,21 @@ class BlockchainService {
   async addIdentity(address, identity) {
     console.log(`[Admin BlockchainService] Adding identity for address: ${address}`, identity);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
+      const service = await this.getService();
+      
       // Check if UnifiedBlockchainService has addIdentity method
-      if (typeof this.unifiedService.addIdentity === "function") {
-        const result = await this.unifiedService.addIdentity(address, identity);
+      if (typeof service.addIdentity === "function") {
+        const result = await service.addIdentity(address, identity);
         console.log(`[Admin BlockchainService] Identity added successfully:`, result);
         return result;
       } else {
         console.warn(`[Admin BlockchainService] addIdentity not implemented in UnifiedBlockchainService`);
-        throw new Error(`Identity management is not yet implemented for ${this.currentChain} chain.`);
+        throw new Error(`Identity management is not yet implemented for ${currentChain} chain.`);
       }
     } catch (error) {
       console.error(`[Admin BlockchainService] Error adding identity:`, error);
@@ -711,9 +808,9 @@ class BlockchainService {
       } else if (error.message && error.message.includes("not initialized")) {
         throw new Error(`Blockchain service not properly initialized. Please check your chain configuration.`);
       } else if (error.message && error.message.includes("Invalid address")) {
-        throw new Error(`Invalid address format for ${this.currentChain} chain.`);
+        throw new Error(`Invalid address format for ${currentChain} chain.`);
       } else if (error.message && error.message.includes("not implemented")) {
-        throw new Error(`Identity management is not yet implemented for ${this.currentChain} chain.`);
+        throw new Error(`Identity management is not yet implemented for ${currentChain} chain.`);
       }
 
       throw error;
@@ -726,29 +823,33 @@ class BlockchainService {
 
   // Pass-through methods to UnifiedBlockchainService
   getChainInfo() {
-    if (!this.unifiedService) {
-      throw new Error("Service not initialized");
+    try {
+      const service = this.manager.getBlockchainService();
+      if (!service) {
+        throw new Error("Service not initialized");
+      }
+      return service.getChainInfo();
+    } catch (error) {
+      console.error('[Admin BlockchainService] Failed to get chain info:', error);
+      return {};
     }
-    return this.unifiedService.getChainInfo();
   }
 
   getCurrentChainFromService() {
-    if (!this.unifiedService) {
-      throw new Error("Service not initialized");
-    }
-    return this.unifiedService.getCurrentChain();
+    return this.manager.getCurrentChainId() || "ethereum-local";
   }
 
   // Diamond Loupe Operations (EIP-2535)
   async isDiamondContract(contractAddress) {
     console.log(`[Admin BlockchainService] Checking if ${contractAddress} is a Diamond contract`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      return await this.unifiedService.isDiamondContract(contractAddress);
+      const service = await this.getService();
+      return await service.isDiamondContract(contractAddress);
     } catch (error) {
       console.error(`[Admin BlockchainService] Error checking Diamond contract:`, error);
       return false;
@@ -758,12 +859,13 @@ class BlockchainService {
   async getDiamondLoupeInfo(contractAddress) {
     console.log(`[Admin BlockchainService] Getting Diamond Loupe info for ${contractAddress}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      const info = await this.unifiedService.getDiamondLoupeInfo(contractAddress);
+      const service = await this.getService();
+      const info = await service.getDiamondLoupeInfo(contractAddress);
       console.log(`[Admin BlockchainService] Diamond Loupe info:`, info);
       return info;
     } catch (error) {
@@ -775,12 +877,13 @@ class BlockchainService {
   async getDiamondFacets(contractAddress) {
     console.log(`[Admin BlockchainService] Getting Diamond facets for ${contractAddress}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      return await this.unifiedService.getDiamondFacets(contractAddress);
+      const service = await this.getService();
+      return await service.getDiamondFacets(contractAddress);
     } catch (error) {
       console.error(`[Admin BlockchainService] Error getting Diamond facets:`, error);
       throw error;
@@ -790,12 +893,13 @@ class BlockchainService {
   async getFacetAddress(contractAddress, functionSelector) {
     console.log(`[Admin BlockchainService] Getting facet address for selector ${functionSelector}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      return await this.unifiedService.getFacetAddress(contractAddress, functionSelector);
+      const service = await this.getService();
+      return await service.getFacetAddress(contractAddress, functionSelector);
     } catch (error) {
       console.error(`[Admin BlockchainService] Error getting facet address:`, error);
       throw error;
@@ -805,12 +909,13 @@ class BlockchainService {
   async getFacetSelectors(contractAddress, facetAddress) {
     console.log(`[Admin BlockchainService] Getting selectors for facet ${facetAddress}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      return await this.unifiedService.getFacetSelectors(contractAddress, facetAddress);
+      const service = await this.getService();
+      return await service.getFacetSelectors(contractAddress, facetAddress);
     } catch (error) {
       console.error(`[Admin BlockchainService] Error getting facet selectors:`, error);
       throw error;
@@ -820,12 +925,13 @@ class BlockchainService {
   async getAllFacetAddresses(contractAddress) {
     console.log(`[Admin BlockchainService] Getting all facet addresses for ${contractAddress}`);
 
-    if (!this.initialized || !this.unifiedService) {
+    if (!this.initialized) {
       throw new Error("BlockchainService not initialized");
     }
 
     try {
-      return await this.unifiedService.getAllFacetAddresses(contractAddress);
+      const service = await this.getService();
+      return await service.getAllFacetAddresses(contractAddress);
     } catch (error) {
       console.error(`[Admin BlockchainService] Error getting all facet addresses:`, error);
       throw error;
