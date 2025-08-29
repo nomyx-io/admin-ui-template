@@ -80,7 +80,7 @@ const TransactionHistoryPage = (service) => {
       const min = parseFloat(minAmount);
       if (!isNaN(min)) {
         filtered = filtered.filter((tx) => tx.amount / 1_000_000 >= min);
-        console.log("After min amount filter:", filtered.length);
+        console.log("After minimum amount filter:", filtered.length);
       }
     }
 
@@ -88,7 +88,7 @@ const TransactionHistoryPage = (service) => {
       const max = parseFloat(maxAmount);
       if (!isNaN(max)) {
         filtered = filtered.filter((tx) => tx.amount / 1_000_000 <= max);
-        console.log("After max amount filter:", filtered.length);
+        console.log("After maximum amount filter:", filtered.length);
       }
     }
 
@@ -155,11 +155,11 @@ const TransactionHistoryPage = (service) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Min Amount</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Amount</label>
             <Input type="number" value={localFilters.minAmount} onChange={(e) => handleInputChange("minAmount", e.target.value)} className="w-full" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Max Amount</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Amount</label>
             <Input type="number" value={localFilters.maxAmount} onChange={(e) => handleInputChange("maxAmount", e.target.value)} className="w-full" />
           </div>
         </div>
