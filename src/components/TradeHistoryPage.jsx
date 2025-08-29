@@ -182,11 +182,11 @@ const TradeHistoryPage = (service) => {
         name: "status",
         render: (record) => record.status || "Unknown",
       },
-      {
-        label: "Chain",
-        name: "chain",
-        render: (record) => record.chain || "-",
-      },
+      // {
+      //   label: "Chain",
+      //   name: "chain",
+      //   render: (record) => record.chain || "-",
+      // },
       {
         label: "Source Currency",
         name: "currency",
