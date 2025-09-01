@@ -3,13 +3,1855 @@ npm warn ignoring workspace config at /Users/nologik/nomyx/parse-projects/portal
 > admin-portal@0.1.0 build
 > next build
 
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/nologik/nomyx/parse-projects/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /Users/nologik/nomyx/parse-projects/portals/admin-ui-template/package-lock.json
+
    ▲ Next.js 15.5.0
    - Environments: .env.local, .env
 
    Creating an optimized production build ...
-(node:33005) [DEP_WEBPACK_EXTERNALS_FUNCTION_PARAMETERS] DeprecationWarning: The externals-function should be defined like ({context, request}, cb) => { ... }
+(node:43248) [DEP_WEBPACK_EXTERNALS_FUNCTION_PARAMETERS] DeprecationWarning: The externals-function should be defined like ({context, request}, cb) => { ... }
 (Use `node --trace-deprecation ...` to show where the warning was created)
-npm error Lifecycle script `build` failed with error:
-npm error Error: command failed
-npm error   in workspace: admin-portal@0.1.0
-npm error   at location: /Users/nologik/nomyx/parse-projects/portals/admin-ui-template
+ ✓ Compiled successfully in 14.6s
+   Skipping validation of types
+   Linting ...
+
+./src/components/ClaimCard.jsx
+66:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+86:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/CreateDigitalId.jsx
+45:6  Warning: React Hook useEffect has a missing dependency: 'manager'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+65:6  Warning: React Hook useEffect has a missing dependency: 'walletAddress'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/CreatePasswordPage.jsx
+73:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+74:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/CreateTrustedIssuer.jsx
+50:6  Warning: React Hook React.useEffect has a missing dependency: 'manager'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+128:6  Warning: React Hook useEffect has a missing dependency: 'walletAddress'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/DigitalIdentityDetailPage.jsx
+125:6  Warning: React Hook useCallback has missing dependencies: 'navigate' and 'userId'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/EditClaimsSummaryView.jsx
+55:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/NextNavBar.tsx
+53:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/SimpleAdminLoginForm.tsx
+40:5  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/signup/PasswordForm.jsx
+43:9  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/signup/SignUpForm.jsx
+37:9  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/context/UniversalWalletContext.tsx
+103:6  Warning: React Hook useEffect has missing dependencies: 'isConnected' and 'isConnecting'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/useChainAwareData.js
+46:29  Warning: React Hook useCallback has a spread element in its dependency array. This means we can't statically verify whether you've passed the correct dependencies.  react-hooks/exhaustive-deps
+51:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+51:16  Warning: React Hook useEffect has a spread element in its dependency array. This means we can't statically verify whether you've passed the correct dependencies.  react-hooks/exhaustive-deps
+
+./src/pages/_app.tsx
+40:6  Warning: React Hook useEffect has a missing dependency: 'serviceManager'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+ParseClient constructor
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+ParseClient constructor
+ParseClient constructor
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+ParseClient constructor
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Initialization complete
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+ParseClient constructor
+ParseClient constructor
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+   Generating static pages (0/20) ...
+STELLAR_DEPLOY_ACCOUNT environment variable not set, using default
+[StellarAdapter] Loading external configuration for stellar-local
+[StellarAdapter] Initialized with direct contract calls. Signer: No signer (read-only mode)
+[UnifiedBlockchainService] Initialized with chain stellar-local (type: stellar) using jx
+[StellarAdapter] External config loaded successfully: {
+  type: 'stellar',
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  passphrase: 'Standalone Network ; February 2017',
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Updated config with external values: {
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  hasContracts: true
+}
+[StellarAdapter] Initializing with Soroban URL: http://localhost:8000/soroban/rpc
+[StellarAdapter] Chain config: {
+  name: 'standalone',
+  type: 'stellar',
+  chainType: 'stellar',
+  horizonUrl: 'http://localhost:8000',
+  networkPassphrase: 'Standalone Network ; February 2017',
+  explorer: 'http://localhost:8000',
+  nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+  contracts: {
+    DiamondFactory: 'CCBQQKW3TMXILRD75XHT34PHZ45UQXOV6RD4FEFSOMBHRR6O3NGZITR7',
+    DiamondProxy: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+    facets: {
+      ClaimTopicsRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TrustedIssuersRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityRegistry: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      IdentityFactory: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      GemforceMinter: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      CarbonCredit: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Marketplace: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      TradeDeal: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Ownership: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      Treasury: 'CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ',
+      VABBToken: 'CC3E4TGZAE4JFBFA3RV2GQJ6TYS5W2JDNY7AIHW5B3CRXHEF66RMOE5A'
+    },
+    wasmHashes: {
+      DiamondProxy: 'a16b8b64975992631e0916c2dfdb14199072104c86c80a77de0a50d7d068ae59',
+      ClaimTopicsRegistry: '4dac83d0e99d853fac96d79637c27be5444a8d634ab72aa293288f5dae8a931f',
+      TrustedIssuersRegistry: '120ee2a90bffb08bca131532b17a32abb878497a014839a6912b708cad15fba4',
+      IdentityRegistry: 'e1c9a99298ea7ad217902ab03822bc399f44026a3599dc8b0a4bc21be81ec8e2',
+      IdentityFactory: '4b4c6eee234fe36b8b57b4bb4d329b889285a69ce3bd5aaa16c39b57e61abe6a',
+      GemforceMinter: '96a02b7983c104b6322ff6baa8e68c7d0ad7928b71a917194996166c64c25826',
+      CarbonCredit: '230d78c4d6232d214be7f8cb00c97cf546b59dced85ee4e319455384ab658956',
+      Marketplace: '5098ce0d32aa7713c53bc37a7052ff0687e1c96ced573eeefb7aafd66906df04',
+      TradeDeal: '5eb3f533d3f810dbb512da2939586eb584286d60276757cfe37d4546b0464c69',
+      Ownership: 'eaf6946bdc301f7f99fc8d4db0f3e8ca4834eb7923e8ff4c14ca070c37e042ec',
+      Treasury: 'd745d41d6dbe27efa0e35a91116a45df1e318d2ebc6c4c841786c56acfc1b4a2'
+    },
+    CarbonCredit: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    Marketplace: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    TradeDeal: 'CAWIBYEC5VBSHHMPFEKZU7Z2T3KTN2B7C6EJXB34ACMHN6LVJFTOKRCH',
+    USDC: 'CBFJWQR4WA72O56SNPT6AK245WOHESYHYRBQYM3VN24DQU7C6MP7G4W3'
+  },
+  networkName: 'standalone',
+  rpcUrl: 'http://localhost:8000/soroban/rpc',
+  sorobanUrl: 'http://localhost:8000/soroban/rpc',
+  passphrase: 'Standalone Network ; February 2017',
+  deployedAt: '2025-09-01T16:31:53.169Z'
+}
+[StellarAdapter] Skipping health check in SSR environment
+[StellarAdapter] No signer provided - running in browser/wallet-connect mode
+[StellarAdapter] Using DiamondProxy at: CCMBQCV7GMKNM7MXHJ5JPDKSQKZALLQLBGWZ4TUQ3KKP4KN3CYS7T4EZ
+[StellarAdapter] StellarContractHelper initialized successfully
+[StellarAdapter] Initialization complete
+ParseClient constructor
+   Generating static pages (5/20) 
+   Generating static pages (10/20) 
+   Generating static pages (15/20) 
+ ✓ Generating static pages (20/20)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (pages)                                 Size  First Load JS
+┌ ○ / (772 ms)                               426 B         775 kB
+├   /_app                                      0 B         774 kB
+├ ○ /404                                     184 B         774 kB
+├ ○ /create-password                       2.23 kB         777 kB
+├ ○ /dashboard                               35 kB         886 kB
+├ ○ /identities                            2.67 kB         785 kB
+├ ○ /identities/[id]                       2.67 kB         785 kB
+├ ○ /identities/[id]/edit (774 ms)         2.68 kB         785 kB
+├ ○ /identities/[id]/edit/summary          2.66 kB         785 kB
+├ ○ /identities/create (772 ms)            2.71 kB         785 kB
+├ ○ /identities/pending/[id]               3.22 kB         865 kB
+├ ○ /issuers                               1.36 kB         781 kB
+├ ○ /issuers/[id]                          2.09 kB         861 kB
+├ ○ /issuers/create                        1.39 kB         781 kB
+├ ○ /login                                 35.7 kB         831 kB
+├ ○ /signup (773 ms)                       2.23 kB         777 kB
+├ ○ /topics (773 ms)                         628 B         788 kB
+├ ○ /topics/[id] (772 ms)                  1.38 kB         781 kB
+├ ○ /topics/[id]/edit (773 ms)             1.37 kB         781 kB
+└ ○ /topics/create (772 ms)                  737 B         788 kB
++ First Load JS shared by all               778 kB
+  ├ chunks/framework-32ed1894af50a0a5.js   57.7 kB
+  ├ chunks/main-fbf59f5a788193fe.js        37.5 kB
+  ├ chunks/pages/_app-bfc933b3deebddbc.js   676 kB
+  └ other shared chunks (total)            6.43 kB
+
+○  (Static)  prerendered as static content
+
