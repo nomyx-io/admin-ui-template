@@ -174,32 +174,36 @@ const FunctionClaimsPage = ({ service }) => {
 
   const setTokenFeeReceivers = async () => {
     const trimmedTokenAddress = tokenAddress.trim();
-
     if (!validateTokenFeeReceivers(trimmedTokenAddress, feeReceivers)) {
       return;
     }
 
     const receiverAddresses = feeReceivers.map((r) => r.address);
-    const receiverWeights = feeReceivers.map((r) => r.weight);
+    // Fix: Convert percentages to basis points (weight)
+    const receiverWeights = feeReceivers.map((r) => Math.round((r.percentage / 100) * totalWeightBasis));
 
     try {
       setIsLoading(true);
-
       if (walletPreference === WalletPreference.MANAGED) {
         toast
           .promise(
             (async () => {
-              const { success, error } = await DfnsService.setTokenFeeReceivers(
+              const { initiateResponse, error: initError } = await DfnsService.initiateSetTokenFeeReceivers(
                 trimmedTokenAddress,
                 receiverAddresses,
                 receiverWeights,
                 user.walletId,
                 dfnsToken
               );
+              if (initError) throw new Error(initError);
 
-              if (!success) {
-                throw new Error(error);
-              }
+              const { completeResponse, error: completeError } = await DfnsService.completeSetTokenFeeReceivers(
+                user.walletId,
+                dfnsToken,
+                initiateResponse.challenge,
+                initiateResponse.requestBody
+              );
+              if (completeError) throw new Error(completeError);
 
               setTokenAddress("");
               setFeeReceivers([{ address: "", percentage: 100 }]);
@@ -227,7 +231,7 @@ const FunctionClaimsPage = ({ service }) => {
             (async () => {
               await service.setTokenFeeReceivers(trimmedTokenAddress, receiverAddresses, receiverWeights);
               setTokenAddress("");
-              setFeeReceivers([{ address: "", weight: 10000 }]);
+              setFeeReceivers([{ address: "", percentage: 100 }]); // Fix: Use percentage, not weight
             })(),
             {
               pending: "Setting Token Fee Receivers...",
