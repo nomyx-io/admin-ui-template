@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
 
-import { Breadcrumb, Button, Input, Switch } from "antd";
+import { Breadcrumb, Button, Input } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -52,10 +52,10 @@ function CreateOrEditAddressBookEntry({ service }) {
       toast.error("Invalid Wallet Address");
       return false;
     }
-    if (!email.trim()) {
-      toast.error("Email is required");
-      return false;
-    }
+    // if (!email.trim()) {
+    //   toast.error("Email is required");
+    //   return false;
+    // }
     return true;
   };
 
@@ -131,7 +131,7 @@ function CreateOrEditAddressBookEntry({ service }) {
 
         {/* Email */}
         <div>
-          <label htmlFor="email">Email *</label>
+          <label htmlFor="email">Email</label>
           <Input
             id="email"
             value={email}
