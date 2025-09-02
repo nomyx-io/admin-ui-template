@@ -760,8 +760,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsSetTokenFeeReceiversComplete", {
         walletId,
