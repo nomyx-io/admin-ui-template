@@ -3,6 +3,16 @@ import Parse from "parse";
 
 class DfnsService {
   private static _instance: DfnsService;
+  private webauthn: WebAuthnSigner;
+
+  constructor() {
+    this.webauthn = new WebAuthnSigner({
+      relyingParty: {
+        id: process.env.REACT_APP_DFNS_RELYING_PARTY || "localhost",
+        name: "Nomyx Admin Portal",
+      },
+    });
+  }
 
   public static get instance(): DfnsService {
     if (!DfnsService._instance) {
@@ -40,8 +50,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsAddClaimTopicComplete", {
         walletId,
@@ -90,8 +99,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsAddTrustedIssuerComplete", {
         walletId,
@@ -139,8 +147,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsRemoveTrustedIssuerComplete", {
         walletId,
@@ -189,8 +196,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsUpdateIssuerClaimTopicsComplete", {
         walletId,
@@ -238,8 +244,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsCreateIdentityComplete", {
         walletId,
@@ -309,8 +314,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsAddIdentityComplete", {
         walletId,
@@ -359,8 +363,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsSetClaimsComplete", {
         walletId,
@@ -410,8 +413,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsAddClaimComplete", {
         walletId,
@@ -460,8 +462,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsRemoveClaimComplete", {
         walletId,
@@ -509,8 +510,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsGemforceMintComplete", {
         walletId,
@@ -558,8 +558,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsRemoveIdentityComplete", {
         walletId,
@@ -607,8 +606,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsUnregisterIdentityComplete", {
         walletId,
@@ -664,8 +662,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsSetFunctionClaimsComplete", {
         walletId,
@@ -713,8 +710,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsCompleteTransferOwnership", {
         walletId,
@@ -764,8 +760,7 @@ class DfnsService {
     }
 
     try {
-      const webauthn = new WebAuthnSigner();
-      const assertion = await webauthn.sign(challenge);
+      const assertion = await this.webauthn.sign(challenge);
 
       const completeResponse = await Parse.Cloud.run("dfnsSetTokenFeeReceiversComplete", {
         walletId,
