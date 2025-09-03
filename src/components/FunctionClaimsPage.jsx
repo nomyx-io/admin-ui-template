@@ -17,7 +17,7 @@ const FunctionClaimsPage = ({ service }) => {
   const [functionRules, setFunctionRules] = useState([]);
   const [activeTab, setActiveTab] = useState("1");
 
-  // Token Fee Receivers state
+  // Initiate Token state
   const [tokenAddress, setTokenAddress] = useState("");
   const [feeReceivers, setFeeReceivers] = useState([{ address: "", percentage: 100 }]);
   const [isLoading, setIsLoading] = useState(false);
@@ -210,17 +210,17 @@ const FunctionClaimsPage = ({ service }) => {
               await new Promise((resolve) => setTimeout(resolve, 2000));
             })(),
             {
-              pending: "Setting Token Fee Receivers...",
-              success: `Successfully Set Token Fee Receivers for ${trimmedTokenAddress}`,
+              pending: "Initiating Token ...",
+              success: `Successfully Initiated Token ${trimmedTokenAddress}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.message || `An error occurred while setting Token Fee Receivers`}</div>;
+                  return <div>{data?.message || `An error occurred while setting Initiating Token`}</div>;
                 },
               },
             }
           )
           .catch((error) => {
-            console.error("Error after attempting to set Token Fee Receivers:", error);
+            console.error("Error after attempting to Initiated Token:", error);
           })
           .finally(() => {
             setIsLoading(false);
@@ -234,17 +234,17 @@ const FunctionClaimsPage = ({ service }) => {
               setFeeReceivers([{ address: "", percentage: 100 }]); // Fix: Use percentage, not weight
             })(),
             {
-              pending: "Setting Token Fee Receivers...",
-              success: `Successfully Set Token Fee Receivers for ${trimmedTokenAddress}`,
+              pending: "Initiating Token ...",
+              success: `Successfully Initiated Token for ${trimmedTokenAddress}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while setting Token Fee Receivers`}</div>;
+                  return <div>{data?.reason || `An error occurred while setting Initiating Token`}</div>;
                 },
               },
             }
           )
           .catch((error) => {
-            console.error("Error after attempting to set Token Fee Receivers:", error);
+            console.error("Error after attempting to Initiated Token:", error);
           })
           .finally(() => {
             setIsLoading(false);
@@ -312,7 +312,7 @@ const FunctionClaimsPage = ({ service }) => {
       case "1":
         return "Function Claims";
       case "2":
-        return "Token Fee Receivers";
+        return "Initiate Token";
       default:
         return "Function Claims";
     }
@@ -340,7 +340,7 @@ const FunctionClaimsPage = ({ service }) => {
     },
     {
       key: "2",
-      label: "Token Fee Receivers",
+      label: "Initiate Token",
       children: (
         <div className="p-6 mt-2">
           <div>
@@ -399,7 +399,13 @@ const FunctionClaimsPage = ({ service }) => {
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="font-medium">Fee Receiver {index + 1}</h4>
                     {feeReceivers.length > 1 && (
-                      <Button type="text" danger onClick={() => removeFeeReceiver(index)} icon={<MinusCircleOutlined />}>
+                      <Button
+                        type="default"
+                        danger
+                        className="flex items-center gap-1"
+                        icon={<MinusCircleOutlined />}
+                        onClick={() => removeFeeReceiver(index)}
+                      >
                         Remove
                       </Button>
                     )}
@@ -456,7 +462,7 @@ const FunctionClaimsPage = ({ service }) => {
               loading={isLoading}
               disabled={isLoading}
             >
-              Set Token Fee Receivers
+              Initiate Token
             </Button>
           </div>
         </div>
