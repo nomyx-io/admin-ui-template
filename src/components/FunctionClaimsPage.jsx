@@ -1,17 +1,29 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
+import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { Tabs, Button, Breadcrumb, Input, InputNumber } from "antd";
 import { ethers } from "ethers";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
+import { isEthereumAddress } from "../utils";
 import { NomyxAction, WalletPreference, PAYMENT_ROUTES } from "../utils/Constants";
 
 const FunctionClaimsPage = ({ service }) => {
   const navigate = useNavigate();
   const [functionRules, setFunctionRules] = useState([]);
+  const [activeTab, setActiveTab] = useState("1");
+
+  // Initiate Token state
+  const [tokenAddress, setTokenAddress] = useState("");
+  const [feeReceivers, setFeeReceivers] = useState([{ address: "", percentage: 100 }]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [totalWeightBasis] = useState(10000); // Hardcoded to 10000 as per deployment
+  const [feesEnabled, setFeesEnabled] = useState(true);
+
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const fetchData = useCallback(async () => {
@@ -21,20 +33,16 @@ const FunctionClaimsPage = ({ service }) => {
       const data = PAYMENT_ROUTES.map((route) => {
         const matchedClaim = functionClaims?.find((t) => t?.attributes?.functionId === route.value);
 
-        // Sort compliance rules if they exist
         let sortedClaimTopics = "";
         if (matchedClaim?.attributes?.requiredClaimTopics) {
           const claimTopicsArray = matchedClaim.attributes.requiredClaimTopics.map((obj) => obj);
-          // Sort the array (assuming they are strings or numbers)
           claimTopicsArray.sort((a, b) => {
-            // Handle different data types
             if (typeof a === "string" && typeof b === "string") {
               return a.localeCompare(b);
             }
             if (typeof a === "number" && typeof b === "number") {
               return a - b;
             }
-            // Convert to string and compare if mixed types
             return String(a).localeCompare(String(b));
           });
           sortedClaimTopics = claimTopicsArray.join(",");
@@ -57,19 +65,13 @@ const FunctionClaimsPage = ({ service }) => {
     fetchData();
   }, [service, fetchData]);
 
-  // const addTrustedIssuer = async (issuer, claimTopics) => {
-  //   await service.addTrustedIssuer(issuer, claimTopics);
-  // };
-
   const removeFunctionClaims = async (functionName) => {
     const functionId = ethers.utils.formatBytes32String(functionName);
     try {
       if (walletPreference === WalletPreference.MANAGED) {
-        // Handle MANAGED wallet preference using DFNSService
         toast
           .promise(
             (async () => {
-              // Initiate removal of the function rules
               const { initiateResponse, error: initError } = await DfnsService.initiateSetFunctionClaimRequirements(
                 functionId,
                 [],
@@ -79,16 +81,14 @@ const FunctionClaimsPage = ({ service }) => {
               );
               if (initError) throw new Error(initError);
 
-              // Complete removal of the function rules
               const { completeResponse, error: completeError } = await DfnsService.completeSetFunctionClaimRequirements(
                 user.walletId,
                 dfnsToken,
-                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                initiateResponse.challenge,
                 initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
 
-              // Fetch updated data after successful removal
               setTimeout(fetchData, 3000);
             })(),
             {
@@ -105,7 +105,6 @@ const FunctionClaimsPage = ({ service }) => {
             console.error("Error after attempting to remove Function Rules:", error);
           });
       } else if (walletPreference === WalletPreference.PRIVATE) {
-        // Handle PRIVATE wallet preference
         toast
           .promise(
             (async () => {
@@ -132,6 +131,149 @@ const FunctionClaimsPage = ({ service }) => {
     }
   };
 
+  const validateTokenFeeReceivers = (tokenAddress, feeReceivers) => {
+    if (!tokenAddress?.trim()) {
+      toast.error("Token address is required");
+      return false;
+    }
+
+    if (!isEthereumAddress(tokenAddress)) {
+      toast.error("Invalid token address");
+      return false;
+    }
+
+    if (!feeReceivers || feeReceivers.length === 0) {
+      toast.error("At least one fee receiver is required");
+      return false;
+    }
+
+    let totalPercentage = 0;
+    for (const receiver of feeReceivers) {
+      if (!receiver.address?.trim()) {
+        toast.error("All receiver addresses are required");
+        return false;
+      }
+      if (!isEthereumAddress(receiver.address)) {
+        toast.error(`Invalid receiver address: ${receiver.address}`);
+        return false;
+      }
+      if (!receiver.percentage || receiver.percentage <= 0) {
+        toast.error("All percentages must be positive numbers");
+        return false;
+      }
+      totalPercentage += receiver.percentage;
+    }
+
+    if (totalPercentage !== 100) {
+      toast.error("Total percentages must equal 100%");
+      return false;
+    }
+
+    return true;
+  };
+
+  const setTokenFeeReceivers = async () => {
+    const trimmedTokenAddress = tokenAddress.trim();
+    if (!validateTokenFeeReceivers(trimmedTokenAddress, feeReceivers)) {
+      return;
+    }
+
+    const receiverAddresses = feeReceivers.map((r) => r.address);
+    // Fix: Convert percentages to basis points (weight)
+    const receiverWeights = feeReceivers.map((r) => Math.round((r.percentage / 100) * totalWeightBasis));
+
+    try {
+      setIsLoading(true);
+      if (walletPreference === WalletPreference.MANAGED) {
+        toast
+          .promise(
+            (async () => {
+              const { initiateResponse, error: initError } = await DfnsService.initiateSetTokenFeeReceivers(
+                trimmedTokenAddress,
+                receiverAddresses,
+                receiverWeights,
+                user.walletId,
+                dfnsToken
+              );
+              if (initError) throw new Error(initError);
+
+              const { completeResponse, error: completeError } = await DfnsService.completeSetTokenFeeReceivers(
+                user.walletId,
+                dfnsToken,
+                initiateResponse.challenge,
+                initiateResponse.requestBody
+              );
+              if (completeError) throw new Error(completeError);
+
+              setTokenAddress("");
+              setFeeReceivers([{ address: "", percentage: 100 }]);
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+            })(),
+            {
+              pending: "Initiating Token ...",
+              success: `Successfully Initiated Token ${trimmedTokenAddress}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.message || `An error occurred while setting Initiating Token`}</div>;
+                },
+              },
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to Initiated Token:", error);
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else if (walletPreference === WalletPreference.PRIVATE) {
+        toast
+          .promise(
+            (async () => {
+              await service.setTokenFeeReceivers(trimmedTokenAddress, receiverAddresses, receiverWeights);
+              setTokenAddress("");
+              setFeeReceivers([{ address: "", percentage: 100 }]); // Fix: Use percentage, not weight
+            })(),
+            {
+              pending: "Initiating Token ...",
+              success: `Successfully Initiated Token for ${trimmedTokenAddress}`,
+              error: {
+                render({ data }) {
+                  return <div>{data?.reason || `An error occurred while setting Initiating Token`}</div>;
+                },
+              },
+            }
+          )
+          .catch((error) => {
+            console.error("Error after attempting to Initiated Token:", error);
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      }
+    } catch (error) {
+      console.error("Unexpected error during setTokenFeeReceivers:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
+  const addFeeReceiver = () => {
+    setFeeReceivers([...feeReceivers, { address: "", percentage: 0 }]);
+  };
+
+  const removeFeeReceiver = (index) => {
+    if (feeReceivers.length > 1) {
+      const newReceivers = feeReceivers.filter((_, i) => i !== index);
+      setFeeReceivers(newReceivers);
+    }
+  };
+
+  const updateFeeReceiver = (index, field, value) => {
+    const newReceivers = [...feeReceivers];
+    newReceivers[index][field] = value;
+    setFeeReceivers(newReceivers);
+  };
+
   const columns = [
     { label: "Function", name: "functionLabel", width: "25%" },
     { label: "Compliance Rules", name: "claimTopics", width: "30%" },
@@ -145,7 +287,6 @@ const FunctionClaimsPage = ({ service }) => {
       confirmation: "Are you sure you want to remove this Function Rules?",
     },
   ];
-  //   const globalActions = [{ label: "Set Function Claims", name: NomyxAction.SetFunctionClaims }];
 
   const search = true;
 
@@ -166,19 +307,189 @@ const FunctionClaimsPage = ({ service }) => {
     }
   };
 
+  const getTabTitle = () => {
+    switch (activeTab) {
+      case "1":
+        return "Function Claims";
+      case "2":
+        return "Initiate Token";
+      default:
+        return "Function Claims";
+    }
+  };
+
+  const tabItems = [
+    {
+      key: "1",
+      label: "Function Claims",
+      children: (
+        <div className="p-6 mt-2">
+          <ObjectList
+            title="Function Claims"
+            description="Function Claims"
+            columns={columns}
+            actions={actions}
+            search={search}
+            data={functionRules}
+            pageSize={10}
+            onAction={handleAction}
+            onGlobalAction={handleAction}
+          />
+        </div>
+      ),
+    },
+    {
+      key: "2",
+      label: "Initiate Token",
+      children: (
+        <div className="p-6 mt-2">
+          <div>
+            <label htmlFor="tokenAddress">Token Address *</label>
+            <div className="mt-3 relative w-full flex border rounded-lg">
+              <Input
+                id="tokenAddress"
+                value={tokenAddress}
+                className="border w-full p-2 rounded-lg text-xl"
+                placeholder="0x..."
+                type="text"
+                onChange={(e) => setTokenAddress(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={feesEnabled}
+                onChange={(e) => {
+                  setFeesEnabled(e.target.checked);
+                  if (!e.target.checked) {
+                    // When disabling fees, set single receiver to user's wallet with 100%
+                    setFeeReceivers([{ address: user?.walletAddress || "", percentage: 100 }]);
+                  } else {
+                    // When enabling fees, reset to empty
+                    setFeeReceivers([{ address: "", percentage: 100 }]);
+                  }
+                }}
+                className="mr-2"
+              />
+              Enable fee distribution for this token
+            </label>
+            <p className="text-sm text-gray-600 mt-1">
+              {feesEnabled ? "Configure multiple fee receivers below" : "All payments will go directly to recipient (no fees)"}
+            </p>
+          </div>
+
+          {feesEnabled && (
+            <>
+              <div className="mt-10 mb-6">
+                <p className="my-4">Configure Fee Receivers & Weights</p>
+                <p className="text-sm text-gray-600 mb-4">
+                  Add addresses that will receive fees and their corresponding percentages. Percentages must total 100%.
+                </p>
+              </div>
+            </>
+          )}
+
+          <div className="my-5">
+            {feesEnabled &&
+              feeReceivers.map((receiver, index) => (
+                <div key={index} className="mb-6 p-4 border rounded-lg bg-gray-50">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-medium">Fee Receiver {index + 1}</h4>
+                    {feeReceivers.length > 1 && (
+                      <Button
+                        type="default"
+                        danger
+                        className="flex items-center gap-1"
+                        icon={<MinusCircleOutlined />}
+                        onClick={() => removeFeeReceiver(index)}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor={`address-${index}`}>Receiver Address *</label>
+                      <div className="mt-3 relative w-full flex border rounded-lg">
+                        <Input
+                          id={`address-${index}`}
+                          value={receiver.address}
+                          className="border w-full p-2 rounded-lg text-xl"
+                          placeholder="Wallet Address"
+                          type="text"
+                          onChange={(e) => updateFeeReceiver(index, "address", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor={`percentage-${index}`}>Percentage *</label>
+                      <div className="mt-3 relative w-full flex border rounded-lg">
+                        <InputNumber
+                          id={`percentage-${index}`}
+                          value={receiver.percentage}
+                          className="border w-full p-2 rounded-lg text-xl"
+                          placeholder="Percentage"
+                          min={0}
+                          max={100}
+                          formatter={(value) => `${value}%`}
+                          parser={(value) => value.replace("%", "")}
+                          onChange={(value) => updateFeeReceiver(index, "percentage", value)}
+                          style={{ width: "100%" }}
+                          controls={false}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+            {feesEnabled && (
+              <Button type="dashed" onClick={addFeeReceiver} icon={<PlusOutlined />} className="w-full mb-6" size="large">
+                Add Fee Receiver
+              </Button>
+            )}
+          </div>
+
+          <div className="flex justify-end max-[600px]:justify-center">
+            <Button
+              className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
+              onClick={setTokenFeeReceivers}
+              loading={isLoading}
+              disabled={isLoading}
+            >
+              Initiate Token
+            </Button>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className="p-6">
-      <ObjectList
-        title="Function Claims"
-        description="Function Claims"
-        columns={columns}
-        actions={actions}
-        search={search}
-        data={functionRules}
-        pageSize={10}
-        onAction={handleAction}
-        onGlobalAction={handleAction}
+    <div>
+      <Breadcrumb
+        className="bg-transparent"
+        items={[
+          {
+            title: <Link to={"/"}>Home</Link>,
+          },
+          {
+            title: <Link to={"/admin"}>Admin</Link>,
+          },
+          {
+            title: getTabTitle(),
+          },
+        ]}
       />
+      <p className="text-xl p-6">{getTabTitle()}</p>
+      <hr />
+
+      <Tabs defaultActiveKey="1" items={tabItems} onChange={setActiveTab} className="px-6" />
     </div>
   );
 };

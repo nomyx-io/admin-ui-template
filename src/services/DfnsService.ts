@@ -730,6 +730,56 @@ class DfnsService {
       return { completeResponse: null, error: error.message };
     }
   }
+
+  public async initiateSetTokenFeeReceivers(token: string, feeReceivers: string[], feeWeights: number[], walletId: string, dfnsToken: string) {
+    if (!token || !feeReceivers?.length || !feeWeights?.length || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for setTokenFeeReceivers initiation.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsSetTokenFeeReceiversInit", {
+        dfns_token: dfnsToken,
+        walletId,
+        token,
+        feeReceivers,
+        feeWeights,
+      });
+
+      console.log("setTokenFeeReceivers initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating setTokenFeeReceivers:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeSetTokenFeeReceivers(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing setTokenFeeReceivers.");
+    }
+
+    try {
+      const assertion = await this.webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsSetTokenFeeReceiversComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("setTokenFeeReceivers completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing setTokenFeeReceivers:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
 }
 
 export default DfnsService.instance;

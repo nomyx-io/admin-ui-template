@@ -759,6 +759,12 @@ class BlockchainService {
     const functionCompliance = await ParseClient.getFirstRecord("FunctionCompliance", ["functionId"], [functionId]);
     return functionCompliance;
   }
+  async setTokenFeeReceivers(token, feeReceivers, feeWeights) {
+    const contract = this.transferService.connect(this.signer);
+    const tx = await contract.setTokenFeeReceivers(token, feeReceivers, feeWeights);
+    await tx.wait();
+    return tx;
+  }
 }
 
 export default BlockchainService;
