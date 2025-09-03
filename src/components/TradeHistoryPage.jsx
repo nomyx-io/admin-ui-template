@@ -9,10 +9,10 @@ import ObjectList from "./ObjectList"; // Replace with your actual component
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
 
-const TransactionHistoryPage = (service) => {
-  const [rawTransactions, setRawTransactions] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [activeTab, setActiveTab] = useState("Transactions");
+const TradeHistoryPage = (service) => {
+  const [rawTrades, setRawTrades] = useState([]);
+  const [trades, setTrades] = useState([]);
+  const [activeTab, setActiveTab] = useState("TradeHistory");
 
   // Separate state for filters (bound to inputs)
   const [localFilters, setLocalFilters] = useState({
@@ -22,41 +22,41 @@ const TransactionHistoryPage = (service) => {
     maxAmount: "",
   });
 
-  const fetchTransactionData = useCallback(async () => {
+  const fetchTradeData = useCallback(async () => {
     try {
-      const transactionRecords = await Parse.Cloud.run("getTransactionHistoryRecords");
+      const tradeRecords = await Parse.Cloud.run("getTradeHistory");
 
-      if (!transactionRecords || transactionRecords.length === 0) {
-        setRawTransactions([]);
-        setTransactions([]);
+      if (!tradeRecords || tradeRecords.length === 0) {
+        setRawTrades([]);
+        setTrades([]);
         return;
       }
 
       // No need to format again, already done in the cloud function
-      setRawTransactions(transactionRecords);
-      setTransactions(transactionRecords);
+      setRawTrades(tradeRecords);
+      setTrades(tradeRecords);
     } catch (error) {
-      console.error("Error fetching transaction data:", error);
-      toast.error("Failed to fetch transaction data.");
+      console.error("Error fetching trade data:", error);
+      toast.error("Failed to fetch trade data.");
     }
   }, []);
 
   useEffect(() => {
-    fetchTransactionData();
-  }, [fetchTransactionData]);
+    fetchTradeData();
+  }, [fetchTradeData]);
 
   const applyFilters = useCallback(() => {
     const { dateRange, searchTerm, minAmount, maxAmount } = localFilters;
-    let filtered = [...rawTransactions];
+    let filtered = [...rawTrades];
 
     console.log("Applying filters:", { dateRange, searchTerm, minAmount, maxAmount });
-    console.log("Raw transactions count:", rawTransactions.length);
+    console.log("Raw trades count:", rawTrades.length);
 
     if (dateRange?.length === 2) {
       const [start, end] = dateRange;
-      filtered = filtered.filter((tx) => {
-        const txDate = new Date(tx.timestamp);
-        return txDate >= start && txDate <= end;
+      filtered = filtered.filter((trade) => {
+        const tradeDate = new Date(trade.createdAt);
+        return tradeDate >= start && tradeDate <= end;
       });
       console.log("After date filter:", filtered.length);
     }
@@ -64,14 +64,13 @@ const TransactionHistoryPage = (service) => {
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
       filtered = filtered.filter(
-        (tx) =>
-          (tx.userName || "").toLowerCase().includes(term) ||
-          (tx.userEmail || "").toLowerCase().includes(term) ||
-          (tx.transactionHash || "").toLowerCase().includes(term) ||
-          (tx.fromAddress || "").toLowerCase().includes(term) ||
-          (tx.toAddress || "").toLowerCase().includes(term) ||
-          (tx.bridgeTransactionId || "").toLowerCase().includes(term) ||
-          (tx.kycInquiryId || "").toLowerCase().includes(term)
+        (trade) =>
+          (trade.userName || "").toLowerCase().includes(term) ||
+          (trade.userEmail || "").toLowerCase().includes(term) ||
+          (trade.requestId || "").toLowerCase().includes(term) ||
+          (trade.source?.address || "").toLowerCase().includes(term) ||
+          (trade.destination?.address || "").toLowerCase().includes(term) ||
+          (trade.onrampId || "").toLowerCase().includes(term)
       );
       console.log("After search filter:", filtered.length, "Search term:", term);
     }
@@ -79,7 +78,7 @@ const TransactionHistoryPage = (service) => {
     if (minAmount.trim()) {
       const min = parseFloat(minAmount);
       if (!isNaN(min)) {
-        filtered = filtered.filter((tx) => tx.amount / 1_000_000 >= min);
+        filtered = filtered.filter((trade) => trade.amount >= min);
         console.log("After minimum amount filter:", filtered.length);
       }
     }
@@ -87,16 +86,16 @@ const TransactionHistoryPage = (service) => {
     if (maxAmount.trim()) {
       const max = parseFloat(maxAmount);
       if (!isNaN(max)) {
-        filtered = filtered.filter((tx) => tx.amount / 1_000_000 <= max);
+        filtered = filtered.filter((trade) => trade.amount <= max);
         console.log("After maximum amount filter:", filtered.length);
       }
     }
 
     console.log("Final filtered count:", filtered.length);
-    setTransactions([...filtered]); // Force new array reference
-  }, [rawTransactions, localFilters]);
+    setTrades([...filtered]); // Force new array reference
+  }, [rawTrades, localFilters]);
 
-  // Auto-apply filters when localFilters or rawTransactions change
+  // Auto-apply filters when localFilters or rawTrades change
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
@@ -112,29 +111,8 @@ const TransactionHistoryPage = (service) => {
       minAmount: "",
       maxAmount: "",
     });
-    setTransactions(rawTransactions);
-  }, [rawTransactions]);
-
-  // const handleAction = async (event, action, record) => {
-  //   switch (action) {
-  //     case NomyxAction.ViewTransaction:
-  //       toast.info(`Viewing transaction ${record.transactionHash} - To be implemented`);
-  //       break;
-  //     case NomyxAction.ExportTransaction:
-  //       toast.info(`Exporting transaction ${record.transactionHash} - To be implemented`);
-  //       break;
-  //     case NomyxAction.ExportAllTransactions:
-  //       toast.info("Exporting all transactions - To be implemented");
-  //       break;
-  //     case NomyxAction.ClearFilters:
-  //       clearFilters();
-  //       toast.success("Filters cleared");
-  //       break;
-  //     default:
-  //       console.log("Action not handled: ", action);
-  //       break;
-  //   }
-  // };
+    setTrades(rawTrades);
+  }, [rawTrades]);
 
   // Memoize the FilterSection to prevent unnecessary re-renders
   const FilterSection = useMemo(
@@ -149,7 +127,7 @@ const TransactionHistoryPage = (service) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
             <Input
               value={localFilters.searchTerm}
-              placeholder="User, email, hash, address..."
+              placeholder="User, email, request ID, address..."
               onChange={(e) => handleInputChange("searchTerm", e.target.value)}
               className="w-full"
             />
@@ -177,30 +155,47 @@ const TransactionHistoryPage = (service) => {
   // Memoize columns to prevent re-creation on every render
   const columns = useMemo(
     () => [
-      { label: "User", name: "userName" },
+      { label: "Name", name: "userName" },
       { label: "Email", name: "userEmail" },
+      {
+        label: "Wallet Address",
+        name: "walletAddress",
+        render: (record) => record.source?.address || record.destination?.address || "-",
+      },
+      {
+        label: "Transaction ID",
+        name: "requestId",
+        render: (record) => record.requestId || "-",
+      },
+      {
+        label: "Time",
+        name: "createdAt",
+        render: (record) => (record.createdAt ? new Date(record.createdAt).toLocaleString() : "-"),
+      },
       {
         label: "Amount",
         name: "amount",
-        render: (record) => `$${(record.amount / 1_000_000).toFixed(2)}`,
-      },
-      { label: "From", name: "fromAddress" },
-      { label: "To", name: "toAddress" },
-      //{ label: "Recipient", name: "toUserName" },
-      { label: "Fee", name: "fee", render: (record) => `${record.fee}%` },
-      {
-        label: "Timestamp",
-        name: "timestamp",
-        render: (record) => (record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"),
+        render: (record) => `$${(record.amount || 0).toFixed(2)}`,
       },
       {
-        label: "Tx Hash",
-        name: "transactionHash",
-        render: (record) => (
-          <a href={`${process.env.REACT_APP_ETHERSCAN_BASE_URL}${record.transactionHash}`} target="_blank" rel="noopener noreferrer">
-            {record.transactionHash}
-          </a>
-        ),
+        label: "Status",
+        name: "status",
+        render: (record) => record.status || "Unknown",
+      },
+      // {
+      //   label: "Chain",
+      //   name: "chain",
+      //   render: (record) => record.chain || "-",
+      // },
+      {
+        label: "Source Currency",
+        name: "currency",
+        render: (record) => record.source?.currency?.toUpperCase() || "-",
+      },
+      {
+        label: "Destination Currency",
+        name: "currency",
+        render: (record) => record.destination?.currency?.toUpperCase() || "-",
       },
     ],
     []
@@ -208,14 +203,14 @@ const TransactionHistoryPage = (service) => {
 
   return (
     <Tabs activeKey={activeTab} onChange={setActiveTab}>
-      <TabPane tab="Transaction History" key="Transactions">
+      <TabPane tab="Trade History" key="TradeHistory">
         {FilterSection}
         <ObjectList
-          key={`transactions-${transactions.length}`}
-          title="Transaction History"
-          description="Complete ledger of all transactions"
+          key={`trades-${trades.length}`}
+          title="Trade History"
+          description="Complete ledger of all trade transactions"
           columns={columns}
-          data={transactions}
+          data={trades}
           pageSize={20}
         />
       </TabPane>
@@ -223,4 +218,4 @@ const TransactionHistoryPage = (service) => {
   );
 };
 
-export default TransactionHistoryPage;
+export default TradeHistoryPage;
