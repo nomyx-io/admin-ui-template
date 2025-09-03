@@ -22,7 +22,7 @@ const FunctionClaimsPage = ({ service }) => {
   const [feeReceivers, setFeeReceivers] = useState([{ address: "", percentage: 100 }]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalWeightBasis] = useState(10000); // Hardcoded to 10000 as per deployment
-  const [feesEnabled, setFeesEnabled] = useState(true);
+  const [feesEnabled, setFeesEnabled] = useState(false);
 
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
@@ -131,7 +131,8 @@ const FunctionClaimsPage = ({ service }) => {
     }
   };
 
-  const validateTokenFeeReceivers = (tokenAddress, feeReceivers) => {
+  // UPDATED: include feesEnabled so we can skip receiver validation when disabled
+  const validateTokenFeeReceivers = (tokenAddress, feeReceivers, feesEnabled) => {
     if (!tokenAddress?.trim()) {
       toast.error("Token address is required");
       return false;
@@ -141,6 +142,9 @@ const FunctionClaimsPage = ({ service }) => {
       toast.error("Invalid token address");
       return false;
     }
+
+    // Zero-fee mode: we will submit empty arrays; skip receiver checks
+    if (!feesEnabled) return true;
 
     if (!feeReceivers || feeReceivers.length === 0) {
       toast.error("At least one fee receiver is required");
@@ -172,15 +176,15 @@ const FunctionClaimsPage = ({ service }) => {
     return true;
   };
 
+  // UPDATED: branch to submit []/[] when fees are disabled
   const setTokenFeeReceivers = async () => {
     const trimmedTokenAddress = tokenAddress.trim();
-    if (!validateTokenFeeReceivers(trimmedTokenAddress, feeReceivers)) {
+    if (!validateTokenFeeReceivers(trimmedTokenAddress, feeReceivers, feesEnabled)) {
       return;
     }
 
-    const receiverAddresses = feeReceivers.map((r) => r.address);
-    // Fix: Convert percentages to basis points (weight)
-    const receiverWeights = feeReceivers.map((r) => Math.round((r.percentage / 100) * totalWeightBasis));
+    const receiverAddresses = feesEnabled ? feeReceivers.map((r) => r.address) : [];
+    const receiverWeights = feesEnabled ? feeReceivers.map((r) => Math.round((r.percentage / 100) * totalWeightBasis)) : [];
 
     try {
       setIsLoading(true);
@@ -206,12 +210,12 @@ const FunctionClaimsPage = ({ service }) => {
               if (completeError) throw new Error(completeError);
 
               setTokenAddress("");
-              setFeeReceivers([{ address: "", percentage: 100 }]);
+              setFeeReceivers(feesEnabled ? [{ address: "", percentage: 100 }] : []);
               await new Promise((resolve) => setTimeout(resolve, 2000));
             })(),
             {
               pending: "Initiating Token ...",
-              success: `Successfully Initiated Token ${trimmedTokenAddress}`,
+              success: `Successfully set fee config for ${trimmedTokenAddress}${feesEnabled ? "" : " (no fees)"}`,
               error: {
                 render({ data }) {
                   return <div>{data?.message || `An error occurred while setting Initiating Token`}</div>;
@@ -231,11 +235,11 @@ const FunctionClaimsPage = ({ service }) => {
             (async () => {
               await service.setTokenFeeReceivers(trimmedTokenAddress, receiverAddresses, receiverWeights);
               setTokenAddress("");
-              setFeeReceivers([{ address: "", percentage: 100 }]); // Fix: Use percentage, not weight
+              setFeeReceivers(feesEnabled ? [{ address: "", percentage: 100 }] : []);
             })(),
             {
               pending: "Initiating Token ...",
-              success: `Successfully Initiated Token for ${trimmedTokenAddress}`,
+              success: `Successfully set fee config for ${trimmedTokenAddress}${feesEnabled ? "" : " (no fees)"}`,
               error: {
                 render({ data }) {
                   return <div>{data?.reason || `An error occurred while setting Initiating Token`}</div>;
@@ -265,6 +269,8 @@ const FunctionClaimsPage = ({ service }) => {
     if (feeReceivers.length > 1) {
       const newReceivers = feeReceivers.filter((_, i) => i !== index);
       setFeeReceivers(newReceivers);
+    } else if (feeReceivers.length === 1) {
+      setFeeReceivers([]);
     }
   };
 
@@ -363,12 +369,13 @@ const FunctionClaimsPage = ({ service }) => {
                 type="checkbox"
                 checked={feesEnabled}
                 onChange={(e) => {
-                  setFeesEnabled(e.target.checked);
-                  if (!e.target.checked) {
-                    // When disabling fees, set single receiver to user's wallet with 100%
-                    setFeeReceivers([{ address: user?.walletAddress || "", percentage: 100 }]);
+                  const enabled = e.target.checked;
+                  setFeesEnabled(enabled);
+                  if (!enabled) {
+                    // Zero-fee mode: submit empty arrays
+                    setFeeReceivers([]);
                   } else {
-                    // When enabling fees, reset to empty
+                    // Start with a single row at 100%
                     setFeeReceivers([{ address: "", percentage: 100 }]);
                   }
                 }}
@@ -377,7 +384,9 @@ const FunctionClaimsPage = ({ service }) => {
               Enable fee distribution for this token
             </label>
             <p className="text-sm text-gray-600 mt-1">
-              {feesEnabled ? "Configure multiple fee receivers below" : "All payments will go directly to recipient (no fees)"}
+              {feesEnabled
+                ? "Configure multiple fee receivers below"
+                : "No fee distribution will be applied (submits empty fee config to the contract)."}
             </p>
           </div>
 
@@ -398,7 +407,7 @@ const FunctionClaimsPage = ({ service }) => {
                 <div key={index} className="mb-6 p-4 border rounded-lg bg-gray-50">
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="font-medium">Fee Receiver {index + 1}</h4>
-                    {feeReceivers.length > 1 && (
+                    {feeReceivers.length > 0 && (
                       <Button
                         type="default"
                         danger
@@ -434,7 +443,7 @@ const FunctionClaimsPage = ({ service }) => {
                           value={receiver.percentage}
                           className="border w-full p-2 rounded-lg text-xl"
                           placeholder="Percentage"
-                          min={0}
+                          min={1} // Contract requires > 0 when enabled
                           max={100}
                           formatter={(value) => `${value}%`}
                           parser={(value) => value.replace("%", "")}
