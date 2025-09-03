@@ -730,9 +730,9 @@ class DfnsService {
       return { completeResponse: null, error: error.message };
     }
   }
-
   public async initiateSetTokenFeeReceivers(token: string, feeReceivers: string[], feeWeights: number[], walletId: string, dfnsToken: string) {
-    if (!token || !feeReceivers?.length || !feeWeights?.length || !walletId || !dfnsToken) {
+    // Only check for undefined/null, not empty arrays
+    if (!token || feeReceivers === undefined || feeWeights === undefined || !walletId || !dfnsToken) {
       throw new Error("Missing required parameters for setTokenFeeReceivers initiation.");
     }
 
