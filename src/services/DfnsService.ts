@@ -60,6 +60,7 @@ class DfnsService {
           firstFactor: assertion,
         },
         requestBody,
+        sessionToken: Parse.User.current()?.getSessionToken(),
       });
 
       console.log("AddClaimTopic completed:", completeResponse);
@@ -109,6 +110,7 @@ class DfnsService {
           firstFactor: assertion,
         },
         requestBody,
+        sessionToken: Parse.User.current()?.getSessionToken(),
       });
 
       console.log("AddTrustedIssuer completed:", completeResponse);
@@ -423,6 +425,7 @@ class DfnsService {
           firstFactor: assertion,
         },
         requestBody,
+        sessionToken: Parse.User.current()?.getSessionToken(),
       });
 
       console.log("AddClaim completed:", completeResponse);
