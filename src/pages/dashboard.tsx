@@ -68,9 +68,17 @@ export default function DashboardPage() {
                 prefix={<UserOutlinedIcon />}
               />
               <Button 
-                type="link" 
+                type="primary" 
                 onClick={() => router.push("/identities")}
-                style={{ padding: 0, marginTop: 8 }}
+                style={{ 
+                  marginTop: 16,
+                  width: '100%',
+                  backgroundColor: '#722ed1',
+                  borderColor: '#722ed1',
+                  fontWeight: 500,
+                  padding: '6px 16px',
+                  height: '36px'
+                }}
               >
                 Manage Identities →
               </Button>
@@ -85,9 +93,17 @@ export default function DashboardPage() {
                 prefix={<LockOutlinedIcon />}
               />
               <Button 
-                type="link" 
+                type="primary" 
                 onClick={() => router.push("/issuers")}
-                style={{ padding: 0, marginTop: 8 }}
+                style={{ 
+                  marginTop: 16,
+                  width: '100%',
+                  backgroundColor: '#722ed1',
+                  borderColor: '#722ed1',
+                  fontWeight: 500,
+                  padding: '6px 16px',
+                  height: '36px'
+                }}
               >
                 Manage Issuers →
               </Button>
@@ -102,9 +118,17 @@ export default function DashboardPage() {
                 prefix={<GlobalOutlinedIcon />}
               />
               <Button 
-                type="link" 
+                type="primary" 
                 onClick={() => router.push("/topics")}
-                style={{ padding: 0, marginTop: 8 }}
+                style={{ 
+                  marginTop: 16,
+                  width: '100%',
+                  backgroundColor: '#722ed1',
+                  borderColor: '#722ed1',
+                  fontWeight: 500,
+                  padding: '6px 16px',
+                  height: '36px'
+                }}
               >
                 Manage Topics →
               </Button>
@@ -119,9 +143,17 @@ export default function DashboardPage() {
                 prefix={<CheckCircleOutlinedIcon />}
               />
               <Button 
-                type="link" 
+                type="primary" 
                 onClick={() => router.push("/claims")}
-                style={{ padding: 0, marginTop: 8 }}
+                style={{ 
+                  marginTop: 16,
+                  width: '100%',
+                  backgroundColor: '#722ed1',
+                  borderColor: '#722ed1',
+                  fontWeight: 500,
+                  padding: '6px 16px',
+                  height: '36px'
+                }}
               >
                 View Claims →
               </Button>

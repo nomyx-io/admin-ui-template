@@ -61,11 +61,21 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
     router.push("/login");
   };
 
-  const handleChainChange = (chainId: string) => {
+  const handleChainChange = async (chainId: string) => {
     setSelectedChain(chainId);
     localStorage.setItem("nomyx-selected-chain", chainId);
-    // Trigger a page reload to reinitialize services with new chain
-    window.location.reload();
+    
+    // Switch chain using BlockchainServiceManager without reloading
+    try {
+      const { BlockchainServiceManager } = await import('@nomyx/shared');
+      const manager = BlockchainServiceManager.getInstance();
+      await manager.switchChain(chainId);
+      
+      // Chain switch event will be handled by components using useBlockchainService hook
+      console.log(`[AppLayout] Switched to chain: ${chainId}`);
+    } catch (error) {
+      console.error('[AppLayout] Failed to switch chain:', error);
+    }
   };
 
   if (loading) {

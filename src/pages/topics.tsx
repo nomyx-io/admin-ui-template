@@ -22,6 +22,10 @@ export default function TopicsPage() {
       wrapper.currentChain = selectedChain;
       wrapper.initialized = true;
       setBlockchainService(wrapper);
+      console.log(`[TopicsPage] Service initialized for chain: ${selectedChain}`);
+    } else {
+      // Clear service when loading or switching chains
+      setBlockchainService(null);
     }
   }, [unifiedService, serviceLoading, selectedChain]);
 

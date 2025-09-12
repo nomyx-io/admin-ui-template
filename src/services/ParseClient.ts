@@ -1,11 +1,17 @@
-import Parse from "parse";
+import Parse, { RequestOptions } from "parse";
 
 class ParseClient {
   private static instance: ParseClient;
+  private initialized: boolean = false;
+  private sessionToken: string | null = null;
 
   constructor() {
-    console.log("ParseClient constructor");
+    if (ParseClient.instance) {
+      return ParseClient.instance;
+    }
+    console.log("[ParseClient] Creating singleton instance");
     this.initialize();
+    ParseClient.instance = this;
   }
 
   // Singleton getInstance method
@@ -17,20 +23,79 @@ class ParseClient {
   }
 
   private initialize() {
+    // Prevent double initialization
+    if (this.initialized) {
+      console.log('[ParseClient] Already initialized, skipping');
+      return;
+    }
+
     // Check if we're in the browser
     if (typeof window !== 'undefined') {
       const appId = process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID || process.env.REACT_APP_PARSE_APPLICATION_ID || "nomyx";
       const jsKey = process.env.NEXT_PUBLIC_PARSE_JAVASCRIPT_KEY || process.env.REACT_APP_PARSE_JAVASCRIPT_KEY || "12345";
       const serverURL = process.env.NEXT_PUBLIC_PARSE_SERVER_URL || process.env.REACT_APP_PARSE_SERVER_URL || "http://localhost:1338/parse";
       
-      Parse.initialize(appId, jsKey);
-      Parse.serverURL = serverURL;
-      Parse.javaScriptKey = jsKey;
+      // Only initialize Parse if not already initialized
+      if (!Parse.applicationId) {
+        Parse.initialize(appId, jsKey);
+        Parse.serverURL = serverURL;
+        Parse.javaScriptKey = jsKey;
+        console.log('[ParseClient] Parse SDK initialized');
+      }
 
-      // Important: Don't try to restore Parse sessions from localStorage
-      // The sessionToken in localStorage is from our custom JWT auth system,
-      // not a Parse session token. Parse operations will work without authentication,
-      // and classes like Identity will fall back to blockchain data when Parse auth fails.
+      // Set up session token handling
+      this.setupSessionToken();
+      
+      // Mark as initialized
+      this.initialized = true;
+    }
+  }
+
+  /**
+   * Setup session token for Parse authentication
+   */
+  private setupSessionToken() {
+    const sessionToken = localStorage.getItem('sessionToken');
+    
+    if (sessionToken && sessionToken !== this.sessionToken) {
+      this.sessionToken = sessionToken;
+      
+      // Configure Parse to send the session token with all requests
+      Parse.CoreManager.set('REQUEST_HEADERS', {
+        'X-Parse-Session-Token': sessionToken,
+        'Authorization': `Bearer ${sessionToken}`
+      });
+      
+      console.log('[ParseClient] Session token configured for Parse requests');
+    }
+  }
+
+  /**
+   * Update session token if it changes
+   */
+  public updateSessionToken(token: string | null) {
+    if (token !== this.sessionToken) {
+      this.sessionToken = token;
+      if (token) {
+        Parse.CoreManager.set('REQUEST_HEADERS', {
+          'X-Parse-Session-Token': token,
+          'Authorization': `Bearer ${token}`
+        });
+        console.log('[ParseClient] Session token updated');
+      } else {
+        Parse.CoreManager.set('REQUEST_HEADERS', {});
+        console.log('[ParseClient] Session token cleared');
+      }
+    }
+  }
+
+  /**
+   * Ensure session token is current before making requests
+   */
+  private ensureSessionToken() {
+    const currentToken = localStorage.getItem('sessionToken');
+    if (currentToken !== this.sessionToken) {
+      this.setupSessionToken();
     }
   }
 
@@ -41,6 +106,7 @@ class ParseClient {
    * @returns
    */
   public async get(collectionName: string, id: string) {
+    this.ensureSessionToken();
     const Collection = Parse.Object.extend(collectionName);
     const query = new Parse.Query(Collection);
     query.equalTo("objectId", id);
@@ -61,6 +127,7 @@ class ParseClient {
     whereValues: any[] = [],
     includesValues: any[] = []
   ): Promise<Parse.Object | undefined> {
+    this.ensureSessionToken();
     if (whereFields.length !== whereValues.length) {
       throw new Error("The number of whereFields and whereValues must match");
     }
@@ -134,6 +201,7 @@ class ParseClient {
     nonNullFields: string[] = []
   ) {
     try {
+      this.ensureSessionToken();
       if (whereFields.length !== whereValues.length) {
         throw new Error("The number of whereFields and whereValues must match");
       }
@@ -624,7 +692,11 @@ class ParseClient {
    */
   public async run(cloudFunction: string, params: any = {}): Promise<any> {
     try {
-      return await Parse.Cloud.run(cloudFunction, params);
+      this.ensureSessionToken();
+      const options: RequestOptions = {
+        sessionToken: this.sessionToken!
+      };
+      return await Parse.Cloud.run(cloudFunction, params, options);
     } catch (error: any) {
       console.error(`Error running cloud function "${cloudFunction}":`, error.message);
       throw error;

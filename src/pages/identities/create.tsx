@@ -5,6 +5,7 @@ import { useBlockchainService } from "../../hooks/useBlockchainService";
 import IdentityService from "../../services/IdentityService";
 import BlockchainService from "../../services/BlockchainService";
 import AppLayout from "../../components/AppLayout";
+import useWalletProtection from "../../hooks/useWalletProtection";
 
 // Dynamically import to avoid SSR issues
 const CreateDigitalId = dynamic(() => import("../../components/CreateDigitalId"), {
@@ -15,12 +16,13 @@ export default function CreateIdentityPage() {
   const { blockchainService, loading: serviceLoading } = useBlockchainService();
   const [identityService, setIdentityService] = useState<IdentityService | null>(null);
   const [loading, setLoading] = useState(true);
+  const { onWalletRequired, WalletModal } = useWalletProtection();
 
   useEffect(() => {
     // Initialize identity service with the blockchain service
     if (blockchainService && !serviceLoading) {
       try {
-        const service = new IdentityService(blockchainService);
+        const service = new IdentityService(blockchainService, onWalletRequired);
         setIdentityService(service);
       } catch (error) {
         console.error("[CreateIdentityPage] Failed to initialize identity service:", error);
@@ -48,6 +50,7 @@ export default function CreateIdentityPage() {
   return (
     <AppLayout>
       <CreateDigitalId service={identityService} />
+      {WalletModal}
     </AppLayout>
   );
 }

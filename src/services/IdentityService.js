@@ -1,12 +1,15 @@
 import ParseClient, { Parse } from "./ParseClient";
+import parseServerClient from "./ParseServerClient";
+import WalletProtectedService from "./WalletProtectedService";
 
 /**
  * IdentityService - A hybrid service that combines blockchain operations with Parse database operations
  * This service provides identity management functionality including fetching active and pending identities
  */
 class IdentityService {
-  constructor(blockchainService) {
-    this.blockchainService = blockchainService;
+  constructor(blockchainService, onWalletRequired) {
+    // Wrap blockchain service with wallet protection
+    this.blockchainService = new WalletProtectedService(blockchainService, onWalletRequired);
     this.parseClient = ParseClient;
     this.Parse = Parse;
     this.parseAuthFailed = false; // Cache Parse auth status to avoid repeated failures
@@ -50,67 +53,69 @@ class IdentityService {
     return this.blockchainService.isValidAddress(address);
   }
 
-  // Identity-specific Parse operations
+  // Identity-specific Parse operations using Cloud functions
   async getActiveIdentities(chain = null) {
-    // Skip Parse if we know auth has failed recently (within last 5 minutes)
-    const now = Date.now();
-    const skipParse = this.parseAuthFailed && (now - this.lastParseAttempt) < 300000; // 5 minutes
-    
-    if (!skipParse) {
-      try {
-        const Identity = this.Parse.Object.extend("Identity");
-        const query = new this.Parse.Query(Identity);
-        query.equalTo("status", "active");
-        
-        // Filter by chain if provided
-        if (chain) {
-          query.equalTo("chain", chain);
-        }
-        
-        query.descending("createdAt");
-        query.limit(1000); // Adjust limit as needed
-        
-        const results = await query.find();
-        
-        // If we get here, Parse auth is working
-        this.parseAuthFailed = false;
-        
-        return results.map(identity => ({
-          id: identity.id,
-          attributes: identity.attributes,
-          className: identity.className,
-          createdAt: identity.createdAt,
-          updatedAt: identity.updatedAt
-        }));
-      } catch (error) {
-        // Handle authentication errors - Parse operations require auth we don't have
-        // This is expected behavior - we'll use blockchain data instead
-        if (error.code === 119 || error.code === 403 || error.code === 209 || 
-            error.message?.includes('unauthorized') || error.message?.includes('Forbidden') ||
-            error.message?.includes('Invalid session token')) {
-          
-          // Mark Parse auth as failed and record the time
-          this.parseAuthFailed = true;
-          this.lastParseAttempt = now;
-          
-          // Only log once every 5 minutes to reduce console noise
-          if ((now - this.lastParseAttempt) > 300000) {
-            console.log("[IdentityService] Parse authentication not available. Using blockchain data.");
+    // Extract chain ID if chain is an object
+    let chainId = null;
+    if (chain) {
+      if (typeof chain === 'string') {
+        // If it's already a string, check if it's a network passphrase
+        if (chain.includes('Network') && chain.includes(';')) {
+          // This is a Stellar network passphrase, convert to chain ID
+          if (chain.includes('Standalone')) {
+            chainId = 'stellar-local';
+          } else if (chain.includes('Test')) {
+            chainId = 'stellar-testnet';
+          } else if (chain.includes('Public')) {
+            chainId = 'stellar-mainnet';
+          } else {
+            chainId = chain;
           }
         } else {
-          console.error("[IdentityService] Error fetching active identities:", error);
+          chainId = chain;
+        }
+      } else if (typeof chain === 'object' && chain !== null) {
+        // Handle chain object - could have id, chainId, networkId, or name
+        chainId = chain.id || chain.chainId || chain.networkId || chain.name || null;
+        
+        // If we got a network passphrase instead, convert it
+        if (chainId && chainId.includes('Network') && chainId.includes(';')) {
+          if (chainId.includes('Standalone')) {
+            chainId = 'stellar-local';
+          } else if (chainId.includes('Test')) {
+            chainId = 'stellar-testnet';
+          } else if (chainId.includes('Public')) {
+            chainId = 'stellar-mainnet';
+          }
         }
       }
     }
     
+    console.log("[IdentityService] getActiveIdentities called with chain:", chain, "resolved to chainId:", chainId);
+    
+    try {
+      // Use API route with Master Key (bypasses session token issue)
+      const cloudResult = await parseServerClient.getActiveIdentities(chainId);
+      
+      if (cloudResult && Array.isArray(cloudResult)) {
+        console.log("[IdentityService] Retrieved identities via API route");
+        return cloudResult;
+      }
+    } catch (error) {
+      console.log("[IdentityService] API route failed:", error.message);
+    }
+    
     // Fall back to blockchain data
+    console.log("[IdentityService] Falling back to blockchain data for identities");
     try {
       // Force fresh fetch from blockchain by clearing any cache
       if (this.blockchainService.clearIdentityCache) {
         await this.blockchainService.clearIdentityCache();
       }
       
+      console.log("[IdentityService] Calling blockchainService.getIdentities()");
       const blockchainIdentities = await this.blockchainService.getIdentities();
+      console.log(`[IdentityService] Got ${blockchainIdentities ? blockchainIdentities.length : 0} identities from blockchain`);
       if (blockchainIdentities && Array.isArray(blockchainIdentities)) {
         return blockchainIdentities.map((identity, index) => {
           // Handle both object and string formats
@@ -130,7 +135,7 @@ class IdentityService {
               identityAddress: identityAddress,
               displayName: displayName,
               status: typeof identity === 'object' ? (identity.status || "active") : "active",
-              chain: chain,
+              chain: chainId,
               claims: []
             },
             className: "Identity",
@@ -146,51 +151,20 @@ class IdentityService {
   }
 
   async getPendingIdentities() {
-    // Skip Parse if we know auth has failed recently (within last 5 minutes)
-    const now = Date.now();
-    const skipParse = this.parseAuthFailed && (now - this.lastParseAttempt) < 300000; // 5 minutes
-    
-    if (skipParse) {
-      // Return empty array without attempting Parse
-      return [];
-    }
-    
     try {
-      const Identity = this.Parse.Object.extend("Identity");
-      const query = new this.Parse.Query(Identity);
-      query.equalTo("status", "pending");
-      query.descending("createdAt");
-      query.limit(1000); // Adjust limit as needed
+      // Use API route with Master Key (bypasses session token issue)
+      const cloudResult = await parseServerClient.getPendingIdentities();
       
-      const results = await query.find();
-      
-      // If we get here, Parse auth is working
-      this.parseAuthFailed = false;
-      
-      return results.map(identity => ({
-        id: identity.id,
-        attributes: identity.attributes,
-        className: identity.className,
-        createdAt: identity.createdAt,
-        updatedAt: identity.updatedAt
-      }));
-    } catch (error) {
-      // Handle 403 Forbidden errors (Identity class requires authentication not available in browser)
-      // This is expected in development environments without Parse Master Key
-      if (error.code === 119 || error.code === 403 || error.message?.includes('unauthorized') || error.message?.includes('Forbidden')) {
-        // Mark Parse auth as failed and record the time
-        this.parseAuthFailed = true;
-        this.lastParseAttempt = now;
-        
-        // Only log once every 5 minutes to reduce console noise
-        if ((now - this.lastParseAttempt) > 300000) {
-          console.log("[IdentityService] Identity class requires authentication (expected in development). No pending identities available.");
-        }
-        return [];
+      if (cloudResult && Array.isArray(cloudResult)) {
+        console.log("[IdentityService] Retrieved pending identities via API route");
+        return cloudResult;
       }
-      console.error("[IdentityService] Error fetching pending identities:", error);
-      return [];
+    } catch (error) {
+      console.log("[IdentityService] API route failed:", error.message);
     }
+    
+    // Return empty array as fallback
+    return [];
   }
 
   async updateIdentity(walletAddress, data) {
@@ -198,39 +172,35 @@ class IdentityService {
       // First try blockchain update
       if (this.blockchainService.updateIdentity) {
         await this.blockchainService.updateIdentity(walletAddress, data);
-        return true; // If blockchain update succeeds, consider it successful
       }
 
-      // Then try to update in Parse (may fail with 403 in development)
+      // Use Cloud function with Master Key to update/create identity in Parse
       try {
-        const Identity = this.Parse.Object.extend("Identity");
-        const query = new this.Parse.Query(Identity);
-        query.equalTo("walletAddress", walletAddress.toLowerCase());
+        // Extract only the simple fields that Parse can handle
+        // Remove complex nested objects like chain and address
+        const parseData = {
+          displayName: data.displayName,
+          walletAddress: data.walletAddress,
+          accountNumber: data.accountNumber,
+          status: data.status || 'active',
+          // Extract chain ID if it's an object, otherwise use the value
+          // Priority: id > chainId > networkId > name > chain > network
+          chain: typeof data.chain === 'object' 
+            ? (data.chain.id || data.chain.chainId || data.chain.networkId || data.chain.name || data.chain.chain || data.chain.network || 'unknown') 
+            : (data.chain || 'unknown'),
+          // Store the identity address as a simple string
+          identityAddress: data.address?.identityAddress || data.walletAddress
+        };
         
-        let identity = await query.first();
-        if (!identity) {
-          // Create new identity if it doesn't exist
-          identity = new Identity();
-          identity.set("walletAddress", walletAddress.toLowerCase());
-        }
-        
-        // Update all fields
-        Object.keys(data).forEach(key => {
-          identity.set(key, data[key]);
-        });
-        
-        await identity.save();
+        console.log("[IdentityService] Updating identity via Cloud function with simplified data:", walletAddress, parseData);
+        const result = await parseServerClient.updateIdentity(walletAddress, parseData);
+        console.log("[IdentityService] Identity updated successfully via Cloud function");
+        return true;
       } catch (parseError) {
-        // Handle 403 Forbidden errors gracefully
-        if (parseError.code === 403 || parseError.message?.includes('Forbidden')) {
-          console.log("[IdentityService] Parse update skipped (authentication required in development)");
-          // Don't throw error if Parse fails but blockchain succeeded
-          return true;
-        }
-        throw parseError;
+        console.log("[IdentityService] Cloud function update failed:", parseError.message);
+        // Don't fail completely if Parse update fails but blockchain succeeded
+        return true;
       }
-      
-      return true;
     } catch (error) {
       console.error("[IdentityService] Error updating identity:", error);
       throw error;
@@ -271,12 +241,90 @@ class IdentityService {
     }
   }
 
+  // Claim management methods
+  async setClaims(address, claimTopics) {
+    try {
+      // Try to set claims on blockchain first
+      const result = await this.blockchainService.setClaims(address, claimTopics);
+      
+      // If successful on blockchain, also update in Parse
+      await this.updateIdentityClaims(address, claimTopics);
+      
+      return result;
+    } catch (blockchainError) {
+      console.log("[IdentityService] Blockchain setClaims failed, updating Parse only:", blockchainError.message);
+      
+      // If blockchain fails, at least save to Parse for UI display
+      await this.updateIdentityClaims(address, claimTopics);
+      
+      // Return success since we saved to Parse
+      return { success: true, fallback: 'parse' };
+    }
+  }
+  
+  // Helper method to update claims in Parse
+  async updateIdentityClaims(address, claimTopics) {
+    try {
+      // Find the identity by address
+      const identities = await this.getActiveIdentities();
+      const identity = identities.find(i => {
+        // Handle both Parse format (direct fields) and blockchain format (attributes)
+        const walletAddr = i.walletAddress || i.attributes?.walletAddress || '';
+        const identityAddr = i.identityAddress || i.attributes?.identityAddress || '';
+        const nestedAddr = i.attributes?.address?.identityAddress || '';
+        
+        // Compare addresses (case-insensitive for non-Stellar)
+        const normalizedAddress = address.toLowerCase();
+        return walletAddr.toLowerCase() === normalizedAddress ||
+               identityAddr.toLowerCase() === normalizedAddress ||
+               nestedAddr.toLowerCase() === normalizedAddress ||
+               walletAddr === address || // For Stellar (case-sensitive)
+               identityAddr === address ||
+               nestedAddr === address;
+      });
+      
+      if (identity) {
+        // Update the identity with new claims
+        // Convert any BigInt values to regular numbers for JSON serialization
+        const data = {
+          claims: (claimTopics || []).map(topic => 
+            typeof topic === 'bigint' ? Number(topic) : topic
+          )
+        };
+        
+        console.log("[IdentityService] Updating identity claims in Parse:", identity.id, data);
+        await parseServerClient.updateIdentity(address, data);
+      } else {
+        console.error("[IdentityService] Could not find identity for address:", address);
+      }
+    } catch (error) {
+      console.error("[IdentityService] Failed to update claims in Parse:", error);
+    }
+  }
+
+  async removeClaim(address, claimTopic) {
+    return this.blockchainService.removeClaim(address, claimTopic);
+  }
+
+  async getIdentityClaims(address) {
+    return this.blockchainService.getIdentityClaims(address);
+  }
+
   // Delegate all other methods to BlockchainService
   async switchChain(chain) {
     return this.blockchainService.switchChain(chain);
   }
 
   async getClaimTopics() {
+    return this.blockchainService.getClaimTopics();
+  }
+  
+  async getClaimTopicsDetailed() {
+    // Try to get detailed claim topics with names from blockchain
+    if (this.blockchainService.getClaimTopicsDetailed) {
+      return this.blockchainService.getClaimTopicsDetailed();
+    }
+    // Fallback to basic claim topics
     return this.blockchainService.getClaimTopics();
   }
 
@@ -334,24 +382,24 @@ class IdentityService {
   
   async softRemoveUser(address) {
     try {
-      // Update the identity status in Parse to "removed" or similar
-      const Identity = this.Parse.Object.extend("Identity");
-      const query = new this.Parse.Query(Identity);
-      
       // Handle both string and object address formats
       const addressString = typeof address === 'string' ? address : (address?.identityAddress || address);
       
-      query.equalTo("address.identityAddress", addressString);
+      console.log("[IdentityService] Soft removing user from Parse:", addressString);
       
-      const identity = await query.first();
-      if (identity) {
-        identity.set("status", "removed");
-        await identity.save();
+      // Use Cloud function to delete/soft-delete the identity
+      const result = await parseServerClient.deleteIdentity(addressString);
+      
+      if (result && result.success) {
+        console.log("[IdentityService] Identity soft deleted successfully from Parse");
         return true;
       }
+      
+      console.log("[IdentityService] Identity deletion result:", result);
       return false;
     } catch (error) {
       console.error("[IdentityService] Error soft removing user:", error);
+      // Don't fail completely if Parse delete fails but blockchain succeeded
       return false;
     }
   }
@@ -413,50 +461,69 @@ class IdentityService {
   }
 
   async getDigitalIdentity(identityId) {
-    try {
-      const Identity = this.Parse.Object.extend("Identity");
-      const query = new this.Parse.Query(Identity);
-      const identity = await query.get(identityId);
+    // If this is a blockchain-generated ID, skip Parse entirely and use blockchain data
+    if (identityId?.includes('blockchain-')) {
+      console.log("[IdentityService] Blockchain ID detected, fetching from blockchain data");
       
-      if (!identity) {
-        console.error("[IdentityService] Identity not found:", identityId);
-        return null;
-      }
+      // Get identity data from blockchain
+      const activeIdentities = await this.getActiveIdentities();
+      const identity = activeIdentities.find(i => i.id === identityId);
       
-      const attributes = identity.attributes;
-      
-      // Handle both string and object address formats
-      let identityAddress = "";
-      if (typeof attributes.address === 'string') {
-        identityAddress = attributes.address;
-      } else if (attributes.address && typeof attributes.address === 'object') {
-        identityAddress = attributes.address.identityAddress || "";
-      }
-      
-      return {
-        displayName: attributes.displayName || "",
-        address: identityAddress,
-        accountNumber: attributes.accountNumber || attributes.kyc_id || "",
-        personaData: attributes.personaVerificationData ? JSON.parse(attributes.personaVerificationData) : null,
-        watchlistMatched: attributes.watchlistMatched || false,
-        pepMatched: attributes.pepMatched || false,
-        claims: attributes.claims || []
-      };
-    } catch (error) {
-      // Handle 403 Forbidden errors gracefully
-      if (error.code === 403 || error.message?.includes('Forbidden')) {
-        console.log("[IdentityService] Identity details not accessible (authentication required in development)");
-        // Return mock data for development
+      if (identity) {
+        // Handle both scenarios: identity.attributes exists or identity has direct properties
+        const attributes = identity.attributes || identity;
+        
+        // Handle the address field which could be a string or an object
+        let address = "";
+        if (typeof attributes.address === 'string') {
+          address = attributes.address;
+        } else if (attributes.address && typeof attributes.address === 'object') {
+          address = attributes.address.identityAddress || "";
+        } else if (attributes.identityAddress) {
+          address = attributes.identityAddress;
+        }
+        
+        // Try to fetch claims directly from blockchain for this address
+        let claims = [];
+        if (address && this.blockchainService) {
+          try {
+            claims = await this.blockchainService.getIdentityClaims(address);
+            console.log(`[IdentityService] Retrieved ${claims.length} claims for ${address} from blockchain`);
+          } catch (error) {
+            console.error("[IdentityService] Error fetching claims from blockchain:", error);
+            // Fallback to attributes claims if blockchain fetch fails
+            claims = identity.attributes.claims || [];
+          }
+        }
+        
         return {
-          displayName: "Mock Identity",
-          address: identityId,
-          accountNumber: "DEV-" + identityId.substring(0, 8),
+          displayName: attributes.displayName || `Identity ${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
+          address: address,
+          accountNumber: attributes.accountNumber || attributes.kyc_id || "",
           personaData: null,
           watchlistMatched: false,
           pepMatched: false,
-          claims: []
+          claims: claims
         };
       }
+      
+      // If not found in blockchain data, return null
+      console.error("[IdentityService] Identity not found in blockchain data:", identityId);
+      return null;
+    }
+    
+    // For non-blockchain IDs, use Cloud function
+    try {
+      const result = await parseServerClient.getIdentityById(identityId);
+      
+      if (result) {
+        console.log("[IdentityService] Retrieved identity via API route");
+        return result;
+      }
+      
+      console.error("[IdentityService] Identity not found:", identityId);
+      return null;
+    } catch (error) {
       console.error("[IdentityService] Error fetching digital identity:", error);
       return null;
     }

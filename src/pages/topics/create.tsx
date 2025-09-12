@@ -23,9 +23,15 @@ export default function CreateTopicPage() {
         wrapper.unifiedService = unifiedService;
         wrapper.currentChain = selectedChain;
         wrapper.initialized = true;
-        await wrapper.initialize();
+        // Don't call wrapper.initialize() - it defaults to ethereum-local and switches the chain
+        // The service is already initialized via unifiedService
         setBlockchainService(wrapper);
         setLoading(false);
+        console.log(`[CreateTopicPage] Service initialized for chain: ${selectedChain}`);
+      } else {
+        // Clear service when loading or switching chains
+        setBlockchainService(null);
+        setLoading(true);
       }
     };
 

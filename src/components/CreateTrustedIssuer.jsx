@@ -10,6 +10,8 @@ import { BlockchainServiceManager } from "@nomyx/shared";
 import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
+import TransactionModal from "./shared/TransactionModal";
+import WalletConnectionModal from "./WalletConnectionModal";
 
 function CreateTrustedIssuer({ service }) {
   const navigate = useNavigate();
@@ -19,6 +21,15 @@ function CreateTrustedIssuer({ service }) {
   const [targetKeys, setTargetKeys] = React.useState([]);
   const [selectedKeys, setSelectedKeys] = React.useState([]);
   const location = useLocation();
+  const [walletModalVisible, setWalletModalVisible] = React.useState(false);
+  const [transactionModal, setTransactionModal] = React.useState({
+    visible: false,
+    status: 'loading',
+    title: 'Creating Trusted Issuer',
+    loadingMessage: 'Adding trusted issuer to blockchain...',
+    successMessage: 'Trusted Issuer created successfully!',
+    errorMessage: ''
+  });
 
   // Get user and dfnsToken from RoleContext (for DFNS operations)
   const { user, dfnsToken } = useContext(RoleContext);
@@ -199,36 +210,77 @@ function CreateTrustedIssuer({ service }) {
       // For local development or when service.addTrustedIssuer is available
       if (isLocalDev && service && service.addTrustedIssuer) {
         console.log("[CreateTrustedIssuer] Using local development mode");
-        toast
-          .promise(
-            (async () => {
-              const result = await service.addTrustedIssuer(
-                walletAddress,
-                targetKeys,
-                trimmedVerifierName
-              );
-              
-              console.log(`[CreateTrustedIssuer] Add trusted issuer result:`, result);
-              if (!result || (!result.success && !result.txHash && !result.transactionHash)) {
-                throw new Error('Transaction did not return a success confirmation');
-              }
-              
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              navigate("/issuers");
-            })(),
-            {
-              pending: "Adding Trusted Issuer...",
-              success: `Successfully Added Trusted Issuer ${walletAddress}`,
-              error: {
-                render({ data }) {
-                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${walletAddress}`}</div>;
-                },
-              },
+        
+        // Show transaction modal
+        setTransactionModal({
+          visible: true,
+          status: 'loading',
+          title: 'Creating Trusted Issuer',
+          loadingMessage: 'Adding trusted issuer to blockchain...',
+          successMessage: '',
+          errorMessage: ''
+        });
+
+        try {
+          const result = await service.addTrustedIssuer(
+            walletAddress,
+            targetKeys,
+            trimmedVerifierName
+          );
+          
+          console.log(`[CreateTrustedIssuer] Add trusted issuer result:`, result);
+          
+          // Check if wallet connection is required
+          if (result && result.requiresWallet) {
+            console.log('[CreateTrustedIssuer] Wallet connection required');
+            setTransactionModal({ visible: false });
+            setWalletModalVisible(true);
+            return;
+          }
+          
+          if (!result || (!result.success && !result.txHash && !result.transactionHash)) {
+            throw new Error('Transaction did not return a success confirmation');
+          }
+          
+          // Update modal
+          setTransactionModal(prev => ({
+            ...prev,
+            loadingMessage: 'Finalizing trusted issuer registration...'
+          }));
+          
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Show success
+          setTransactionModal({
+            visible: true,
+            status: 'success',
+            title: 'Success',
+            loadingMessage: '',
+            successMessage: `Successfully Added Trusted Issuer`,
+            errorMessage: '',
+            data: {
+              'Wallet Address': walletAddress,
+              'Display Name': trimmedVerifierName,
+              'Claim Topics': targetKeys.join(', ')
             }
-          )
-          .catch((error) => {
-            console.error("Error after attempting to add Trusted Issuer:", error);
           });
+          
+          // Navigate after a short delay
+          setTimeout(() => {
+            navigate("/issuers");
+          }, 2000);
+          
+        } catch (error) {
+          console.error("Error adding Trusted Issuer:", error);
+          setTransactionModal({
+            visible: true,
+            status: 'error',
+            title: 'Error',
+            loadingMessage: '',
+            successMessage: '',
+            errorMessage: error.message || `An error occurred while adding Trusted Issuer ${walletAddress}`
+          });
+        }
       }
       // Check if we're using DFNS managed wallet
       else if (walletType === 'managed' && (!service || !service.addTrustedIssuer)) {
@@ -274,46 +326,74 @@ function CreateTrustedIssuer({ service }) {
         // Handle private wallet (DEV, MetaMask, Freighter)
         console.log("[CreateTrustedIssuer] Using private wallet mode");
         console.log("[CreateTrustedIssuer] Service available, proceeding with blockchain call");
-        toast
-          .promise(
-            (async () => {
-              if (!service || typeof service.addTrustedIssuer !== "function") {
-                throw new Error("addTrustedIssuer method not available on service");
-              }
-              const result = await service.addTrustedIssuer(
-                walletAddress,
-                targetKeys,
-                trimmedVerifierName
-              );
-              
-              // Verify the transaction was successful
-              console.log(`[CreateTrustedIssuer] Add trusted issuer result:`, result);
-              if (!result || (!result.success && !result.txHash && !result.transactionHash)) {
-                throw new Error('Transaction did not return a success confirmation');
-              }
-              
-              // Add a small delay to ensure blockchain state is updated
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              
-              // Note: Update is not needed immediately after creation
-              // The issuer is created with the correct claim topics
-            })(),
-            {
-              pending: "Adding Trusted Issuer...",
-              success: `Successfully Added Trusted Issuer ${walletAddress}`,
-              error: {
-                render({ data }) {
-                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${walletAddress}`}</div>;
-                },
-              },
+        
+        // Show transaction modal
+        setTransactionModal({
+          visible: true,
+          status: 'loading',
+          title: 'Creating Trusted Issuer',
+          loadingMessage: 'Adding trusted issuer to blockchain...',
+          successMessage: '',
+          errorMessage: ''
+        });
+
+        try {
+          if (!service || typeof service.addTrustedIssuer !== "function") {
+            throw new Error("addTrustedIssuer method not available on service");
+          }
+          
+          const result = await service.addTrustedIssuer(
+            walletAddress,
+            targetKeys,
+            trimmedVerifierName
+          );
+          
+          // Verify the transaction was successful
+          console.log(`[CreateTrustedIssuer] Add trusted issuer result:`, result);
+          if (!result || (!result.success && !result.txHash && !result.transactionHash)) {
+            throw new Error('Transaction did not return a success confirmation');
+          }
+          
+          // Update modal
+          setTransactionModal(prev => ({
+            ...prev,
+            loadingMessage: 'Finalizing trusted issuer registration...'
+          }));
+          
+          // Add a small delay to ensure blockchain state is updated
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Show success
+          setTransactionModal({
+            visible: true,
+            status: 'success',
+            title: 'Success',
+            loadingMessage: '',
+            successMessage: `Successfully Added Trusted Issuer ${walletAddress}`,
+            errorMessage: '',
+            data: {
+              'Wallet Address': walletAddress,
+              'Verifier Name': trimmedVerifierName,
+              'Claim Topics': targetKeys.join(', ')
             }
-          )
-          .then(() => {
-            navigate("/issuers");
-          })
-          .catch((error) => {
-            console.error("Error after attempting to add Trusted Issuer:", error);
           });
+          
+          // Navigate after a short delay
+          setTimeout(() => {
+            navigate("/issuers");
+          }, 2000);
+          
+        } catch (error) {
+          console.error("Error adding Trusted Issuer:", error);
+          setTransactionModal({
+            visible: true,
+            status: 'error',
+            title: 'Error',
+            loadingMessage: '',
+            successMessage: '',
+            errorMessage: error.message || `An error occurred while adding Trusted Issuer ${walletAddress}`
+          });
+        }
       } else {
         // This should not happen with the wallet-agnostic approach
         console.error("[CreateTrustedIssuer] Unable to determine how to proceed. WalletType:", walletType, "Service:", !!service);
@@ -413,6 +493,20 @@ function CreateTrustedIssuer({ service }) {
     }
   };
 
+  const handleWalletConnect = async (walletInfo) => {
+    console.log('[CreateTrustedIssuer] Wallet connected:', walletInfo);
+    setWalletModalVisible(false);
+    // Retry the operation after wallet connection
+    saveTrustedIssuer();
+  };
+
+  const handleWalletModalClose = (connected) => {
+    setWalletModalVisible(false);
+    if (!connected) {
+      toast.error("Wallet connection cancelled");
+    }
+  };
+
   return (
     <div>
       <Breadcrumb
@@ -497,6 +591,24 @@ function CreateTrustedIssuer({ service }) {
           )}
         </div>
       </div>
+      
+      {/* Transaction Modal */}
+      <TransactionModal
+        visible={transactionModal.visible}
+        status={transactionModal.status}
+        title={transactionModal.title}
+        loadingMessage={transactionModal.loadingMessage}
+        successMessage={transactionModal.successMessage}
+        errorMessage={transactionModal.errorMessage}
+        data={transactionModal.data}
+        onClose={() => setTransactionModal({ ...transactionModal, visible: false })}
+        autoCloseDelay={3000}
+      />
+      <WalletConnectionModal
+        visible={walletModalVisible}
+        onClose={handleWalletModalClose}
+        onConnect={handleWalletConnect}
+      />
     </div>
   );
 }

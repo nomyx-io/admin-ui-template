@@ -199,32 +199,42 @@ class BlockchainService {
       const service = await this.getService();
       const currentChain = this.manager.getCurrentChainId();
       
+      // Get locally stored names (development workaround for Parse auth)
+      const localNames = typeof window !== 'undefined' 
+        ? JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}')
+        : {};
+      
       // For Stellar, try to get detailed topics with names
       if (currentChain?.includes("stellar") && typeof service.getClaimTopicsDetailed === "function") {
         console.log(`[Admin BlockchainService] Getting detailed claim topics for Stellar`);
         const detailedTopics = await service.getClaimTopicsDetailed();
         console.log(`[Admin BlockchainService] Retrieved ${detailedTopics.length} detailed claim topics`);
 
-        // Convert detailed topics to admin portal format
-        return detailedTopics.map((topic) => ({
-          id: topic.id.toString(),
-          attributes: {
-            topic: topic.id,
-            displayName: topic.name || topic.displayName || `Claim Topic ${topic.id}`,
-          },
-        }));
+        // Convert detailed topics to admin portal format, preferring local names
+        return detailedTopics.map((topic) => {
+          const topicId = topic.id;
+          const displayName = localNames[topicId] || topic.name || topic.displayName || `Claim Topic ${topicId}`;
+          
+          return {
+            id: topicId.toString(),
+            attributes: {
+              topic: topicId,
+              displayName: displayName,
+            },
+          };
+        });
       }
 
       // Fallback to basic topics for other chains or if detailed method not available
       const topics = await service.getClaimTopics();
       console.log(`[Admin BlockchainService] Retrieved ${topics.length} claim topics`);
 
-      // Convert to admin portal format (matching UI expectations)
+      // Convert to admin portal format, using local names if available
       return topics.map((topicId, index) => ({
         id: topicId.toString(),
         attributes: {
           topic: topicId,
-          displayName: `Claim Topic ${topicId}`,
+          displayName: localNames[topicId] || `Claim Topic ${topicId}`,
         },
       }));
     } catch (error) {
@@ -263,6 +273,26 @@ class BlockchainService {
     try {
       const service = await this.getService();
       const currentChain = this.manager.getCurrentChainId();
+      
+      // Store claim topic name in Parse via Cloud function
+      if (displayName) {
+        try {
+          await ParseClient.run('storeClaimTopicMetadata', { 
+            topicId: topicId, 
+            displayName: displayName 
+          });
+          console.log(`[Admin BlockchainService] Stored claim topic metadata in Parse: ${topicId} -> ${displayName}`);
+        } catch (parseError) {
+          console.error(`[Admin BlockchainService] Failed to store claim topic metadata in Parse:`, parseError);
+          // Store locally as fallback
+          if (typeof window !== 'undefined') {
+            const claimTopicNames = JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}');
+            claimTopicNames[topicId] = displayName;
+            localStorage.setItem('nomyx-claim-topic-names', JSON.stringify(claimTopicNames));
+            console.log(`[Admin BlockchainService] Stored claim topic name locally as fallback`);
+          }
+        }
+      }
       
       // For Stellar, pass the display name if available
       if (currentChain?.includes("stellar") && displayName) {
@@ -935,6 +965,62 @@ class BlockchainService {
     } catch (error) {
       console.error(`[Admin BlockchainService] Error getting all facet addresses:`, error);
       throw error;
+    }
+  }
+
+  // Claim management - critical for identity permissions
+  async setClaims(address, claimTopics) {
+    console.log(`[Admin BlockchainService] Setting claims for ${address}:`, claimTopics);
+
+    if (!this.initialized) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      const service = await this.getService();
+      const adapter = service.getAdapter();
+      
+      if (!adapter) {
+        throw new Error("No blockchain adapter available");
+      }
+      
+      // Use the adapter's setClaims method which properly writes to blockchain
+      const result = await adapter.setClaims(address, claimTopics);
+      console.log(`[Admin BlockchainService] Claims set successfully on blockchain:`, result);
+      
+      return {
+        success: true,
+        transactionHash: result.txHash || result.hash || result.transactionHash,
+        address: address,
+        claims: claimTopics
+      };
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error setting claims on blockchain:`, error);
+      throw error;
+    }
+  }
+
+  async getIdentityClaims(address) {
+    console.log(`[Admin BlockchainService] Getting claims for ${address}`);
+
+    if (!this.initialized) {
+      throw new Error("BlockchainService not initialized");
+    }
+
+    try {
+      const service = await this.getService();
+      const adapter = service.getAdapter();
+      
+      if (!adapter) {
+        throw new Error("No blockchain adapter available");
+      }
+      
+      const claims = await adapter.getIdentityClaims(address);
+      console.log(`[Admin BlockchainService] Retrieved ${claims.length} claims for ${address}`);
+      return claims;
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting identity claims:`, error);
+      return [];
     }
   }
 

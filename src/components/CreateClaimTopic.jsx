@@ -8,12 +8,23 @@ import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
+import TransactionModal from "./shared/TransactionModal";
+import WalletConnectionModal from "./WalletConnectionModal";
 
 function CreateClaimTopic({ service }) {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = React.useState("");
   const [hiddenName, setHiddenName] = React.useState(0);
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
+  const [walletModalVisible, setWalletModalVisible] = React.useState(false);
+  const [transactionModal, setTransactionModal] = React.useState({
+    visible: false,
+    status: 'loading',
+    title: 'Creating Compliance Rule',
+    loadingMessage: 'Adding compliance rule to blockchain...',
+    successMessage: 'Compliance Rule created successfully!',
+    errorMessage: ''
+  });
 
   const getNextClaimTopicId = useCallback(async () => {
     try {
@@ -41,12 +52,20 @@ function CreateClaimTopic({ service }) {
   }
 
   const saveClaimTopic = async () => {
+    console.log("[CreateClaimTopic] saveClaimTopic called");
+    console.log("[CreateClaimTopic] service:", service);
+    console.log("[CreateClaimTopic] displayName:", displayName);
+    console.log("[CreateClaimTopic] hiddenName:", hiddenName);
+    
     const trimmedDisplayName = displayName.trim();
 
     if (!validateClaimTopic(trimmedDisplayName)) {
+      console.log("[CreateClaimTopic] validation failed");
       return;
     }
 
+    console.log("[CreateClaimTopic] validation passed, proceeding...");
+    
     try {
       // Default to PRIVATE wallet preference if not set
       const effectiveWalletPreference = walletPreference ?? WalletPreference.PRIVATE;
@@ -89,36 +108,82 @@ function CreateClaimTopic({ service }) {
       } else {
         // Handle PRIVATE wallet preference (or null/default case)
         console.log(`[CreateClaimTopic] Using ${effectiveWalletPreference === WalletPreference.PRIVATE ? "PRIVATE" : "DEFAULT"} wallet mode`);
-        toast
-          .promise(
-            (async () => {
-              console.log(`[CreateClaimTopic] Calling service.addClaimTopic(${hiddenName}, "${trimmedDisplayName}")`);
-              await service.addClaimTopic(hiddenName, trimmedDisplayName);
+        console.log("[CreateClaimTopic] service.addClaimTopic exists?", typeof service.addClaimTopic);
+        
+        if (!service || typeof service.addClaimTopic !== 'function') {
+          console.error("[CreateClaimTopic] Service not initialized or addClaimTopic method missing");
+          toast.error("Service not initialized. Please wait and try again.");
+          return;
+        }
+        
+        // Show transaction modal
+        setTransactionModal({
+          visible: true,
+          status: 'loading',
+          title: 'Creating Compliance Rule',
+          loadingMessage: 'Adding compliance rule to blockchain...',
+          successMessage: '',
+          errorMessage: ''
+        });
 
-              // Only call updateClaimTopic if the service has this method
-              if (typeof service.updateClaimTopic === "function") {
-                await service.updateClaimTopic({
-                  topic: String(hiddenName),
-                  displayName: trimmedDisplayName,
-                });
-              } else {
-                console.log(`[CreateClaimTopic] updateClaimTopic method not available, skipping`);
-              }
-            })(),
-            {
-              pending: "Creating Compliance Rule...",
-              success: `Successfully created Compliance Rule ${hiddenName}`,
-              error: `An error occurred while creating Compliance Rule ${hiddenName}`,
+        try {
+          console.log(`[CreateClaimTopic] Calling service.addClaimTopic(${hiddenName}, "${trimmedDisplayName}")`);
+          const result = await service.addClaimTopic(hiddenName, trimmedDisplayName);
+          
+          // Check if wallet connection is required
+          if (result && result.requiresWallet) {
+            console.log('[CreateClaimTopic] Wallet connection required');
+            setTransactionModal({ visible: false });
+            setWalletModalVisible(true);
+            return;
+          }
+
+          // Update modal
+          setTransactionModal(prev => ({
+            ...prev,
+            loadingMessage: 'Saving compliance rule details...'
+          }));
+
+          // Only call updateClaimTopic if the service has this method
+          if (typeof service.updateClaimTopic === "function") {
+            await service.updateClaimTopic({
+              topic: String(hiddenName),
+              displayName: trimmedDisplayName,
+            });
+          } else {
+            console.log(`[CreateClaimTopic] updateClaimTopic method not available, skipping`);
+          }
+
+          // Show success
+          setTransactionModal({
+            visible: true,
+            status: 'success',
+            title: 'Success',
+            loadingMessage: '',
+            successMessage: `Successfully created Compliance Rule ${hiddenName}`,
+            errorMessage: '',
+            data: {
+              'Topic ID': hiddenName,
+              'Display Name': trimmedDisplayName
             }
-          )
-          .then(() => {
-            setTimeout(() => {
-              navigate("/topics");
-            }, 500); // Delay navigation to ensure the success toast has time to display
-          })
-          .catch((error) => {
-            console.error("Error after attempting to create compliance rule:", error);
           });
+
+          // Navigate after a short delay
+          setTimeout(() => {
+            navigate("/topics");
+          }, 2000);
+          
+        } catch (error) {
+          console.error("Error creating compliance rule:", error);
+          setTransactionModal({
+            visible: true,
+            status: 'error',
+            title: 'Error',
+            loadingMessage: '',
+            successMessage: '',
+            errorMessage: error.message || `An error occurred while creating Compliance Rule ${hiddenName}`
+          });
+        }
       }
     } catch (error) {
       console.error("Unexpected error during compliance rule creation:", error);
@@ -127,8 +192,25 @@ function CreateClaimTopic({ service }) {
   };
 
   useEffect(() => {
-    getNextClaimTopicId();
+    // Re-fetch next claim topic ID when service changes (e.g., chain switch)
+    if (service) {
+      getNextClaimTopicId();
+    }
   }, [service, getNextClaimTopicId]);
+
+  const handleWalletConnect = async (walletInfo) => {
+    console.log('[CreateClaimTopic] Wallet connected:', walletInfo);
+    setWalletModalVisible(false);
+    // Retry the operation after wallet connection
+    saveTopic();
+  };
+
+  const handleWalletModalClose = (connected) => {
+    setWalletModalVisible(false);
+    if (!connected) {
+      toast.error("Wallet connection cancelled");
+    }
+  };
 
   return (
     <div>
@@ -177,6 +259,24 @@ function CreateClaimTopic({ service }) {
           </Button>
         </div>
       </div>
+      
+      {/* Transaction Modal */}
+      <TransactionModal
+        visible={transactionModal.visible}
+        status={transactionModal.status}
+        title={transactionModal.title}
+        loadingMessage={transactionModal.loadingMessage}
+        successMessage={transactionModal.successMessage}
+        errorMessage={transactionModal.errorMessage}
+        data={transactionModal.data}
+        onClose={() => setTransactionModal({ ...transactionModal, visible: false })}
+        autoCloseDelay={3000}
+      />
+      <WalletConnectionModal
+        visible={walletModalVisible}
+        onClose={handleWalletModalClose}
+        onConnect={handleWalletConnect}
+      />
     </div>
   );
 }

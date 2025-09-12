@@ -5,6 +5,7 @@ import { useNavigate } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
+import TransactionModal from "./shared/TransactionModal";
 import { RoleContext } from "../context/RoleContext"; // Import RoleContext for user/dfnsToken only
 import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
@@ -19,21 +20,44 @@ const IdentitiesPage = ({ service }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [currentChain, setCurrentChain] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [abortController, setAbortController] = useState(null);
   // Get user and dfnsToken from RoleContext (for DFNS operations)
   const { user, dfnsToken } = useContext(RoleContext);
   
   // Get wallet state from BlockchainServiceManager
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState(null);
+  const [transactionModal, setTransactionModal] = useState({
+    visible: false,
+    status: 'loading',
+    title: '',
+    loadingMessage: '',
+    successMessage: '',
+    errorMessage: '',
+    data: null
+  });
   
   useEffect(() => {
     const manager = BlockchainServiceManager.getInstance();
     const checkWallet = () => {
-      setIsConnected(manager.isWalletConnected());
-      setAccount(manager.getWalletAddress());
+      const connected = manager.isWalletConnected();
+      const address = manager.getWalletAddress();
+      
+      if (!connected) {
+        console.log('[IdentitiesPage] Wallet check:', { connected, address });    
+      }
+      
+      setIsConnected(connected);
+      setAccount(address);
     };
     
-    checkWallet();
+    var intervalChecker = null;
+    // Initial check
+    if (!manager.isWalletConnected()) {
+      checkWallet();
+      // Set up periodic check as a fallback (every 2 seconds)
+      intervalChecker = setInterval(checkWallet, 2000);
+    }
     
     const handleWalletConnected = () => checkWallet();
     const handleWalletDisconnected = () => checkWallet();
@@ -42,6 +66,9 @@ const IdentitiesPage = ({ service }) => {
     manager.on('wallet:disconnected', handleWalletDisconnected);
     
     return () => {
+      if (intervalChecker != null) {
+        clearInterval(intervalChecker);
+      }
       manager.off('wallet:connected', handleWalletConnected);
       manager.off('wallet:disconnected', handleWalletDisconnected);
     };
@@ -51,44 +78,90 @@ const IdentitiesPage = ({ service }) => {
     // Get wallet type from manager if needed
     const manager = BlockchainServiceManager.getInstance();
     const walletInfo = manager.getWalletInfo();
-    return walletInfo?.walletType || 'unknown';
+    const walletType = walletInfo?.walletType || 'unknown';
+    
+    // Treat dev wallets as private (non-custodial) wallets
+    if (walletType === 'dev' || walletType === 'dev2') {
+      return 'private';
+    }
+    
+    return walletType;
   };
 
   const fetchData = useCallback(
     async (tab) => {
+      // Cancel any previous fetch
+      if (abortController) {
+        abortController.abort();
+      }
+      
+      // Create new abort controller for this fetch
+      const controller = new AbortController();
+      setAbortController(controller);
+      
       setIsLoading(true);
       try {
+        // Wait a bit if service is still initializing
+        let retryCount = 0;
+        while (!service && retryCount < 10) {
+          console.log('[IdentitiesPage] Service not available, waiting...');
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retryCount++;
+        }
+        
+        if (!service) {
+          console.error('[IdentitiesPage] Service not available after waiting');
+          return;
+        }
+        
         let fetchedIdentities = [];
-        if (service) {
+        if (service && !controller.signal.aborted) {
           // Get current chain
           const chain = await service.getCurrentChain();
           setCurrentChain(chain);
+          
+          // Extract chain ID for filtering
+          const chainId = chain?.id || chain?.chainId || chain?.networkId || null;
 
           if (tab === "Identities" || tab === "Claims") {
             // Fetch active identities for Identities and Claims tabs, filtered by chain
-            fetchedIdentities = await service.getActiveIdentities(chain);
+            fetchedIdentities = await service.getActiveIdentities(chainId);
             fetchedIdentities = fetchedIdentities.map((identity) => {
               let identidyObj = {};
-              if (identity && identity.attributes) {
+              // Check if identity has attributes (blockchain format) or direct fields (Parse format)
+              const data = identity.attributes || identity;
+              
+              if (identity && data) {
                 // Map active identities fields
-                const claimsArray = identity.attributes.claims || [];
+                const claimsArray = data.claims || [];
                 identidyObj.claims = claimsArray.join(", "); // Convert claims array to comma-separated string
                 // Ensure displayName is a string, not an object
-                const rawDisplayName = identity.attributes.displayName || identity.displayName || "";
+                const rawDisplayName = data.displayName || "";
                 identidyObj.displayName = typeof rawDisplayName === 'string' ? rawDisplayName : String(rawDisplayName);
-                identidyObj.kyc_id = identity.attributes.accountNumber || "";
+                identidyObj.kyc_id = data.accountNumber || "";
                 // Handle both string and object address formats for backward compatibility
-                const address = identity.attributes.address;
+                const address = data.address || data.identityAddress || data.walletAddress;
+                let displayAddress = "";
                 if (typeof address === "string") {
-                  identidyObj.identityAddress = address;
+                  displayAddress = address;
                 } else if (address && typeof address === "object") {
-                  identidyObj.identityAddress = address.identityAddress || "";
+                  displayAddress = address.identityAddress || "";
                 } else {
-                  identidyObj.identityAddress = "";
+                  // Fallback to walletAddress if no address field
+                  displayAddress = data.walletAddress || "";
                 }
-                identidyObj.id = identity.id;
-                identidyObj.pepMatched = identity?.pepMatched || false;
-                identidyObj.watchlistMatched = identity?.watchlistMatched || false;
+                
+                // For Stellar addresses, ensure they are displayed in uppercase
+                if (displayAddress.length === 56 && displayAddress[0] && displayAddress[0].toLowerCase() === 'g') {
+                  displayAddress = displayAddress.toUpperCase();
+                }
+                
+                identidyObj.identityAddress = displayAddress;
+                // Store walletAddress separately for deletion operations
+                identidyObj.walletAddress = data.walletAddress || "";
+                identidyObj.id = identity.id || identity.objectId || "";
+                identidyObj.pepMatched = data.pepMatched || false;
+                identidyObj.watchlistMatched = data.watchlistMatched || false;
               } else {
                 // Default empty values if attributes are missing
                 identidyObj.claims = "";
@@ -149,36 +222,36 @@ const IdentitiesPage = ({ service }) => {
           setPendingIdentities(fetchedIdentities);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        // Don't log errors for aborted requests
+        if (error.name !== 'AbortError') {
+          console.error("Error fetching data:", error);
+        }
       } finally {
         setIsLoading(false);
       }
     },
-    [service]
+    [service, abortController]
   );
 
   useEffect(() => {
+    // Don't fetch if service is not available
+    if (!service) {
+      console.log('[IdentitiesPage] Service not available yet, skipping fetch');
+      return;
+    }
+    
     fetchData(activeTab);
-  }, [activeTab, service, refreshTrigger, fetchData]);
-
-  // Monitor for chain changes
-  useEffect(() => {
-    if (!service) return;
-
-    const checkChainChange = async () => {
-      const chain = await service.getCurrentChain();
-      if (chain !== currentChain && currentChain !== null) {
-        // Chain has changed, refresh data
-        fetchData(activeTab);
+    
+    // Cleanup function to abort fetch on unmount or deps change
+    return () => {
+      if (abortController) {
+        abortController.abort();
       }
     };
+  }, [activeTab, service, refreshTrigger]); // Removed fetchData from deps to prevent infinite loop
 
-    // Check for chain changes less frequently (every 10 seconds instead of 1 second)
-    // This reduces Parse authentication errors and improves performance
-    const interval = setInterval(checkChainChange, 10000);
-
-    return () => clearInterval(interval);
-  }, [service, currentChain, activeTab, fetchData]);
+  // Chain monitoring is already handled by the service/hook layer
+  // Removed duplicate monitoring to prevent redundant API calls
 
   const handleTabChange = (key) => {
     setActiveTab(key);
@@ -223,7 +296,22 @@ const IdentitiesPage = ({ service }) => {
     
     if (walletType === 'managed') {
       const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-      const identities = [record.identityAddress];
+      // Use walletAddress for deletion (the actual blockchain address)
+      // Fall back to identityAddress if walletAddress is not available  
+      let addressToRemove = record.walletAddress || record.identityAddress;
+      
+      if (!addressToRemove) {
+        toast.error('No address found for identity removal');
+        return;
+      }
+      
+      // For Stellar addresses, ensure they are uppercase
+      // Stellar addresses start with G and are 56 characters long
+      if (addressToRemove.length === 56 && addressToRemove[0].toLowerCase() === 'g') {
+        addressToRemove = addressToRemove.toUpperCase();
+      }
+      
+      const identities = [addressToRemove];
       for (const identity of identities) {
         try {
           await toast.promise(
@@ -263,6 +351,11 @@ const IdentitiesPage = ({ service }) => {
 
               // Step 6: Delay before refreshing state
               await delay(2500);
+              
+              // Refresh wallet identity status to update the UI indicator
+              const manager = BlockchainServiceManager.getInstance();
+              await manager.refreshWalletIdentityStatus();
+              
               setRefreshTrigger((prev) => !prev);
             })(),
             {
@@ -280,32 +373,117 @@ const IdentitiesPage = ({ service }) => {
         }
       }
     } else if (walletType === 'private') {
-      toast.promise(
-        async () => {
-          const identities = [record.identityAddress];
+      // Show loading modal
+      setTransactionModal({
+        visible: true,
+        status: 'loading',
+        title: 'Removing Identity',
+        loadingMessage: `Removing ${record?.displayName} from blockchain...`,
+        successMessage: '',
+        errorMessage: '',
+        data: null
+      });
+
+      (async () => {
+        try {
+          // Use walletAddress for deletion (the actual blockchain address)
+          // Fall back to identityAddress if walletAddress is not available
+          let addressToRemove = record.walletAddress || record.identityAddress;
+          
+          if (!addressToRemove) {
+            throw new Error('No address found for identity removal');
+          }
+          
+          // For Stellar addresses, ensure they are uppercase
+          // Stellar addresses start with G and are 56 characters long
+          if (addressToRemove.length === 56 && addressToRemove[0].toLowerCase() === 'g') {
+            addressToRemove = addressToRemove.toUpperCase();
+          }
+          
+          const identities = [addressToRemove];
 
           for (const identity of identities) {
-            // Step 1: Call removeIdentity (blockchain)
-            await service.removeIdentity(identity);
-            // Step 2: Call unregisterIdentity (blockchain)
-            await service.unregisterIdentity(identity);
-            // Step 3: Soft remove from database
-            await service.softRemoveUser(record);
+            // Step 1: Try to remove identity from blockchain
+            try {
+              setTransactionModal(prev => ({
+                ...prev,
+                loadingMessage: 'Removing identity from blockchain...'
+              }));
+              // Wrap in Promise.resolve to ensure it's always async and catches sync errors
+              await Promise.resolve().then(() => service.removeIdentity(identity)).catch(err => {
+                console.warn(`[IdentitiesPage] removeIdentity failed (may not exist):`, err);
+                // Silently ignore this error - identity might not exist on blockchain
+                return null;
+              });
+            } catch (error) {
+              console.warn(`[IdentitiesPage] removeIdentity outer catch:`, error);
+              // Continue even if removeIdentity fails
+            }
+
+            // Step 2: Try to unregister identity (may fail if not registered)
+            try {
+              setTransactionModal(prev => ({
+                ...prev,
+                loadingMessage: 'Unregistering identity...'
+              }));
+              // Wrap in Promise.resolve to ensure it's always async and catches sync errors
+              await Promise.resolve().then(() => service.unregisterIdentity(identity)).catch(err => {
+                console.warn(`[IdentitiesPage] unregisterIdentity failed (may not be registered):`, err);
+                // Silently ignore this error - identity might not be in registry
+                return null;
+              });
+            } catch (error) {
+              console.warn(`[IdentitiesPage] unregisterIdentity outer catch:`, error);
+              // Continue even if unregisterIdentity fails
+            }
+
+            // Step 3: Soft remove from database (this should always work)
+            try {
+              setTransactionModal(prev => ({
+                ...prev,
+                loadingMessage: 'Updating database...'
+              }));
+              // Wrap in Promise.resolve to ensure it's always async and catches sync errors
+              await Promise.resolve().then(() => service.softRemoveUser(identity)).catch(err => {
+                console.warn(`[IdentitiesPage] softRemoveUser failed:`, err);
+                // Continue even if database update fails
+                return null;
+              });
+            } catch (error) {
+              console.warn(`[IdentitiesPage] softRemoveUser outer catch:`, error);
+            }
           }
 
+          // Refresh wallet identity status to update the UI indicator
+          const manager = BlockchainServiceManager.getInstance();
+          await manager.refreshWalletIdentityStatus();
+
+          // Show success
+          setTransactionModal({
+            visible: true,
+            status: 'success',
+            title: 'Success',
+            loadingMessage: '',
+            successMessage: `Successfully removed ${record?.displayName}`,
+            errorMessage: '',
+            data: { identityName: record?.displayName }
+          });
+
           // After successful removal, trigger a refresh of the component
-          setRefreshTrigger((prev) => !prev); // This needs to be tested upon updated removal event contract redeployment
-        },
-        {
-          pending: `Removing ${record?.displayName}...`,
-          success: `Successfully removed ${record?.displayName}`,
-          error: {
-            render({ data }) {
-              return <div>{data?.reason || `An error occurred while removing ${record?.displayName}`}</div>;
-            },
-          },
+          setRefreshTrigger((prev) => !prev);
+        } catch (error) {
+          console.error('[IdentitiesPage] Error removing identity:', error);
+          setTransactionModal({
+            visible: true,
+            status: 'error',
+            title: 'Error',
+            loadingMessage: '',
+            successMessage: '',
+            errorMessage: error.message || `Failed to remove ${record?.displayName}`,
+            data: null
+          });
         }
-      );
+      })();
     } else {
       // This should not happen with the wallet-agnostic approach
       console.error("[IdentitiesPage] Unknown wallet type:", walletType);
@@ -453,6 +631,17 @@ const IdentitiesPage = ({ service }) => {
   return (
     <>
       <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} />
+      <TransactionModal
+        visible={transactionModal.visible}
+        status={transactionModal.status}
+        title={transactionModal.title}
+        loadingMessage={transactionModal.loadingMessage}
+        successMessage={transactionModal.successMessage}
+        errorMessage={transactionModal.errorMessage}
+        data={transactionModal.data}
+        onClose={() => setTransactionModal(prev => ({ ...prev, visible: false }))}
+        autoCloseDelay={3000}
+      />
     </>
   );
 };

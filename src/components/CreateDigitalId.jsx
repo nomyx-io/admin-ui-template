@@ -9,6 +9,7 @@ import { BlockchainServiceManager } from "@nomyx/shared";
 import DfnsService from "../services/DfnsService";
 import { awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
+import TransactionModal from "./shared/TransactionModal";
 
 function CreateDigitalId({ service }) {
   const location = useLocation();
@@ -52,6 +53,14 @@ function CreateDigitalId({ service }) {
   const [displayName, setDisplayName] = useState(searchParams.get("displayName") || "");
   const [walletAddress, setWalletAddress] = useState(searchParams.get("walletAddress") || "");
   const [accountNumber, setAccountNumber] = useState(searchParams.get("accountNumber") || "");
+  const [transactionModal, setTransactionModal] = useState({
+    visible: false,
+    status: 'loading',
+    title: 'Creating Digital Identity',
+    loadingMessage: 'Creating identity on blockchain...',
+    successMessage: 'Digital Identity created successfully!',
+    errorMessage: ''
+  });
 
   // Reset form validation when service changes (chain switching)
   useEffect(() => {
@@ -109,8 +118,8 @@ function CreateDigitalId({ service }) {
 
     const trimmedDisplayName = displayName.trim();
     const trimmedAccountNumber = accountNumber.trim();
-    // Use connected account address if available, otherwise use form input
-    const addressToValidate = account || walletAddress;
+    // Use form input if provided, otherwise use connected account address
+    const addressToValidate = walletAddress || account;
 
     if (!validateDigitalID(trimmedDisplayName, addressToValidate, trimmedAccountNumber, service)) {
       return; // Early return if validation fails
@@ -121,57 +130,151 @@ function CreateDigitalId({ service }) {
                        (window.location.hostname === 'localhost' || 
                         window.location.hostname === '127.0.0.1');
     
-    // Check if wallet is connected (skip for local dev)
-    if (!isLocalDev && !isConnected) {
-      toast.error("Please connect your wallet first");
-      return;
-    }
+    // Let the WalletProtectedService handle wallet connection requirements
+    // The service will show a modal if wallet is not connected
+    // if (!isConnected) {
+    //   toast.warning("You must first connect to an account");
+    //   // Try to trigger wallet connection through the manager
+    //   // The BlockchainSelectionManager UI will handle showing the modal
+    //   try {
+    //     await manager.connectWallet();
+    //   } catch (error) {
+    //     console.log("[CreateDigitalId] Wallet connection cancelled or failed:", error);
+    //   }
+    //   return;
+    // }
 
     try {
-      // For local development or when service.createIdentity is available
-      if (isLocalDev && service && service.createIdentity) {
-        console.log("[CreateDigitalId] Using local development mode");
-        // Use connected account address if available, otherwise use form input
-        const addressToUse = account || walletAddress;
+      // Always use the service, which will handle wallet protection
+      if (service && service.createIdentity) {
+        console.log("[CreateDigitalId] Calling service.createIdentity");
+        // Use form input if provided, otherwise use connected account address
+        const addressToUse = walletAddress || account;
         console.log("[CreateDigitalId] Using address:", addressToUse);
-        toast
-          .promise(
-            (async () => {
-              // For Stellar, createIdentity already adds it to the registry
-              const createResult = await service.createIdentity(addressToUse);
-              console.log(`[CreateDigitalId] Create identity result:`, createResult);
-              
-              if (!createResult || (!createResult.identityAddress && !createResult.txHash)) {
-                throw new Error('Failed to create identity');
-              }
-              
-              // Check if this is an existing identity (not newly created)
-              const identityAddress = Array.isArray(createResult.identityAddress) 
-                ? createResult.identityAddress[0] 
-                : createResult.identityAddress;
-              
-              if (identityAddress && identityAddress.startsWith('existing_identity_')) {
-                console.log(`[CreateDigitalId] Using existing identity: ${identityAddress}`);
-              } else {
-                console.log(`[CreateDigitalId] Successfully created new identity: ${identityAddress}`);
-              }
-              
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              navigate("/identities");
-            })(),
-            {
-              pending: "Creating Digital Identity...",
-              success: `Successfully Created Digital Identity ${walletAddress}`,
-              error: {
-                render({ data }) {
-                  return <div>{data?.reason || `An error occurred while creating Digital Identity ${walletAddress}`}</div>;
-                },
-              },
+        
+        // Show transaction modal
+        setTransactionModal({
+          visible: true,
+          status: 'loading',
+          title: 'Creating Digital Identity',
+          loadingMessage: 'Creating identity on blockchain...',
+          successMessage: '',
+          errorMessage: ''
+        });
+
+        try {
+          // For Stellar, createIdentity already adds it to the registry
+          const createResult = await service.createIdentity(addressToUse);
+          console.log(`[CreateDigitalId] Create identity result:`, createResult);
+          
+          if (!createResult || (!createResult.identityAddress && !createResult.txHash)) {
+            throw new Error('Failed to create identity');
+          }
+          
+          // Check if this is an existing identity (not newly created)
+          const identityAddress = Array.isArray(createResult.identityAddress) 
+            ? createResult.identityAddress[0] 
+            : createResult.identityAddress;
+          
+          if (identityAddress && identityAddress.startsWith('existing_identity_')) {
+            console.log(`[CreateDigitalId] Using existing identity: ${identityAddress}`);
+          } else {
+            console.log(`[CreateDigitalId] Successfully created new identity: ${identityAddress}`);
+          }
+          
+          // Update modal to show adding to registry
+          setTransactionModal(prev => ({
+            ...prev,
+            loadingMessage: 'Registering identity on-chain...'
+          }));
+          
+          // Wait longer to ensure the identity is fully registered on-chain
+          // This is important for Stellar where transactions may take time to finalize
+          console.log(`[CreateDigitalId] Waiting for on-chain finalization...`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          // CRITICAL: Save to Parse database AFTER blockchain success
+          // This ensures blockchain is the source of truth
+          setTransactionModal(prev => ({
+            ...prev,
+            loadingMessage: 'Saving identity details to database...'
+          }));
+          
+          try {
+            console.log("[CreateDigitalId] Saving identity to Parse database (after blockchain success)");
+            
+            // Get the chain ID directly from BlockchainServiceManager
+            // This returns the chain key (e.g., "stellar-local") that we need
+            const chainId = manager.getCurrentChainId() || 'unknown';
+            
+            console.log("[CreateDigitalId] Using chain ID for Parse:", chainId);
+            
+            // For Stellar addresses, keep them uppercase; for Ethereum, use lowercase
+            const normalizedAddress = (addressToUse.length === 56 && addressToUse[0] === 'G') 
+              ? addressToUse.toUpperCase()  // Stellar address
+              : addressToUse.toLowerCase();  // Ethereum address
+            
+            // Use Parse Cloud function to create/update the identity record
+            // This is now a backup/cache after blockchain success
+            const Parse = window.Parse;
+            if (Parse) {
+              const result = await Parse.Cloud.run('createIdentity', {
+                walletAddress: normalizedAddress,
+                displayName: trimmedDisplayName,
+                accountNumber: trimmedAccountNumber,
+                chain: chainId,
+                metaData: {
+                  identityAddress: identityAddress,
+                  createdOnBlockchain: true,
+                  blockchainTxHash: createResult.txHash || 'pending'
+                }
+              });
+              console.log("[CreateDigitalId] Identity saved to Parse successfully:", result);
+            } else {
+              console.warn("[CreateDigitalId] Parse not available, skipping database save");
             }
-          )
-          .catch((error) => {
-            console.error("Error after attempting to create Digital Identity:", error);
+          } catch (parseError) {
+            // Parse save failed, but blockchain succeeded - log but don't fail the whole operation
+            console.error("[CreateDigitalId] Failed to save identity to Parse (blockchain succeeded):", parseError);
+            // Continue - blockchain is the source of truth
+          }
+          
+          // Refresh wallet identity status to update the UI indicator
+          console.log(`[CreateDigitalId] Refreshing wallet identity status...`);
+          await manager.refreshWalletIdentityStatus();
+          
+          // Show success
+          setTransactionModal({
+            visible: true,
+            status: 'success',
+            title: 'Success',
+            loadingMessage: '',
+            successMessage: `Successfully created Digital Identity for ${addressToUse}`,
+            errorMessage: '',
+            data: {
+              'Wallet Address': addressToUse,
+              'Display Name': trimmedDisplayName,
+              'KYC ID': trimmedAccountNumber
+            }
           });
+          
+          // Navigate after a short delay
+          setTimeout(() => {
+            console.log(`[CreateDigitalId] Navigating to identities page`);
+            navigate("/identities");
+          }, 2000);
+          
+        } catch (error) {
+          console.error("Error creating Digital Identity:", error);
+          setTransactionModal({
+            visible: true,
+            status: 'error',
+            title: 'Error',
+            loadingMessage: '',
+            successMessage: '',
+            errorMessage: error.message || `Failed to create Digital Identity for ${addressToUse}`
+          });
+        }
       }
       // Check if we're using DFNS managed wallet
       else if (walletType === 'managed' && (!service || !service.createIdentity)) {
@@ -261,79 +364,125 @@ function CreateDigitalId({ service }) {
         // Handle private wallet (DEV, MetaMask, Freighter)
         console.log("[CreateDigitalId] Using private wallet mode");
         console.log("[CreateDigitalId] Service available, proceeding with blockchain call");
-        toast
-          .promise(
-            (async () => {
-              // Step 1: Create identity
-              console.log("[CreateDigitalId] Creating identity for:", walletAddress);
-              const createResult = await service.createIdentity(walletAddress);
-              console.log("[CreateDigitalId] Create identity result:", createResult);
-              
-              // Verify the transaction was successful
-              if (!createResult || (!createResult.identityAddress && !createResult.txHash)) {
-                throw new Error('Identity creation did not return expected result');
-              }
+        
+        // Show transaction modal
+        setTransactionModal({
+          visible: true,
+          status: 'loading',
+          title: 'Creating Digital Identity',
+          loadingMessage: 'Creating identity on blockchain...',
+          successMessage: '',
+          errorMessage: ''
+        });
 
-              // Step 2: Get identity details
-              console.log("[CreateDigitalId] Getting identity details");
-              const identity = await service.getIdentity(walletAddress);
-              console.log("[CreateDigitalId] Got identity:", identity);
-              
-              // Step 3: Add identity
-              console.log("[CreateDigitalId] Adding identity to registry");
-              const addResult = await service.addIdentity(walletAddress, identity);
-              console.log("[CreateDigitalId] Add identity result:", addResult);
-              
-              // Add a small delay to ensure blockchain state is updated
-              await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+          // Step 1: Create identity
+          console.log("[CreateDigitalId] Creating identity for:", walletAddress);
+          const createResult = await service.createIdentity(walletAddress);
+          console.log("[CreateDigitalId] Create identity result:", createResult);
+          
+          // Verify the transaction was successful
+          if (!createResult || (!createResult.identityAddress && !createResult.txHash)) {
+            throw new Error('Identity creation did not return expected result');
+          }
 
-              // Step 4: Update identity in Parse (optional - don't fail if this errors)
-              try {
-                console.log("[CreateDigitalId] Updating identity in Parse");
-                const currentChain = await service.getCurrentChain();
-                await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
-                  displayName: trimmedDisplayName,
-                  walletAddress: walletAddress.toLocaleLowerCase(),
-                  accountNumber: trimmedAccountNumber,
-                  status: "active",
-                  address: { identityAddress: identity.identityAddress }, // Send address as object
-                  chain: currentChain, // Add the current chain to segregate identities
-                });
-              } catch (error) {
-                // Handle the error gracefully and continue - Parse update is optional
-                console.log("[CreateDigitalId] Parse update failed (non-critical):", error.message);
-              }
+          // Update modal
+          setTransactionModal(prev => ({
+            ...prev,
+            loadingMessage: 'Getting identity details...'
+          }));
 
-              // Step 5: Approve user if needed (optional)
-              if (searchParams.has("walletAddress")) {
-                try {
-                  const userExists = await service.isUser(walletAddress.toLocaleLowerCase());
-                  if (userExists) {
-                    await service.approveUser(walletAddress.toLocaleLowerCase());
-                  }
-                } catch (error) {
-                  console.log("[CreateDigitalId] User approval failed (non-critical):", error.message);
-                }
+          // Step 2: Get identity details
+          console.log("[CreateDigitalId] Getting identity details");
+          const identity = await service.getIdentity(walletAddress);
+          console.log("[CreateDigitalId] Got identity:", identity);
+          
+          // Update modal
+          setTransactionModal(prev => ({
+            ...prev,
+            loadingMessage: 'Adding identity to registry...'
+          }));
+          
+          // Step 3: Add identity
+          console.log("[CreateDigitalId] Adding identity to registry");
+          const addResult = await service.addIdentity(walletAddress, identity);
+          console.log("[CreateDigitalId] Add identity result:", addResult);
+          
+          // Add a small delay to ensure blockchain state is updated
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          // Step 4: CRITICAL - Update identity in Parse so it appears in the table
+          setTransactionModal(prev => ({
+            ...prev,
+            loadingMessage: 'Saving identity details...'
+          }));
+          
+          try {
+            console.log("[CreateDigitalId] Updating identity in Parse");
+            const currentChain = await service.getCurrentChain();
+            await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
+              displayName: trimmedDisplayName,
+              walletAddress: walletAddress.toLocaleLowerCase(),
+              accountNumber: trimmedAccountNumber,
+              status: "active",
+              address: { identityAddress: identity.identityAddress }, // Send address as object
+              chain: currentChain, // Add the current chain to segregate identities
+            });
+            console.log("[CreateDigitalId] Identity saved to Parse successfully");
+          } catch (parseError) {
+            // This is now critical - if Parse update fails, the identity won't show in the table
+            console.error("[CreateDigitalId] Failed to save identity to Parse:", parseError);
+            throw new Error(`Identity created on blockchain but failed to save details: ${parseError.message}`);
+          }
+
+          // Step 5: Approve user if needed (optional)
+          if (searchParams.has("walletAddress")) {
+            try {
+              const userExists = await service.isUser(walletAddress.toLocaleLowerCase());
+              if (userExists) {
+                await service.approveUser(walletAddress.toLocaleLowerCase());
               }
-              
-              console.log("[CreateDigitalId] Identity creation completed successfully");
-              return { success: true, walletAddress };
-            })(),
-            {
-              pending: "Creating Digital Identity...",
-              success: "Digital Identity created successfully",
-              error: {
-                render: ({ data }) => <div>{data?.message || data?.reason || "An error occurred while creating Digital Identity"}</div>,
-              },
+            } catch (error) {
+              console.log("[CreateDigitalId] User approval failed (non-critical):", error.message);
             }
-          )
-          .then((result) => {
+          }
+          
+          // Refresh wallet identity status to update the UI indicator
+          console.log("[CreateDigitalId] Refreshing wallet identity status...");
+          await manager.refreshWalletIdentityStatus();
+          
+          // Show success
+          setTransactionModal({
+            visible: true,
+            status: 'success',
+            title: 'Success',
+            loadingMessage: '',
+            successMessage: 'Digital Identity created successfully!',
+            errorMessage: '',
+            data: {
+              'Wallet Address': walletAddress,
+              'Display Name': trimmedDisplayName,
+              'KYC ID': trimmedAccountNumber
+            }
+          });
+          
+          // Navigate after a short delay
+          setTimeout(() => {
             console.log("[CreateDigitalId] Navigation to /identities");
             navigate("/identities");
-          })
-          .catch((error) => {
-            console.error("[CreateDigitalId] Error after attempting to create Digital ID:", error);
+          }, 2000);
+          
+        } catch (error) {
+          console.error("[CreateDigitalId] Error creating Digital Identity:", error);
+          setTransactionModal({
+            visible: true,
+            status: 'error',
+            title: 'Error',
+            loadingMessage: '',
+            successMessage: '',
+            errorMessage: error.message || "An error occurred while creating Digital Identity"
           });
+        }
       } else {
         // This should not happen with the wallet-agnostic approach
         console.error("[CreateDigitalId] Unable to determine how to proceed. WalletType:", walletType, "Service:", !!service);
@@ -413,6 +562,19 @@ function CreateDigitalId({ service }) {
           </Button>
         </div>
       </div>
+      
+      {/* Transaction Modal */}
+      <TransactionModal
+        visible={transactionModal.visible}
+        status={transactionModal.status}
+        title={transactionModal.title}
+        loadingMessage={transactionModal.loadingMessage}
+        successMessage={transactionModal.successMessage}
+        errorMessage={transactionModal.errorMessage}
+        data={transactionModal.data}
+        onClose={() => setTransactionModal({ ...transactionModal, visible: false })}
+        autoCloseDelay={3000}
+      />
     </div>
   );
 }
