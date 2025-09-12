@@ -238,7 +238,7 @@ function App() {
       setWalletPreference(walletPreference);
       setDfnsToken(dfnsToken);
       localStorage.setItem("sessionToken", token);
-      localStorage.setItem("jwt_token", cognito?.idToken);
+      localStorage.setItem("jwt_token", cognito?.accessToken);
       localStorage.setItem("refresh_token", cognito?.refreshToken);
     } else {
       if (signature) {
@@ -259,7 +259,7 @@ function App() {
     setIsConnected(true);
 
     initializeBlockchainService(provider);
-    parseJWTClient.setTokensImmediate(cognito?.idToken, cognito?.refreshToken, token);
+    parseJWTClient.setTokensImmediate(cognito?.accessToken, cognito?.refreshToken, token);
     // Initialize Parse
     parseInitialize();
   };
@@ -314,7 +314,7 @@ function App() {
       setWalletPreference(walletPreference);
       localStorage.setItem("sessionToken", token);
       localStorage.setItem("tokenExpiration", expirationTime.toString());
-      localStorage.setItem("jwt_token", cognito?.idToken);
+      localStorage.setItem("jwt_token", cognito?.accessToken);
       localStorage.setItem("refresh_token", cognito?.refreshToken);
       setIsConnected(true);
       //const provider = await setupProvider();
@@ -326,7 +326,7 @@ function App() {
 
       console.log("✅ Provider initialized:", provider);
       initializeBlockchainService(provider);
-      parseJWTClient.setTokensImmediate(cognito?.idToken, cognito?.refreshToken, token);
+      parseJWTClient.setTokensImmediate(cognito?.accessToken, cognito?.refreshToken, token);
       // Initialize Parse
       parseInitialize();
     } else {
@@ -384,9 +384,9 @@ function App() {
         setDfnsToken(dfnsToken);
         setWalletPreference(walletPreference);
         setIsConnected(true);
-        localStorage.setItem("jwt_token", cognito?.idToken);
+        localStorage.setItem("jwt_token", cognito?.accessToken);
         localStorage.setItem("refresh_token", cognito?.refreshToken);
-        parseJWTClient.setTokensImmediate(cognito?.idToken, cognito?.refreshToken, token);
+        parseJWTClient.setTokensImmediate(cognito?.accessToken, cognito?.refreshToken, token);
         parseInitialize();
       } else {
         // Token is invalid or roles are empty
