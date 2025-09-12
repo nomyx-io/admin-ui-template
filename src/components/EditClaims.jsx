@@ -60,7 +60,13 @@ const EditClaims = ({ service }) => {
       return;
     }
     
-    const selectedClaimTopics = targetKeys; // These are already numbers
+    // Convert any BigInt values to numbers before sending to the adapter
+    const selectedClaimTopics = targetKeys.map(key => {
+      if (typeof key === 'bigint') {
+        return Number(key);
+      }
+      return typeof key === 'number' ? key : Number(key);
+    });
     console.log(`[EditClaims] Saving claims for identity ${identity.address}:`, selectedClaimTopics);
     
     // Show transaction modal
@@ -326,9 +332,15 @@ const EditClaims = ({ service }) => {
         const identityClaims = identityRecord?.claims || [];
         setIdentity(identityRecord);
         // Handle both object format {topic: 1} and plain number format
-        const claimKeys = identityClaims.map(claim => 
-          typeof claim === 'object' ? claim.topic : claim
-        );
+        // Also convert BigInt to number
+        const claimKeys = identityClaims.map(claim => {
+          let topic = typeof claim === 'object' ? claim.topic : claim;
+          // Convert BigInt to number
+          if (typeof topic === 'bigint') {
+            return Number(topic);
+          }
+          return typeof topic === 'number' ? topic : Number(topic);
+        });
         setTargetKeys(claimKeys);
       } catch (error) {
         if (error.name !== 'AbortError') {

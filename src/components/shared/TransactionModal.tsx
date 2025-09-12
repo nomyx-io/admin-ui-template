@@ -73,30 +73,38 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                     <div style={{ 
                       padding: '16px', 
                       borderRadius: '8px',
-                      marginTop: '16px'
+                      marginTop: '16px',
+                      maxWidth: '100%',
+                      overflow: 'hidden'
                     }} className="bg-nomyx-gray4-light dark:bg-nomyx-gray4-dark">
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        {Object.entries(data).map(([key, value]) => (
-                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start' }}>
-                            <Text strong className="text-nomyx-text-light dark:text-nomyx-text-dark" style={{ flexShrink: 0 }}>
-                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-                            </Text>
-                            <Text 
-                              className="text-nomyx-text-light dark:text-nomyx-text-dark"
-                              copyable={key.toLowerCase().includes('hash') || key.toLowerCase().includes('id') || key.toLowerCase().includes('address')}
-                              ellipsis={key.toLowerCase().includes('hash') || key.toLowerCase().includes('address') ? { suffix: '' } : false}
-                              style={
-                                key.toLowerCase().includes('hash') || key.toLowerCase().includes('address') 
-                                  ? { maxWidth: '250px', wordBreak: 'break-all' } 
-                                  : { wordBreak: 'break-word' }
-                              }
-                            >
-                              {typeof value === 'number' && key.toLowerCase().includes('amount') 
+                        {Object.entries(data).map(([key, value]) => {
+                          const stringValue = String(value);
+                          const isAddressOrHash = key.toLowerCase().includes('hash') || key.toLowerCase().includes('address');
+                          
+                          // Truncate long addresses/hashes for display (but keep full value for copying)
+                          const displayValue = isAddressOrHash && stringValue.length > 20
+                            ? `${stringValue.substring(0, 8)}...${stringValue.substring(stringValue.length - 8)}`
+                            : (typeof value === 'number' && key.toLowerCase().includes('amount') 
                                 ? `$${value.toLocaleString()}` 
-                                : String(value)}
-                            </Text>
-                          </div>
-                        ))}
+                                : stringValue);
+                          
+                          return (
+                            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start' }}>
+                              <Text strong className="text-nomyx-text-light dark:text-nomyx-text-dark" style={{ flexShrink: 0, minWidth: '100px' }}>
+                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                              </Text>
+                              <Text 
+                                className="text-nomyx-text-light dark:text-nomyx-text-dark"
+                                copyable={isAddressOrHash ? { text: stringValue } : false}
+                                style={{ textAlign: 'right', flex: 1 }}
+                                title={isAddressOrHash ? stringValue : undefined}
+                              >
+                                {displayValue}
+                              </Text>
+                            </div>
+                          );
+                        })}
                       </Space>
                     </div>
                   </>

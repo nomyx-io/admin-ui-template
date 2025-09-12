@@ -179,37 +179,62 @@ const IdentitiesPage = ({ service }) => {
               fetchedIdentities = fetchedIdentities.filter((identity) => !identity.claims || identity.claims.length === 0);
             }
           } else if (tab === "Pending") {
-            fetchedIdentities = await service.getPendingIdentities();
+            // Fetch active identities and filter for those without claims
+            // This shows identities that need claim topics to be assigned (unverified)
+            fetchedIdentities = await service.getActiveIdentities(chainId);
             fetchedIdentities = fetchedIdentities.map((identity) => {
-              const firstName = identity.attributes.firstName || "";
-              const lastName = identity.attributes.lastName || "";
-              const personaData = identity.attributes.personaVerificationData ? JSON.parse(identity.attributes.personaVerificationData) : {};
-
-              const templateId =
-                personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
-                personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
-                "";
-              const identityType =
-                templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
-                  ? "KYC"
-                  : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
-                    ? "KYB"
-                    : "";
-
-              const name = personaData?.data?.attributes?.name || "";
-              const status = name.split(".")[1]?.toUpperCase() || "";
-
-              return {
-                displayName: `${firstName} ${lastName}`.trim(), // Concatenate first and last names
-                identityAddress: identity.attributes.walletAddress || "", // Wallet address remains the same
-                kyc_id: identity.attributes.personaReferenceId || "", // KYC ID set to personaReferenceId
-                pepMatched: identity.attributes.pepMatched,
-                watchlistMatched: identity.attributes.watchlistMatched,
-                type: identityType || "", // Type of identity
-                status: status || "", // Status of identity
-                ...identity, // Include other identity attributes as is
-              };
+              let identidyObj = {};
+              // Check if identity has attributes (blockchain format) or direct fields (Parse format)
+              const data = identity.attributes || identity;
+              
+              if (identity && data) {
+                // Map active identities fields
+                const claimsArray = data.claims || [];
+                identidyObj.claims = claimsArray.join(", "); // Convert claims array to comma-separated string
+                // Ensure displayName is a string, not an object
+                const rawDisplayName = data.displayName || "";
+                identidyObj.displayName = typeof rawDisplayName === 'string' ? rawDisplayName : String(rawDisplayName);
+                identidyObj.kyc_id = data.accountNumber || "";
+                // Handle both string and object address formats for backward compatibility
+                const address = data.address || data.identityAddress || data.walletAddress;
+                let displayAddress = "";
+                if (typeof address === "string") {
+                  displayAddress = address;
+                } else if (address && typeof address === "object") {
+                  displayAddress = address.identityAddress || "";
+                } else {
+                  displayAddress = "";
+                }
+                identidyObj.identityAddress = displayAddress;
+                
+                // Ensure id is properly set from various possible sources
+                identidyObj.id = identity.id || data.id || data.objectId || displayAddress || "";
+                identidyObj.pepMatched = data.pepMatched === true || data.pepMatched === "true";
+                identidyObj.watchlistMatched = data.watchlistMatched === true || data.watchlistMatched === "true";
+                
+                // Include the original data for debugging
+                identidyObj._originalData = identity;
+                
+                // Include raw claims for filtering
+                identidyObj._rawClaims = claimsArray;
+              } else {
+                // Default empty values if attributes are missing
+                identidyObj.claims = "";
+                identidyObj.displayName = "";
+                identidyObj.kyc_id = "";
+                identidyObj.identityAddress = "";
+                identidyObj.id = "";
+                identidyObj.pepMatched = false;
+                identidyObj.watchlistMatched = false;
+                identidyObj._rawClaims = [];
+              }
+              return identidyObj;
             });
+            
+            // Filter to only show identities without claims (pending verification)
+            fetchedIdentities = fetchedIdentities.filter((identity) => 
+              !identity._rawClaims || identity._rawClaims.length === 0
+            );
           }
         } else {
           console.error("Service object is not available");
@@ -498,13 +523,13 @@ const IdentitiesPage = ({ service }) => {
     { label: "Flagged?", name: "flagged_account" },
     { label: "Claims", name: "claims" },
   ];
+  // Pending tab shows identities without claims - same columns as regular identities
   const pendingColumns = [
     { label: "Identity", name: "displayName" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
     { label: "Flagged?", name: "flagged_account" },
-    { label: "Type", name: "type" },
-    { label: "Status", name: "status" },
+    { label: "Claims", name: "claims" }, // Will be empty for pending identities
   ];
 
   const actions = [
@@ -516,13 +541,14 @@ const IdentitiesPage = ({ service }) => {
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
+  // Pending identities can have claims added to verify them
   const pendingActions = [
-    { label: "Approve", name: NomyxAction.CreatePendingIdentity },
-    { label: "View", name: NomyxAction.ViewPendingIdentity },
+    { label: "Add Rules", name: NomyxAction.EditClaims }, // Primary action to add claims
+    { label: "View", name: NomyxAction.ViewIdentity },
     {
-      label: "Deny",
-      name: NomyxAction.RemoveUser,
-      confirmation: "Are you sure you want to deny this pending Identity?",
+      label: "Remove",
+      name: NomyxAction.RemoveIdentity,
+      confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
   const claimsActions = [
@@ -595,8 +621,8 @@ const IdentitiesPage = ({ service }) => {
       label: "Pending",
       children: (
         <ObjectList
-          title="Pending"
-          description="Identities that have yet to be approved or denied"
+          title="Pending Verification"
+          description="Identities without claim topics assigned (unverified). Assign claims to verify these identities."
           columns={pendingColumns}
           actions={pendingActions}
           globalActions={globalActions}
