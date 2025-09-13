@@ -187,6 +187,61 @@ class BlockchainService {
   }
 
   // Blockchain operations using nomyx-ts UnifiedBlockchainService
+  async getClaimTopicsDetailed() {
+    console.log(`[Admin BlockchainService] Getting detailed claim topics via nomyx-ts`);
+
+    if (!this.initialized) {
+      console.warn("[Admin BlockchainService] Service not fully initialized, returning empty array");
+      return [];
+    }
+
+    try {
+      const service = await this.getService();
+
+      // Try to get detailed topics from the service if available
+      if (typeof service.getClaimTopicsDetailed === "function") {
+        console.log(`[Admin BlockchainService] Using getClaimTopicsDetailed method`);
+        const detailedTopics = await service.getClaimTopicsDetailed();
+
+        // Get local names if available
+        const localNames = typeof window !== 'undefined'
+          ? JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}')
+          : {};
+
+        // Return in the format expected by the frontend
+        return detailedTopics.map((topic) => {
+          const topicId = topic.id;
+          const displayName = localNames[topicId] || topic.name || topic.displayName || `Topic ${topicId}`;
+
+          return {
+            id: topicId,
+            name: displayName,
+            displayName: displayName
+          };
+        });
+      }
+
+      // Fallback to basic getClaimTopics
+      console.log(`[Admin BlockchainService] Falling back to basic getClaimTopics`);
+      const topics = await this.getClaimTopics();
+
+      // Convert to detailed format
+      return topics.map(topic => {
+        const topicId = topic.id || topic.attributes?.topic;
+        const displayName = topic.attributes?.displayName || `Topic ${topicId}`;
+
+        return {
+          id: topicId,
+          name: displayName,
+          displayName: displayName
+        };
+      });
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting detailed claim topics:`, error);
+      return [];
+    }
+  }
+
   async getClaimTopics() {
     console.log(`[Admin BlockchainService] Getting claim topics via nomyx-ts`);
 
@@ -277,9 +332,10 @@ class BlockchainService {
       // Store claim topic name in Parse via Cloud function
       if (displayName) {
         try {
-          await ParseClient.run('storeClaimTopicMetadata', { 
-            topicId: topicId, 
-            displayName: displayName 
+          // Ensure topicId is a number as Parse schema expects
+          await ParseClient.run('storeClaimTopicMetadata', {
+            topicId: typeof topicId === 'number' ? topicId : parseInt(topicId, 10),
+            displayName: displayName
           });
           console.log(`[Admin BlockchainService] Stored claim topic metadata in Parse: ${topicId} -> ${displayName}`);
         } catch (parseError) {
@@ -319,6 +375,48 @@ class BlockchainService {
       };
     } catch (error) {
       console.error(`[Admin BlockchainService] Error adding claim topic:`, error);
+      throw error;
+    }
+  }
+
+  async updateClaimTopic(params) {
+    const { topic, displayName } = params;
+    console.log(`[Admin BlockchainService] Updating claim topic ${topic} metadata in Parse`);
+
+    try {
+      // Use the upsert functionality of storeClaimTopicMetadata
+      // This will create the topic if it doesn't exist or update if it does
+      // Ensure topicId is a number as Parse schema expects
+      await ParseClient.run('storeClaimTopicMetadata', {
+        topicId: parseInt(topic, 10),
+        displayName: displayName
+      });
+      console.log(`[Admin BlockchainService] Successfully updated claim topic ${topic} -> ${displayName}`);
+
+      return {
+        success: true,
+        topicId: topic,
+        displayName: displayName
+      };
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error updating claim topic ${topic}:`, error);
+
+      // Fallback to local storage if Parse fails
+      if (typeof window !== 'undefined') {
+        const claimTopicNames = JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}');
+        const numericTopicId = parseInt(topic, 10);
+        claimTopicNames[numericTopicId] = displayName;
+        localStorage.setItem('nomyx-claim-topic-names', JSON.stringify(claimTopicNames));
+        console.log(`[Admin BlockchainService] Stored claim topic name locally as fallback`);
+
+        return {
+          success: true,
+          topicId: topic,
+          displayName: displayName,
+          localOnly: true
+        };
+      }
+
       throw error;
     }
   }

@@ -249,7 +249,7 @@ function CreateDigitalId({ service }) {
             status: 'success',
             title: 'Success',
             loadingMessage: '',
-            successMessage: `Successfully created Digital Identity for ${addressToUse}`,
+            successMessage: 'Digital Identity created successfully!',
             errorMessage: '',
             data: {
               'Wallet Address': addressToUse,

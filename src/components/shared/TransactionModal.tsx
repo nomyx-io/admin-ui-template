@@ -81,23 +81,23 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                         {Object.entries(data).map(([key, value]) => {
                           const stringValue = String(value);
                           const isAddressOrHash = key.toLowerCase().includes('hash') || key.toLowerCase().includes('address');
-                          
+
                           // Truncate long addresses/hashes for display (but keep full value for copying)
                           const displayValue = isAddressOrHash && stringValue.length > 20
                             ? `${stringValue.substring(0, 8)}...${stringValue.substring(stringValue.length - 8)}`
-                            : (typeof value === 'number' && key.toLowerCase().includes('amount') 
-                                ? `$${value.toLocaleString()}` 
+                            : (typeof value === 'number' && key.toLowerCase().includes('amount')
+                                ? `$${value.toLocaleString()}`
                                 : stringValue);
-                          
+
                           return (
                             <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start' }}>
-                              <Text strong className="text-nomyx-text-light dark:text-nomyx-text-dark" style={{ flexShrink: 0, minWidth: '100px' }}>
+                              <Text strong className="text-nomyx-text-light dark:text-nomyx-text-dark" style={{ flexShrink: 0, minWidth: '100px', wordBreak: 'keep-all' }}>
                                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
                               </Text>
-                              <Text 
+                              <Text
                                 className="text-nomyx-text-light dark:text-nomyx-text-dark"
                                 copyable={isAddressOrHash ? { text: stringValue } : false}
-                                style={{ textAlign: 'right', flex: 1 }}
+                                style={{ textAlign: 'right', flex: 1, wordBreak: 'break-all', maxWidth: '300px' }}
                                 title={isAddressOrHash ? stringValue : undefined}
                               >
                                 {displayValue}

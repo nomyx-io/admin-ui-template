@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { BlockchainServiceManager } from '@nomyx/shared';
 
 /**
  * Custom hook for chain-aware data fetching
  * Automatically refreshes data when the blockchain chain changes
- * 
+ *
  * @param {Object} service - The blockchain service instance
  * @param {Function} fetchDataFn - Function that fetches the data (receives service as parameter)
  * @param {Array} dependencies - Additional dependencies for the fetch function
@@ -25,11 +26,17 @@ export const useChainAwareData = (service, fetchDataFn, dependencies = []) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Get current chain ID (string) instead of chain object
       // The getCurrentChain method returns ChainInfo synchronously
       const chain = service.getCurrentChain ? service.getCurrentChain() : null;
-      const chainId = chain?.chainKey || chain?.id || chain || 'ethereum-local';
+      // Ensure we extract a string ID from the chain object
+      let chainId = 'ethereum-local';
+      if (typeof chain === 'string') {
+        chainId = chain;
+      } else if (chain && typeof chain === 'object') {
+        chainId = chain.chainKey || chain.id || chain.chainId || 'ethereum-local';
+      }
       setCurrentChain(chainId);
       console.log(`[useChainAwareData] Fetching data for chain: ${chainId}`);
       
@@ -50,29 +57,35 @@ export const useChainAwareData = (service, fetchDataFn, dependencies = []) => {
     fetchData();
   }, [service, ...dependencies]);
 
-  // Monitor for chain changes
+  // Monitor for chain changes using event system
   useEffect(() => {
     if (!service) return;
-    
-    const checkChainChange = async () => {
-      try {
-        const chain = service.getCurrentChain ? service.getCurrentChain() : null;
-        const chainId = chain?.chainKey || chain?.id || chain || 'ethereum-local';
-        // Compare chain IDs as strings instead of objects
-        if (chainId !== currentChain && currentChain !== null) {
-          console.log(`[useChainAwareData] Chain changed from ${currentChain} to ${chainId}, refreshing data...`);
-          fetchData();
-        }
-      } catch (error) {
-        console.error('[useChainAwareData] Error checking chain change:', error);
+
+    // Get the BlockchainServiceManager singleton instance
+    const manager = BlockchainServiceManager.getInstance();
+
+    const handleChainChange = (data) => {
+      // The event data contains the new chainId
+      const newChainId = data?.chainId;
+
+      if (newChainId && newChainId !== currentChain && currentChain !== null) {
+        console.log(`[useChainAwareData] Chain changed from ${currentChain} to ${newChainId}, refreshing data...`);
+        // Update the current chain and fetch new data
+        setCurrentChain(newChainId);
+        fetchData();
       }
     };
-    
-    // Check for chain changes periodically (reduced frequency to avoid loops)
-    const interval = setInterval(checkChainChange, 5000);
-    
-    return () => clearInterval(interval);
-  }, [service, currentChain, fetchData]);
+
+    // Subscribe to chain change events
+    manager.on('chain:changed', handleChainChange);
+    console.log('[useChainAwareData] Subscribed to chain:changed events');
+
+    // Cleanup function to remove the event listener
+    return () => {
+      manager.off('chain:changed', handleChainChange);
+      console.log('[useChainAwareData] Unsubscribed from chain:changed events');
+    };
+  }, [currentChain, fetchData]);
 
   return {
     data,

@@ -76,8 +76,18 @@ function CreateTrustedIssuer({ service }) {
       );
       console.log("[CreateTrustedIssuer] isValidAddress exists?", service && typeof service.isValidAddress);
       console.log("[CreateTrustedIssuer] addTrustedIssuer exists?", service && typeof service.addTrustedIssuer);
-      if (service && service.getClaimTopics) {
-        const result = await service.getClaimTopics();
+      if (service) {
+        // Try to get detailed claim topics with names first
+        let result = null;
+
+        if (service.getClaimTopicsDetailed && typeof service.getClaimTopicsDetailed === 'function') {
+          console.log("[CreateTrustedIssuer] Using getClaimTopicsDetailed");
+          result = await service.getClaimTopicsDetailed();
+        } else if (service.getClaimTopics && typeof service.getClaimTopics === 'function') {
+          console.log("[CreateTrustedIssuer] Falling back to getClaimTopics");
+          result = await service.getClaimTopics();
+        }
+
         console.log("[CreateTrustedIssuer] Claim topics result:", result);
 
         // Only try to load issuer data if we're editing (not creating)
@@ -97,10 +107,10 @@ function CreateTrustedIssuer({ service }) {
         let data = [];
 
         if (result) {
-          // Handle both formats: array of numbers (Stellar) and array of objects (Ethereum)
+          // Handle different formats
           if (Array.isArray(result) && result.length > 0) {
             if (typeof result[0] === "number") {
-              // Stellar format: array of numbers
+              // Basic format: array of numbers (no names available)
               result.forEach((topicId) => {
                 data.push({
                   key: topicId,
@@ -109,14 +119,37 @@ function CreateTrustedIssuer({ service }) {
                   topic: topicId,
                 });
               });
-            } else {
-              // Ethereum format: array of objects with attributes
+            } else if (result[0].name !== undefined || result[0].displayName !== undefined) {
+              // Detailed format from getClaimTopicsDetailed
+              result.forEach((item) => {
+                const displayName = item.displayName || item.name || `Topic ${item.id}`;
+                data.push({
+                  key: item.id,
+                  displayName: displayName,
+                  id: item.id.toString(),
+                  topic: item.id,
+                });
+              });
+            } else if (result[0].attributes) {
+              // Parse format: array of objects with attributes
               result.forEach((item) => {
                 data.push({
-                  key: item.attributes?.topic,
-                  displayName: item.attributes?.displayName,
+                  key: item.attributes?.topic || item.attributes?.topicId,
+                  displayName: item.attributes?.displayName || `Topic ${item.attributes?.topic || item.attributes?.topicId}`,
                   id: item.id,
-                  topic: item.attributes?.topic,
+                  topic: item.attributes?.topic || item.attributes?.topicId,
+                });
+              });
+            } else {
+              // Unknown format, try to handle gracefully
+              result.forEach((item, index) => {
+                const topicId = item.topic || item.topicId || item.id || index;
+                const displayName = item.displayName || item.name || `Topic ${topicId}`;
+                data.push({
+                  key: topicId,
+                  displayName: displayName,
+                  id: topicId.toString(),
+                  topic: topicId,
                 });
               });
             }
