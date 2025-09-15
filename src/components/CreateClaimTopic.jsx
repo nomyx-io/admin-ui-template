@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useContext } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
-import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
+import { Button, Input } from "antd";
+import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
@@ -10,6 +10,7 @@ import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
 import TransactionModal from "./shared/TransactionModal";
 import WalletConnectionModal from "./WalletConnectionModal";
+import PageCard from "./shared/PageCard";
 
 function CreateClaimTopic({ service }) {
   const navigate = useNavigate();
@@ -213,51 +214,43 @@ function CreateClaimTopic({ service }) {
   };
 
   return (
-    <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[{ title: <Link href={"/"}>Home</Link> }, { title: <Link href={"/topics"}>Compliance Rules</Link> }, { title: "Add" }]}
-      />
-      <p className="text-xl p-6">Create Compliance Rule</p>
-      <hr />
-      <div className="p-3 mt-2">
-        <div>
-          <label htmlFor="claimTopicDisplayName">Compliance Rule Display Name *</label>
-          <div className="mt-3 ml-1 relative w-full flex border rounded-lg p-0">
-            <Input
-              id="claimTopicDisplayName"
-              value={displayName}
-              className="border w-full p-2 rounded-lg text-xl"
-              placeholder="Enter Display Name"
-              type="text"
-              maxLength={32}
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
-            <p className="absolute right-5 top-3">{displayName.length}/32</p>
-          </div>
-          <p>User-friendly name that describes the schema. Shown to end-users.</p>
+    <PageCard title="Create Compliance Rule">
+      <div>
+        <label htmlFor="claimTopicDisplayName">Compliance Rule Display Name *</label>
+        <div className="mt-3 ml-1 relative w-full flex border rounded-lg p-0">
+          <Input
+            id="claimTopicDisplayName"
+            value={displayName}
+            className="border w-full p-2 rounded-lg text-xl"
+            placeholder="Enter Display Name"
+            type="text"
+            maxLength={32}
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
+          <p className="absolute right-5 top-3">{displayName.length}/32</p>
         </div>
-        <div className="mt-10 mb-6">
-          <label htmlFor="claimTopicHiddenName">TopicID hidden name *</label>
-          <div className="mt-3 ml-1 relative w-full flex border rounded-lg p-0">
-            <Input
-              id="claimTopicHiddenName"
-              value={hiddenName}
-              readOnly
-              className="border w-full p-2 rounded-lg text-xl"
-              placeholder="1"
-              type="text"
-              style={{ backgroundColor: "white", cursor: "default" }}
-              onChange={(e) => setHiddenName(e.target.value)}
-            />
-          </div>
-          <p>Only alphanumeric characters allowed and no spaces. Not seen by end-users.</p>
+        <p className="text-gray-600 mt-2">User-friendly name that describes the schema. Shown to end-users.</p>
+      </div>
+      <div className="mt-10 mb-6">
+        <label htmlFor="claimTopicHiddenName">TopicID hidden name *</label>
+        <div className="mt-3 ml-1 relative w-full flex border rounded-lg p-0">
+          <Input
+            id="claimTopicHiddenName"
+            value={hiddenName}
+            readOnly
+            className="border w-full p-2 rounded-lg text-xl"
+            placeholder="1"
+            type="text"
+            style={{ backgroundColor: "#f5f5f5", cursor: "default" }}
+            onChange={(e) => setHiddenName(e.target.value)}
+          />
         </div>
-        <div className="flex justify-end max-[600px]:justify-center">
-          <Button className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white" onClick={saveClaimTopic}>
-            Create Compliance Rule
-          </Button>
-        </div>
+        <p className="text-gray-600 mt-2">Only alphanumeric characters allowed and no spaces. Not seen by end-users.</p>
+      </div>
+      <div className="flex justify-end max-[600px]:justify-center">
+        <Button className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white" onClick={saveClaimTopic}>
+          Create Compliance Rule
+        </Button>
       </div>
       
       {/* Transaction Modal */}
@@ -277,7 +270,7 @@ function CreateClaimTopic({ service }) {
         onClose={handleWalletModalClose}
         onConnect={handleWalletConnect}
       />
-    </div>
+    </PageCard>
   );
 }
 

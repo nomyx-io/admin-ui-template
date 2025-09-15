@@ -31,10 +31,10 @@ class ParseClient {
 
     // Check if we're in the browser
     if (typeof window !== 'undefined') {
-      const appId = process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID || process.env.REACT_APP_PARSE_APPLICATION_ID || "nomyx";
-      const jsKey = process.env.NEXT_PUBLIC_PARSE_JAVASCRIPT_KEY || process.env.REACT_APP_PARSE_JAVASCRIPT_KEY || "12345";
-      const serverURL = process.env.NEXT_PUBLIC_PARSE_SERVER_URL || process.env.REACT_APP_PARSE_SERVER_URL || "http://localhost:1338/parse";
-      
+      const appId = process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID!;
+      const jsKey = process.env.NEXT_PUBLIC_PARSE_JAVASCRIPT_KEY!;
+      const serverURL = process.env.NEXT_PUBLIC_PARSE_SERVER_URL!;
+
       // Only initialize Parse if not already initialized
       if (!Parse.applicationId) {
         Parse.initialize(appId, jsKey);
@@ -45,7 +45,17 @@ class ParseClient {
 
       // Set up session token handling
       this.setupSessionToken();
-      
+
+      // Register with BlockchainServiceManager for centralized session management
+      try {
+        const { BlockchainServiceManager } = require('@nomyx/shared');
+        const manager = BlockchainServiceManager.getInstance();
+        manager.registerParseClient(this);
+        console.log('[ParseClient] Registered with BlockchainServiceManager for session management');
+      } catch (error) {
+        console.warn('[ParseClient] Could not register with BlockchainServiceManager:', error);
+      }
+
       // Mark as initialized
       this.initialized = true;
     }
@@ -56,16 +66,21 @@ class ParseClient {
    */
   private setupSessionToken() {
     const sessionToken = localStorage.getItem('sessionToken');
-    
+
     if (sessionToken && sessionToken !== this.sessionToken) {
       this.sessionToken = sessionToken;
-      
+
       // Configure Parse to send the session token with all requests
       Parse.CoreManager.set('REQUEST_HEADERS', {
         'X-Parse-Session-Token': sessionToken,
         'Authorization': `Bearer ${sessionToken}`
       });
-      
+
+      // Also ensure Parse.User session is set
+      Parse.User.become(sessionToken).catch((error) => {
+        console.warn('[ParseClient] Could not become user with token:', error.message);
+      });
+
       console.log('[ParseClient] Session token configured for Parse requests');
     }
   }
@@ -77,10 +92,17 @@ class ParseClient {
     if (token !== this.sessionToken) {
       this.sessionToken = token;
       if (token) {
+        // Update Parse SDK headers
         Parse.CoreManager.set('REQUEST_HEADERS', {
           'X-Parse-Session-Token': token,
           'Authorization': `Bearer ${token}`
         });
+
+        // Also ensure Parse.User session is set
+        Parse.User.become(token).catch((error) => {
+          console.warn('[ParseClient] Could not become user with token:', error.message);
+        });
+
         console.log('[ParseClient] Session token updated');
       } else {
         Parse.CoreManager.set('REQUEST_HEADERS', {});
@@ -693,6 +715,19 @@ class ParseClient {
   public async run(cloudFunction: string, params: any = {}): Promise<any> {
     try {
       this.ensureSessionToken();
+      console.log(`[ParseClient] Running cloud function: ${cloudFunction}`);
+      console.log(`[ParseClient] Session token available: ${this.sessionToken ? 'Yes' : 'No'}`);
+
+      // Debug: Log the actual session token (first 20 chars)
+      if (this.sessionToken) {
+        console.log(`[ParseClient] Session token value: ${this.sessionToken.substring(0, 20)}...`);
+      } else {
+        console.warn(`[ParseClient] No session token available for ${cloudFunction}`);
+        // Check localStorage directly
+        const storedToken = localStorage.getItem('sessionToken');
+        console.log(`[ParseClient] Token in localStorage: ${storedToken ? storedToken.substring(0, 20) + '...' : 'None'}`);
+      }
+
       const options: RequestOptions = {
         sessionToken: this.sessionToken!
       };

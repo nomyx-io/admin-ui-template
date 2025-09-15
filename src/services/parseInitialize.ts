@@ -2,9 +2,9 @@ import Parse from "parse";
 
 // Initialize Parse
 const parseInitialize = () => {
-  const appId = process.env.REACT_APP_PARSE_APPLICATION_ID;
-  const jsKey = process.env.REACT_APP_PARSE_JAVASCRIPT_KEY;
-  const serverURL = process.env.REACT_APP_PARSE_SERVER_URL;
+  const appId = process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID!;
+  const jsKey = process.env.NEXT_PUBLIC_PARSE_JAVASCRIPT_KEY!;
+  const serverURL = process.env.NEXT_PUBLIC_PARSE_SERVER_URL!;
 
   if (!appId || !jsKey || !serverURL) {
     console.error("ParseClient initialization failed: Missing environment variables.");

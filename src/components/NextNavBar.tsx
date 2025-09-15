@@ -14,16 +14,46 @@ interface NavBarProps {
   showWalletConnect?: boolean;
 }
 
-const NextNavBar: React.FC<NavBarProps> = ({ 
-  onLogout, 
+const NextNavBar: React.FC<NavBarProps> = ({
+  onLogout,
   selectedChainId,
   onChainChange,
   showWalletConnect = false
 }) => {
   const router = useRouter();
+  const manager = BlockchainServiceManager.getInstance();
   const [isWalletConnected, setIsWalletConnected] = React.useState(false);
   const [walletAddress, setWalletAddress] = React.useState<string>('');
-  
+
+  // Listen to manager events and get initial state
+  useEffect(() => {
+    const updateState = () => {
+      setIsWalletConnected(manager.isWalletConnected());
+      const address = manager.getWalletAddress();
+      setWalletAddress(address || '');
+    };
+
+    // Get initial state
+    updateState();
+
+    // Event handlers
+    const handleWalletConnectEvent = () => updateState();
+    const handleWalletDisconnectEvent = () => updateState();
+    const handleChainChangeEvent = () => updateState();
+
+    // Subscribe to events
+    manager.on('walletConnected', handleWalletConnectEvent);
+    manager.on('walletDisconnected', handleWalletDisconnectEvent);
+    manager.on('chainChanged', handleChainChangeEvent);
+
+    // Cleanup
+    return () => {
+      manager.off('walletConnected', handleWalletConnectEvent);
+      manager.off('walletDisconnected', handleWalletDisconnectEvent);
+      manager.off('chainChanged', handleChainChangeEvent);
+    };
+  }, [manager]);
+
   const handleChainChange = async (chainKey: string) => {
     try {
       onChainChange(chainKey);
@@ -35,11 +65,7 @@ const NextNavBar: React.FC<NavBarProps> = ({
 
   const handleWalletConnect = (walletType: string, address?: string) => {
     console.log(`[NavBar] Wallet connected: ${walletType} with address ${address}`);
-    setIsWalletConnected(true);
-    if (address) {
-      setWalletAddress(address);
-    }
-    // You can add additional wallet connection logic here
+    // State will be updated via the manager events
   };
 
   const isActive = (path: string) => {

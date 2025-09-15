@@ -1,8 +1,8 @@
 import React, { useEffect, useContext } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
+import { Button, Input } from "antd";
 import Transfer from "antd/es/transfer";
-import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
+import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
@@ -12,6 +12,7 @@ import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
 import TransactionModal from "./shared/TransactionModal";
 import WalletConnectionModal from "./WalletConnectionModal";
+import PageCard from "./shared/PageCard";
 
 function CreateTrustedIssuer({ service }) {
   const navigate = useNavigate();
@@ -541,24 +542,8 @@ function CreateTrustedIssuer({ service }) {
   };
 
   return (
-    <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link href={"/"}>Home</Link>,
-          },
-          {
-            title: <Link href={"/issuers"}>Trusted Issuer</Link>,
-          },
-          {
-            title: id === "create" ? "Add" : "Update",
-          },
-        ]}
-      />
-      <p className="text-xl p-6">Create Trusted Issuer</p>
-      <hr></hr>
-      <div className="p-6 mt-2">
+    <PageCard title={id === "create" ? "Create Trusted Issuer" : "Update Trusted Issuer"}>
+      <div>
         <div>
           <label htmlFor="trustedIssuerName">Trusted Issuer display name *</label>
           <div className="mt-3 relative w-full flex border rounded-lg">
@@ -606,7 +591,7 @@ function CreateTrustedIssuer({ service }) {
             listStyle={{ width: "50%", minWidth: "120px" }}
           />
         </div>
-        <div className="flex justify-end max-[600px]:justify-center">
+        <div className="flex justify-end max-[600px]:justify-center mt-6">
           {id === "create" ? (
             <Button
               className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
@@ -624,7 +609,7 @@ function CreateTrustedIssuer({ service }) {
           )}
         </div>
       </div>
-      
+
       {/* Transaction Modal */}
       <TransactionModal
         visible={transactionModal.visible}
@@ -642,7 +627,7 @@ function CreateTrustedIssuer({ service }) {
         onClose={handleWalletModalClose}
         onConnect={handleWalletConnect}
       />
-    </div>
+    </PageCard>
   );
 }
 

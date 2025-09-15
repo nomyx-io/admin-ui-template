@@ -91,20 +91,18 @@ export default function LoginPage() {
         const result = data.result || data;
 
         if (result?.access_token) {
-          // Store the session token
-          localStorage.setItem("sessionToken", result.access_token);
-          
           // Store token expiration (30 minutes from now)
           const expirationTime = Date.now() + 60 * 30 * 1000;
           localStorage.setItem("tokenExpiration", expirationTime.toString());
-          
-          // Store user info if needed
-          if (result.user) {
-            localStorage.setItem("user", JSON.stringify(result.user));
-          }
+
+          // Use centralized login handling from BlockchainServiceManager
+          const { BlockchainServiceManager } = await import("@nomyx/shared");
+          const manager = BlockchainServiceManager.getInstance();
+          manager.handleLoginSuccess(result.access_token, result.user);
+          console.log("[Admin Login] Handled login success via BlockchainServiceManager");
 
           console.log("[Admin Login] Login successful, redirecting to dashboard");
-          
+
           // Redirect to dashboard
           router.push("/dashboard");
         } else {

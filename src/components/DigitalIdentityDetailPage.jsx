@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
-import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
+import { Button, Input } from "antd";
+import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 
 import { ClaimCard } from "./ClaimCard";
+import PageCard from "./shared/PageCard";
 
 function toTitleCase(str) {
   return str.replace(/\w\S*/g, function (txt) {
@@ -21,7 +22,7 @@ function DigitalIdentityDetailView({ service }) {
   const templateId = personaData?.payload?.included?.filter((item) => item.type === "inquiry-template").map((item) => item.id)[0];
 
   const identityType =
-    templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
+    templateId === process.env.NEXT_PUBLIC_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.NEXT_PUBLIC_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
 
   // Process verifications
   // Process verifications with specific labels
@@ -133,24 +134,8 @@ function DigitalIdentityDetailView({ service }) {
   }, [getIdentity]);
 
   return (
-    <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link href={"/"}>Home</Link>,
-          },
-          {
-            title: <Link href={"/identities"}>Identities</Link>,
-          },
-          {
-            title: identityId === "pending" ? "Pending" : identity?.displayName,
-          },
-        ]}
-      />
-      <p className="text-xl p-6">Identity Details</p>
-      <hr></hr>
-      <div className="p-6 max-[500px]:px-4 flex flex-col gap-4">
+    <PageCard title="Identity Details">
+      <div className="max-[500px]:px-4 flex flex-col gap-4">
         <div>
           <label htmlFor="identityName">Identity display name *</label>
           <div className="mt-3 relative w-full flex">
@@ -249,12 +234,12 @@ function DigitalIdentityDetailView({ service }) {
           return <ClaimCard key={item.id} data={item} />;
         })}
       </div>
-      <div className="flex justify-end max-[500px]:justify-center">
-        <Button className="max-[500px]:w-[50%] rounded-none my-6 mr-6 h-11 px-10 bg-[#9952b3] text-white" onClick={backBtn}>
+      <div className="flex justify-end max-[500px]:justify-center mt-6">
+        <Button className="max-[500px]:w-[50%] rounded-none h-11 px-10 bg-[#9952b3] text-white" onClick={backBtn}>
           Back
         </Button>
       </div>
-    </div>
+    </PageCard>
   );
 }
 

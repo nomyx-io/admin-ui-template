@@ -9,8 +9,7 @@ class DfnsService {
   private currentChainId: string;
 
   private constructor() {
-    // Use ethereum-local as the default chain ID
-    this.currentChainId = process.env.REACT_APP_SELECTED_CHAIN || "ethereum-local";
+    this.currentChainId = process.env.NEXT_PUBLIC_SELECTED_CHAIN!;
     this.currentChain = this.currentChainId.split("-")[0] as BlockchainType;
     this.blockchainService = createBlockchainService(this.currentChainId);
     console.log(`[DfnsService] Initialized for ${this.currentChainId} chain`);

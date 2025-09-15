@@ -190,9 +190,71 @@ nav ul li ul li a:hover {
   color: white;
 }
 
+/* Old transfer button style removed - see new styles below */
+
+/* Fix Transfer component arrow button clipping and spacing */
+.ant-transfer-operation {
+  margin: 0 20px !important; /* Add more space between lists */
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.ant-transfer-operation .ant-btn {
+  min-width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #7F56D9 !important;
+  border-color: #7F56D9 !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-transfer-operation .ant-btn:hover:not(:disabled) {
+  background-color: #6B46C1 !important;
+  border-color: #6B46C1 !important;
+  transform: scale(1.05) !important;
+}
+
+.ant-transfer-operation .ant-btn:disabled {
+  background-color: #E5E7EB !important;
+  border-color: #E5E7EB !important;
+  opacity: 0.5 !important;
+}
+
+.ant-transfer-operation .ant-btn .anticon,
+.ant-transfer-operation .ant-btn .ant-btn-icon {
+  position: static !important;
+  top: auto !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  color: white !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.ant-transfer-operation .ant-btn:disabled .anticon,
+.ant-transfer-operation .ant-btn:disabled .ant-btn-icon {
+  color: #9CA3AF !important;
+}
+
+/* Remove the old problematic style */
 .ant-transfer .ant-transfer-operation .ant-btn .ant-btn-icon {
-  position: relative;
-  top: -10px;
+  position: static !important;
+  top: auto !important;
+}
+
+/* Add margin to buttons below Transfer component */
+.ant-transfer + div {
+  margin-top: 24px !important;
 }
 
 /* Labels */

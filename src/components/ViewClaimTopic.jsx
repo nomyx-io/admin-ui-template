@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 
-import { Breadcrumb } from "antd";
 import { Tabs } from "antd";
 import moment from "moment";
-import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
+import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 
 import ObjectList from "./ObjectList";
+import PageCard from "./shared/PageCard";
 
 function ViewClaimTopic({ service }) {
   const navigate = useNavigate();
@@ -118,23 +118,7 @@ function ViewClaimTopic({ service }) {
     },
   ];
   return (
-    <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link href={"/"}>Home</Link>,
-          },
-          {
-            title: <Link href={"/topics"}>Compliance Rule</Link>,
-          },
-          {
-            title: topicId,
-          },
-        ]}
-      />
-      <br />
-      <br />
+    <PageCard title={`Compliance Rule Details - Topic ${topicId}`}>
       <Tabs
         onChange={onChange}
         type="card"
@@ -173,7 +157,7 @@ function ViewClaimTopic({ service }) {
           },
         ]}
       />
-    </div>
+    </PageCard>
   );
 }
 

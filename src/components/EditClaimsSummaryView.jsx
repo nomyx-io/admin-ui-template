@@ -13,7 +13,7 @@ const EditClaimsSummaryView = ({ service }) => {
   const data = JSON.parse(identity); // Parse the stringified identity object
 
   // Log the incoming data to see what is being passed
-  const [displayName, setDisplayName] = useState(`${process.env.REACT_APP_ETHERSCAN_BASE_URL}${data.data.events[0].transactionHash}`);
+  const [displayName, setDisplayName] = useState(`${process.env.NEXT_PUBLIC_ETHERSCAN_BASE_URL}${data.data.events[0].transactionHash}`);
   const [isCopied, setIsCopied] = useState(false);
 
   function copyToClipboard(id) {

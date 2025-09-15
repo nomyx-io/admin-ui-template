@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
+import { Button, Input } from "antd";
 import Transfer from "antd/es/transfer";
-import Link from "next/link";
 import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
@@ -11,6 +10,7 @@ import DfnsService from "../services/DfnsService";
 import { WalletPreference } from "../utils/Constants";
 import TransactionModal from "./shared/TransactionModal";
 import WalletConnectionModal from "./WalletConnectionModal";
+import PageCard from "./shared/PageCard";
 
 const EditClaims = ({ service }) => {
   const navigate = useNavigate();
@@ -370,26 +370,8 @@ const EditClaims = ({ service }) => {
   };
 
   return (
-    <>
-      <Breadcrumb
-        items={[
-          {
-            title: <Link href="/">Home</Link>,
-          },
-          {
-            title: <Link href="/identities">Identities</Link>,
-          },
-          {
-            title: <Link href={`/identities/${identityId}`}>{identityId}</Link>,
-          },
-          {
-            title: "Edit",
-          },
-        ]}
-      />
-      <div style={{ fontSize: "24px", marginTop: "20px", marginBottom: "20px", fontWeight: "bold" }}>
-        Edit Rules for Selected ID
-      </div>
+    <PageCard title="Edit Rules for Selected Identity">
+      <div>
       <div style={{ marginBottom: "20px" }}>
         <div style={{ marginBottom: "10px", fontWeight: "bold" }}>Select Rules</div>
         <Transfer
@@ -424,7 +406,8 @@ const EditClaims = ({ service }) => {
       <Button type="primary" onClick={saveClaims} loading={isLoading} disabled={!identity}>
         Save Claims
       </Button>
-      
+      </div>
+
       {/* Transaction Modal */}
       <TransactionModal
         visible={transactionModal.visible}
@@ -444,7 +427,7 @@ const EditClaims = ({ service }) => {
         onClose={handleWalletModalClose}
         onConnect={handleWalletConnect}
       />
-    </>
+    </PageCard>
   );
 };
 

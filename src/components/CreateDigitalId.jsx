@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
-import Link from "next/link"; import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
+import { Button, Input } from "antd";
+import { useNavigate, useParams, useLocation } from "../hooks/useNextRouter";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext"; // Import RoleContext for user/dfnsToken
@@ -10,6 +10,7 @@ import DfnsService from "../services/DfnsService";
 import { awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
 import TransactionModal from "./shared/TransactionModal";
+import PageCard from "./shared/PageCard";
 
 function CreateDigitalId({ service }) {
   const location = useLocation();
@@ -172,14 +173,24 @@ function CreateDigitalId({ service }) {
           }
           
           // Check if this is an existing identity (not newly created)
-          const identityAddress = Array.isArray(createResult.identityAddress) 
-            ? createResult.identityAddress[0] 
-            : createResult.identityAddress;
-          
-          if (identityAddress && identityAddress.startsWith('existing_identity_')) {
-            console.log(`[CreateDigitalId] Using existing identity: ${identityAddress}`);
+          // identityAddress could be a string, an object, or an array
+          let identityAddress = createResult.identityAddress;
+
+          // If it's an object (like the Stellar identity details), extract the owner address
+          if (identityAddress && typeof identityAddress === 'object' && !Array.isArray(identityAddress)) {
+            identityAddress = identityAddress.owner || identityAddress.address || JSON.stringify(identityAddress);
+          } else if (Array.isArray(identityAddress)) {
+            identityAddress = identityAddress[0];
+          }
+
+          // Check if this indicates an existing identity (txHash starts with 'existing_identity_')
+          const isExisting = createResult.txHash && typeof createResult.txHash === 'string' &&
+                           createResult.txHash.startsWith('existing_identity_');
+
+          if (isExisting) {
+            console.log(`[CreateDigitalId] Using existing identity for wallet: ${addressToUse}`);
           } else {
-            console.log(`[CreateDigitalId] Successfully created new identity: ${identityAddress}`);
+            console.log(`[CreateDigitalId] Successfully created new identity: ${identityAddress || addressToUse}`);
           }
           
           // Update modal to show adding to registry
@@ -494,24 +505,8 @@ function CreateDigitalId({ service }) {
   };
 
   return (
-    <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link href={"/"}>Home</Link>,
-          },
-          {
-            title: <Link href={"/identities"}>Identities</Link>,
-          },
-          {
-            title: "Add",
-          },
-        ]}
-      />
-      <p className="text-xl p-6">Create Digital Id</p>
-      <hr></hr>
-      <div className="p-6 mt-2">
+    <PageCard title="Create Digital Identity">
+      <div>
         <div>
           <label htmlFor="identityName">Identity display name *</label>
           <div className="mt-3 relative w-full flex border rounded-lg">
@@ -562,7 +557,7 @@ function CreateDigitalId({ service }) {
           </Button>
         </div>
       </div>
-      
+
       {/* Transaction Modal */}
       <TransactionModal
         visible={transactionModal.visible}
@@ -575,7 +570,7 @@ function CreateDigitalId({ service }) {
         onClose={() => setTransactionModal({ ...transactionModal, visible: false })}
         autoCloseDelay={3000}
       />
-    </div>
+    </PageCard>
   );
 }
 

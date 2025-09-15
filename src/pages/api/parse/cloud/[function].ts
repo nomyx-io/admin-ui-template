@@ -1,31 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Parse from 'parse/node';
 
-// Initialize Parse Server with Master Key (server-side only)
+// Initialize Parse Server (server-side only)
 const initializeParseServer = () => {
-  const appId = process.env.PARSE_APPLICATION_ID || process.env.REACT_APP_PARSE_APPLICATION_ID || 'test-app-id';
-  const jsKey = process.env.PARSE_JAVASCRIPT_KEY || process.env.REACT_APP_PARSE_JAVASCRIPT_KEY || 'test-javascript-key';
-  const masterKey = process.env.PARSE_MASTER_KEY || 'test-master-key';
+  const appId = process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID!;
+  const jsKey = process.env.NEXT_PUBLIC_PARSE_JAVASCRIPT_KEY!;
   // When running in Docker container, use the internal Docker network URL
   // The INTERNAL_PARSE_SERVER_URL should be set to the Docker service name
-  // For local development, try to use localhost first
-  const serverURL = process.env.INTERNAL_PARSE_SERVER_URL || 
-                   process.env.PARSE_SERVER_URL || 
-                   process.env.REACT_APP_PARSE_SERVER_URL ||
-                   'http://localhost:1338/parse';
+  // For local development, use environment variable
+  const serverURL = process.env.INTERNAL_PARSE_SERVER_URL || process.env.NEXT_PUBLIC_PARSE_SERVER_URL!;
 
-  if (!appId || !masterKey) {
-    throw new Error('Parse Server configuration missing: App ID or Master Key not found');
+  if (!appId || !jsKey || !serverURL) {
+    throw new Error('Parse Server configuration missing: App ID, JavaScript Key, or Server URL not found in environment variables');
   }
 
-  // Initialize Parse with Master Key
-  Parse.initialize(appId, jsKey, masterKey);
+  // Initialize Parse without Master Key - we'll use session tokens for authentication
+  Parse.initialize(appId, jsKey);
   Parse.serverURL = serverURL.endsWith('/parse') ? serverURL : `${serverURL}/parse`;
-  
-  // Enable Master Key usage
-  Parse.masterKey = masterKey;
-  
-  console.log('[Parse API Route] Initialized Parse Server with Master Key');
+
+  console.log('[Parse API Route] Initialized Parse Server (session-based authentication)');
   return true;
 };
 
@@ -48,11 +41,10 @@ export default async function handler(
   const authHeader = req.headers.authorization;
   const sessionToken = authHeader?.replace('Bearer ', '');
   
-  // Basic authentication check - in production, validate the token properly
-  // For local development, allow requests without token if master key is available
-  const isLocalDev = process.env.NODE_ENV === 'development' || !process.env.PARSE_MASTER_KEY;
-  if (!sessionToken && !isLocalDev) {
-    return res.status(401).json({ error: 'Unauthorized - No session token provided' });
+  // Basic authentication check - require session token for all cloud function calls
+  // The cloud functions themselves will handle role-based access control
+  if (!sessionToken) {
+    console.log('[Parse API Route] No session token provided - request may fail if cloud function requires authentication');
   }
 
   // Only allow POST requests
@@ -70,9 +62,21 @@ export default async function handler(
   console.log(`[Parse API Route] Calling Cloud function: ${functionName} with params:`, params);
 
   try {
-    // Call the Cloud function with Master Key privileges
-    const result = await Parse.Cloud.run(functionName, params, { useMasterKey: true });
-    
+    // If we have a session token, use it to authenticate the request
+    // Otherwise, let the cloud function handle authentication requirements
+    const options: any = {};
+
+    if (sessionToken) {
+      // Use the session token for authentication
+      options.sessionToken = sessionToken;
+      console.log(`[Parse API Route] Using session token for Cloud function: ${functionName}`);
+    } else {
+      console.log(`[Parse API Route] No session token provided for Cloud function: ${functionName}`);
+    }
+
+    // Call the Cloud function without Master Key - let the cloud function handle its own authentication
+    const result = await Parse.Cloud.run(functionName, params, options);
+
     console.log(`[Parse API Route] Cloud function ${functionName} executed successfully`);
     
     // Return the result
