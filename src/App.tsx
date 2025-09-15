@@ -126,9 +126,9 @@ const optimism: Chain = {
     default: {
       http: [process.env.REACT_APP_NETWORK_OPTIMISM || ""],
     },
-  },
-  public: {
-    http: [process.env.REACT_APP_NETWORK_OPTIMISM || ""],
+    public: {
+      http: [process.env.REACT_APP_NETWORK_OPTIMISM || ""],
+    },
   },
 };
 
