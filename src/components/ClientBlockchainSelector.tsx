@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button, Space, message } from "antd";
 import Badge from "antd/es/badge";
 import Tooltip from "antd/es/tooltip";
@@ -20,6 +20,7 @@ const ClientBlockchainSelector = (props: any) => {
           useState,
           useEffect,
           useCallback,
+          useMemo,
           Select,
           Button,
           Space,
@@ -41,4 +42,3 @@ const ClientBlockchainSelector = (props: any) => {
 };
 
 export default ClientBlockchainSelector;
-

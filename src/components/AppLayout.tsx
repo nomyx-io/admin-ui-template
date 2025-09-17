@@ -25,10 +25,12 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
       return;
     }
 
-    // Check if user is authenticated
-    const sessionToken = localStorage.getItem("sessionToken");
+    // Check if user is authenticated - check multiple possible token keys
+    const sessionToken = localStorage.getItem("nomyx-session-token") ||
+                        localStorage.getItem("sessionToken") ||
+                        localStorage.getItem("access_token");
     const tokenExpiration = localStorage.getItem("tokenExpiration");
-    
+
     if (!sessionToken || !tokenExpiration) {
       router.push("/login");
       return;
@@ -55,9 +57,13 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
   }, [router, requireAuth]);
 
   const handleLogout = () => {
+    // Clear all possible session keys
     localStorage.removeItem("sessionToken");
+    localStorage.removeItem("nomyx-session-token");
+    localStorage.removeItem("access_token");
     localStorage.removeItem("tokenExpiration");
     localStorage.removeItem("user");
+    localStorage.removeItem("nomyx-user-info");
     router.push("/login");
   };
 

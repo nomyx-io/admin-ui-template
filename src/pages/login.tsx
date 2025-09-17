@@ -26,7 +26,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [selectedChain, setSelectedChain] = useState("stellar-local");
+  const [selectedChain, setSelectedChain] = useState(process.env.NEXT_PUBLIC_SELECTED_CHAIN!);
   const serviceManagerRef = useRef(BlockchainServiceManager.getInstance());
 
   // Initialize the blockchain service manager
