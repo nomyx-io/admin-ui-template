@@ -80,7 +80,7 @@ function SetFunctionClaims({ service }) {
   const setFunctionClaims = async () => {
     const trimmedFunctionName = functionaName.trim();
     const trimmedDescription = description.trim();
-    const functionId = ethers.utils.formatBytes32String(trimmedFunctionName);
+    const functionId = ethers.utils.id(trimmedFunctionName);
     const selectedClaims = targetKeys.map(Number);
     if (!validateSetFunctionRules(trimmedFunctionName, trimmedDescription, targetKeys)) {
       return;
