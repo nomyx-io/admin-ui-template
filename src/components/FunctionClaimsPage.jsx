@@ -66,7 +66,7 @@ const FunctionClaimsPage = ({ service }) => {
   }, [service, fetchData]);
 
   const removeFunctionClaims = async (functionName) => {
-    const functionId = ethers.utils.formatBytes32String(functionName);
+    const functionId = ethers.utils.id(functionName);
     try {
       if (walletPreference === WalletPreference.MANAGED) {
         toast
