@@ -31,27 +31,23 @@ const FunctionClaimsPage = ({ service }) => {
       const functionClaims = service.getFunctionCompliances && (await service.getFunctionCompliances());
 
       const data = PAYMENT_ROUTES.map((route) => {
-        const matchedClaim = functionClaims?.find((t) => t?.attributes?.functionId === route.value);
+        // Your routes' value is the *function name*. Match by name, not id.
+        const matched = functionClaims?.find((t) => (t?.attributes?.functionName ?? t?.functionName) === route.value);
 
-        let sortedClaimTopics = "";
-        if (matchedClaim?.attributes?.requiredClaimTopics) {
-          const claimTopicsArray = matchedClaim.attributes.requiredClaimTopics.map((obj) => obj);
-          claimTopicsArray.sort((a, b) => {
-            if (typeof a === "string" && typeof b === "string") {
-              return a.localeCompare(b);
-            }
-            if (typeof a === "number" && typeof b === "number") {
-              return a - b;
-            }
-            return String(a).localeCompare(String(b));
-          });
-          sortedClaimTopics = claimTopicsArray.join(",");
-        }
+        // Normalize + sort claim topics
+        const claimTopics = matched?.attributes?.requiredClaimTopics ?? matched?.requiredClaimTopics ?? [];
+        const sortedClaimTopics = [...claimTopics]
+          .sort((a, b) => (typeof a === "string" && typeof b === "string" ? a.localeCompare(b) : Number(a) - Number(b)))
+          .join(",");
+
+        // Carry functionId forward for actions
+        const fnId = matched?.attributes?.functionId ?? matched?.functionId ?? "";
 
         return {
           functionName: route.value,
           functionLabel: route.label,
           claimTopics: sortedClaimTopics,
+          functionId: fnId,
         };
       });
 
@@ -65,15 +61,17 @@ const FunctionClaimsPage = ({ service }) => {
     fetchData();
   }, [service, fetchData]);
 
-  const removeFunctionClaims = async (functionName) => {
-    const functionId = ethers.utils.id(functionName);
+  const removeFunctionClaims = async ({ functionName, functionId }) => {
+    // Use the id from DB when available; fall back to hashing the name.
+    const idToUse = functionId || ethers.utils.id(functionName);
+
     try {
       if (walletPreference === WalletPreference.MANAGED) {
-        toast
+        await toast
           .promise(
             (async () => {
               const { initiateResponse, error: initError } = await DfnsService.initiateSetFunctionClaimRequirements(
-                functionId,
+                idToUse, // DFNS expects the functionId
                 [],
                 "",
                 user.walletId,
@@ -81,7 +79,7 @@ const FunctionClaimsPage = ({ service }) => {
               );
               if (initError) throw new Error(initError);
 
-              const { completeResponse, error: completeError } = await DfnsService.completeSetFunctionClaimRequirements(
+              const { error: completeError } = await DfnsService.completeSetFunctionClaimRequirements(
                 user.walletId,
                 dfnsToken,
                 initiateResponse.challenge,
@@ -105,9 +103,10 @@ const FunctionClaimsPage = ({ service }) => {
             console.error("Error after attempting to remove Function Rules:", error);
           });
       } else if (walletPreference === WalletPreference.PRIVATE) {
-        toast
+        await toast
           .promise(
             (async () => {
+              // Keep using the *name* here unless your service expects an id.
               await service.setFunctionClaims(functionName, "", []);
               fetchData();
             })(),
@@ -305,7 +304,7 @@ const FunctionClaimsPage = ({ service }) => {
         navigate("/function-claims/" + record.functionName);
         break;
       case NomyxAction.DeleteFunctionClaims:
-        removeFunctionClaims(record.functionName);
+        removeFunctionClaims(record); // pass the whole row so we have functionId
         break;
       default:
         console.log("Unknown action: " + name);
