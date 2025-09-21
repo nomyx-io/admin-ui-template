@@ -165,7 +165,9 @@ function CreateClaimTopic({ service }) {
             errorMessage: '',
             data: {
               'Topic ID': hiddenName,
-              'Display Name': trimmedDisplayName
+              'Display Name': trimmedDisplayName,
+              ...(result?.txHash ? {'Transaction Hash': result.txHash} : {}),
+              ...(result?.transactionHash ? {'Transaction Hash': result.transactionHash} : {})
             }
           });
 

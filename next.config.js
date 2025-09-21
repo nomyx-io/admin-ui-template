@@ -40,7 +40,16 @@ const nextConfig = {
     "rc-radio",
   ],
 
-  webpack: (config, { isServer }) => {
+  webpack: (config, { dev, isServer }) => {
+    // Enable watching of symlinked @nomyx/shared for hot-reload
+    if (dev) {
+      config.watchOptions = {
+        followSymlinks: true,
+        // Watch @nomyx/shared but ignore other node_modules
+        ignored: /node_modules\/(?!@nomyx\/shared)/
+      };
+    }
+
     // For client-side builds, provide fallbacks for Node.js modules
     if (!isServer) {
       config.resolve.fallback = {

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal, Space, Typography, Spin, Result } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import { createExplorerLink, ExplorerLinkProps } from '@nomyx/shared';
 
 const { Title, Text } = Typography;
 
@@ -17,6 +18,9 @@ export interface TransactionModalProps {
   showDetails?: boolean;
 }
 
+// Create the ExplorerLink component
+const ExplorerLink = createExplorerLink(React, { useMemo });
+
 const TransactionModal: React.FC<TransactionModalProps> = ({
   visible,
   status,
@@ -29,6 +33,26 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   autoCloseDelay = 3000,
   showDetails = true
 }) => {
+  // Get explorer helpers from BlockchainSelectionManager
+  const [explorerUrl, setExplorerUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Try to get explorer URL from the blockchain service
+    const getExplorerUrl = async () => {
+      try {
+        const { BlockchainServiceManager } = await import('@nomyx/shared');
+        const manager = BlockchainServiceManager.getInstance();
+        const currentChain = manager.getCurrentChain();
+        // Check for chain_explorer_url directly on the chain object
+        if (currentChain?.chain_explorer_url) {
+          setExplorerUrl(currentChain.chain_explorer_url);
+        }
+      } catch (error) {
+        console.log('Failed to get explorer URL:', error);
+      }
+    };
+    getExplorerUrl();
+  }, []);
   // Auto-close on success after specified delay
   React.useEffect(() => {
     if (status === 'success' && onClose && autoCloseDelay > 0) {
@@ -80,28 +104,50 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
                         {Object.entries(data).map(([key, value]) => {
                           const stringValue = String(value);
-                          const isAddressOrHash = key.toLowerCase().includes('hash') || key.toLowerCase().includes('address');
+                          const isHash = key.toLowerCase().includes('hash') || key.toLowerCase().includes('txhash') || key.toLowerCase().includes('transactionhash');
+                          const isAddress = !isHash && (key.toLowerCase().includes('address') || key.toLowerCase().includes('contract'));
+                          const isAmount = typeof value === 'number' && key.toLowerCase().includes('amount');
 
-                          // Truncate long addresses/hashes for display (but keep full value for copying)
-                          const displayValue = isAddressOrHash && stringValue.length > 20
-                            ? `${stringValue.substring(0, 8)}...${stringValue.substring(stringValue.length - 8)}`
-                            : (typeof value === 'number' && key.toLowerCase().includes('amount')
-                                ? `$${value.toLocaleString()}`
-                                : stringValue);
+                          // Format amount values
+                          const displayValue = isAmount ? `$${value.toLocaleString()}` : stringValue;
 
                           return (
                             <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start' }}>
                               <Text strong className="text-nomyx-text-light dark:text-nomyx-text-dark" style={{ flexShrink: 0, minWidth: '100px', wordBreak: 'keep-all' }}>
                                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
                               </Text>
-                              <Text
-                                className="text-nomyx-text-light dark:text-nomyx-text-dark"
-                                copyable={isAddressOrHash ? { text: stringValue } : false}
-                                style={{ textAlign: 'right', flex: 1, wordBreak: 'break-all', maxWidth: '300px' }}
-                                title={isAddressOrHash ? stringValue : undefined}
-                              >
-                                {displayValue}
-                              </Text>
+                              <div style={{ textAlign: 'right', flex: 1, maxWidth: '300px' }}>
+                                {isHash && explorerUrl ? (
+                                  <ExplorerLink
+                                    type="transaction"
+                                    value={stringValue}
+                                    explorerUrl={explorerUrl}
+                                    className="text-nomyx-text-light dark:text-nomyx-text-dark"
+                                    truncate={true}
+                                    showIcon={true}
+                                  />
+                                ) : isAddress && explorerUrl ? (
+                                  <ExplorerLink
+                                    type={key.toLowerCase().includes('contract') ? 'contract' : 'address'}
+                                    value={stringValue}
+                                    explorerUrl={explorerUrl}
+                                    className="text-nomyx-text-light dark:text-nomyx-text-dark"
+                                    truncate={true}
+                                    showIcon={true}
+                                  />
+                                ) : (
+                                  <Text
+                                    className="text-nomyx-text-light dark:text-nomyx-text-dark"
+                                    copyable={(isHash || isAddress) ? { text: stringValue } : false}
+                                    style={{ wordBreak: 'break-all' }}
+                                    title={(isHash || isAddress) ? stringValue : undefined}
+                                  >
+                                    {(isHash || isAddress) && stringValue.length > 20
+                                      ? `${stringValue.substring(0, 8)}...${stringValue.substring(stringValue.length - 8)}`
+                                      : displayValue}
+                                  </Text>
+                                )}
+                              </div>
                             </div>
                           );
                         })}

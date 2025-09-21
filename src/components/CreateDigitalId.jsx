@@ -250,9 +250,8 @@ function CreateDigitalId({ service }) {
             // Continue - blockchain is the source of truth
           }
           
-          // Refresh wallet identity status to update the UI indicator
-          console.log(`[CreateDigitalId] Refreshing wallet identity status...`);
-          await manager.refreshWalletIdentityStatus();
+          // Note: Wallet identity status will be refreshed on next interaction
+          console.log(`[CreateDigitalId] Identity created successfully`);
           
           // Show success
           setTransactionModal({
@@ -265,7 +264,8 @@ function CreateDigitalId({ service }) {
             data: {
               'Wallet Address': addressToUse,
               'Display Name': trimmedDisplayName,
-              'KYC ID': trimmedAccountNumber
+              'KYC ID': trimmedAccountNumber,
+              ...(createResult.txHash && !createResult.txHash.startsWith('existing_identity_') ? {'Transaction Hash': createResult.txHash} : {})
             }
           });
           
@@ -458,9 +458,8 @@ function CreateDigitalId({ service }) {
             }
           }
           
-          // Refresh wallet identity status to update the UI indicator
-          console.log("[CreateDigitalId] Refreshing wallet identity status...");
-          await manager.refreshWalletIdentityStatus();
+          // Note: Wallet identity status will be refreshed on next interaction
+          console.log("[CreateDigitalId] Identity created successfully");
           
           // Show success
           setTransactionModal({
@@ -473,7 +472,8 @@ function CreateDigitalId({ service }) {
             data: {
               'Wallet Address': walletAddress,
               'Display Name': trimmedDisplayName,
-              'KYC ID': trimmedAccountNumber
+              'KYC ID': trimmedAccountNumber,
+              ...(createResult.txHash && !createResult.txHash.startsWith('existing_identity_') ? {'Transaction Hash': createResult.txHash} : {})
             }
           });
           
