@@ -74,6 +74,7 @@ const IdentitiesPage = ({ service }) => {
 
                 identidyObj.claims = sortedClaims.join(", "); // Convert sorted claims array to comma-separated string
                 identidyObj.displayName = identity.attributes.displayName || "";
+                identidyObj.email = identity?.email || "";
                 identidyObj.kyc_id = identity.attributes.accountNumber || "";
                 identidyObj.identityAddress = identity.attributes.address || "";
                 identidyObj.id = identity.id;
@@ -94,6 +95,7 @@ const IdentitiesPage = ({ service }) => {
                 // Default empty values if attributes are missing
                 identidyObj.claims = "";
                 identidyObj.displayName = "";
+                identidyObj.email = "";
                 identidyObj.kyc_id = "";
                 identidyObj.identityAddress = "";
                 identidyObj.id = "";
@@ -130,6 +132,7 @@ const IdentitiesPage = ({ service }) => {
 
               return {
                 displayName: `${firstName} ${lastName}`.trim(), // Concatenate first and last names
+                email: identity.attributes.email || "",
                 identityAddress: identity.attributes.walletAddress || "", // Wallet address remains the same
                 kyc_id: identity.attributes.personaReferenceId || "", // KYC ID set to personaReferenceId
                 pepMatched: identity.attributes.pepMatched,
@@ -303,6 +306,7 @@ const IdentitiesPage = ({ service }) => {
 
   const columns = [
     { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
     { label: "Flagged?", name: "flagged_account" },
@@ -310,6 +314,7 @@ const IdentitiesPage = ({ service }) => {
   ];
   const pendingColumns = [
     { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
     { label: "Recommended Compliance Rules", name: "recommended_compliance_rules" },

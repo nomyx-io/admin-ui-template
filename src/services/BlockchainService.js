@@ -321,6 +321,9 @@ class BlockchainService {
                 if (user.attributes?.personaVerificationData) {
                   identity.personaVerificationData = user.attributes.personaVerificationData;
                 }
+                if (user.attributes?.username) {
+                  identity.email = user.attributes.username;
+                }
               }
             }
 
