@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -20,6 +20,36 @@ function CreateDigitalId({ service }) {
   const [displayName, setDisplayName] = useState(searchParams.get("displayName") || "");
   const [walletAddress, setWalletAddress] = useState(searchParams.get("walletAddress") || "");
   const [accountNumber, setAccountNumber] = useState(searchParams.get("accountNumber") || "");
+  const [isTrustedIssuer, setIsTrustedIssuer] = useState(false);
+  const [isCheckingTrustedIssuer, setIsCheckingTrustedIssuer] = useState(true);
+
+  // Check if current user is a trusted issuer on component mount
+  useEffect(() => {
+    const checkTrustedIssuer = async () => {
+      if (!user?.walletAddress) {
+        setIsCheckingTrustedIssuer(false);
+        return;
+      }
+
+      try {
+        setIsCheckingTrustedIssuer(true);
+        const isTrusted = await service.isTrustedIssuer(user.walletAddress);
+        setIsTrustedIssuer(isTrusted);
+
+        if (!isTrusted) {
+          toast.error("Please create a trusted issuer for your address in order to create an identity.");
+        }
+      } catch (error) {
+        console.error("Error checking trusted issuer status:", error);
+        toast.error("Failed to verify trusted issuer status. Please try again.");
+        setIsTrustedIssuer(false);
+      } finally {
+        setIsCheckingTrustedIssuer(false);
+      }
+    };
+
+    checkTrustedIssuer();
+  }, [user?.walletAddress, service]);
 
   function validateDigitalID(displayName, walletAddress, accountNumber) {
     if (displayName.trim() === "") {
@@ -56,6 +86,12 @@ function CreateDigitalId({ service }) {
   }
 
   const handleCreateDigitalId = async () => {
+    // Check if user is trusted issuer before proceeding
+    if (!isTrustedIssuer) {
+      toast.error("Please create a trusted issuer for your address in order to create an identity.");
+      return;
+    }
+
     const trimmedDisplayName = displayName.trim();
     const trimmedAccountNumber = accountNumber.trim();
 
@@ -292,7 +328,7 @@ function CreateDigitalId({ service }) {
             />
             <p className="absolute right-5 top-3">{displayName.length}/32</p>
           </div>
-          <p>User-friendly name that describes the trusted issuers.Shown to end-users</p>
+          <p>User-friendly name that describes the identity. Shown to end-users</p>
         </div>
         <div className="mt-10 mb-6 w-[100%] max-[600px]:w-full border p-6 rounded-lg">
           <div>
