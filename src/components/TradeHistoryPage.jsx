@@ -9,6 +9,45 @@ import ObjectList from "./ObjectList"; // Replace with your actual component
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
 
+// Referred By Button Component
+const ReferredByButton = ({ referredByName, referredByEmail }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  if (!referredByName && !referredByEmail) {
+    return <span className="text-gray-500">-</span>;
+  }
+
+  return (
+    <div className="relative inline-block">
+      <button
+        className="border border-[#7f56d9] hover:bg-[#7f56d9] text-[#7f56d9] hover:text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-200"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        User Info
+      </button>
+      {showTooltip && (
+        <div className="absolute z-50 left-0 top-full mt-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 min-w-max">
+          <div className="space-y-1">
+            {referredByName && (
+              <div className="whitespace-nowrap">
+                <span className="font-medium">Name:</span> {referredByName}
+              </div>
+            )}
+            {referredByEmail && (
+              <div className="whitespace-nowrap">
+                <span className="font-medium">Email:</span> {referredByEmail}
+              </div>
+            )}
+          </div>
+          {/* Tooltip arrow */}
+          <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const TradeHistoryPage = (service) => {
   const [rawTrades, setRawTrades] = useState([]);
   const [trades, setTrades] = useState([]);
@@ -155,46 +194,60 @@ const TradeHistoryPage = (service) => {
   // Memoize columns to prevent re-creation on every render
   const columns = useMemo(
     () => [
-      { label: "Name", name: "userName" },
-      { label: "Email", name: "userEmail" },
+      { label: "Name", name: "userName", width: 150 },
+      { label: "Email", name: "userEmail", width: 200 },
       {
         label: "Wallet Address",
         name: "walletAddress",
-        render: (record) => record.source?.address || record.destination?.address || "-",
+        width: 180,
+        render: (record) => record.destination?.walletAddress || record?.transferDetails?.source?.walletAddress || "-",
       },
       {
         label: "Transaction ID",
         name: "requestId",
-        render: (record) => record.requestId || "-",
+        width: 150,
+        render: (record) => record?.hifiTransferId || record?.requestId || "-",
       },
       {
         label: "Time",
         name: "createdAt",
+        width: 150,
         render: (record) => (record.createdAt ? new Date(record.createdAt).toLocaleString() : "-"),
-      },
-      {
-        label: "Amount",
-        name: "amount",
-        render: (record) => `$${(record.amount || 0).toFixed(2)}`,
       },
       {
         label: "Status",
         name: "status",
+        width: 120,
         render: (record) => record.status || "Unknown",
       },
-      // {
-      //   label: "Chain",
-      //   name: "chain",
-      //   render: (record) => record.chain || "-",
-      // },
+      {
+        label: "Referred By",
+        name: "referredBy",
+        width: 130,
+        render: (record) => {
+          if (!record.referredByName && !record.referredByEmail) {
+            return "-";
+          } else {
+            return <ReferredByButton referredByName={record.referredByName} referredByEmail={record.referredByEmail} />;
+          }
+        },
+      },
+      {
+        label: "Amount",
+        name: "amount",
+        width: 120,
+        render: (record) => `$${(record.amount || 0).toFixed(2)}`,
+      },
       {
         label: "Source Currency",
         name: "currency",
+        width: 140,
         render: (record) => record.source?.currency?.toUpperCase() || "-",
       },
       {
         label: "Destination Currency",
         name: "currency",
+        width: 160,
         render: (record) => record.destination?.currency?.toUpperCase() || "-",
       },
     ],
@@ -205,14 +258,17 @@ const TradeHistoryPage = (service) => {
     <Tabs activeKey={activeTab} onChange={setActiveTab}>
       <TabPane tab="Trade History" key="TradeHistory">
         {FilterSection}
-        <ObjectList
-          key={`trades-${trades.length}`}
-          title="Trade History"
-          description="Complete ledger of all trade transactions"
-          columns={columns}
-          data={trades}
-          pageSize={20}
-        />
+        {/* Add horizontal scrolling wrapper */}
+        <div className="overflow-x-auto">
+          <ObjectList
+            key={`trades-${trades.length}`}
+            title="Trade History"
+            description="Complete ledger of all trade transactions"
+            columns={columns}
+            data={trades}
+            pageSize={20}
+          />
+        </div>
       </TabPane>
     </Tabs>
   );
