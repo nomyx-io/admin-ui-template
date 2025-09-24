@@ -18,6 +18,7 @@ const IdentitiesPage = ({ service }) => {
   const [pendingIdentities, setPendingIdentities] = useState([]);
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const [claimTopicsLookup, setClaimTopicsLookup] = useState({});
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
   const location = useLocation();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -57,6 +58,27 @@ const IdentitiesPage = ({ service }) => {
     async (tab) => {
       try {
         let fetchedIdentities = [];
+
+        // Fetch claim topics lookup for Identities and Add Rules tabs
+        if ((tab === "Identities" || tab === "Claims") && service.getClaimTopics) {
+          try {
+            const claimTopics = await service.getClaimTopics();
+            const topicsLookup = {};
+            if (claimTopics) {
+              claimTopics.forEach((topic) => {
+                const topicId = topic.attributes?.topic || topic.topic || topic.id;
+                const displayName = topic.attributes?.displayName || topic.displayName || topic.name;
+                if (topicId) {
+                  topicsLookup[topicId.toString()] = displayName || `Topic ${topicId}`;
+                }
+              });
+            }
+            setClaimTopicsLookup(topicsLookup);
+          } catch (error) {
+            console.error("Error fetching claim topics:", error);
+          }
+        }
+
         if (service) {
           if (tab === "Identities" || tab === "Claims") {
             // Fetch active identities for Identities and Claims tabs
@@ -75,6 +97,7 @@ const IdentitiesPage = ({ service }) => {
                   .map((claim) => claim.toString()); // Convert back to strings
 
                 identidyObj.claims = sortedClaims.join(", "); // Convert sorted claims array to comma-separated string
+                identidyObj.claimsArray = sortedClaims; // Keep array for tooltip display
                 identidyObj.displayName = identity.attributes.displayName || "";
                 identidyObj.kyc_id = identity.attributes.accountNumber || "";
                 identidyObj.identityAddress = identity.attributes.address || "";
@@ -95,6 +118,7 @@ const IdentitiesPage = ({ service }) => {
               } else {
                 // Default empty values if attributes are missing
                 identidyObj.claims = "";
+                identidyObj.claimsArray = [];
                 identidyObj.displayName = "";
                 identidyObj.kyc_id = "";
                 identidyObj.identityAddress = "";
@@ -347,12 +371,54 @@ const IdentitiesPage = ({ service }) => {
     }
   };
 
+  // Component for Claim Topics Button with Tooltip
+  const ClaimTopicsButton = ({ claimsArray }) => {
+    const [showTooltip, setShowTooltip] = useState(false);
+
+    if (!claimsArray || claimsArray.length === 0) {
+      return <span className="text-gray-500">No Claims</span>;
+    }
+
+    return (
+      <div className="relative inline-block">
+        <button
+          className="border border-[#7f56d9] hover:bg-[#7f56d9] text-[#7f56d9] hover:text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-200"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          Claim Topics
+        </button>
+
+        {showTooltip && (
+          <div className="absolute z-50 left-0 top-full mt-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 min-w-max">
+            <div className="space-y-1">
+              {claimsArray.map((topicId) => {
+                const displayName = claimTopicsLookup[topicId] || `Topic ${topicId}`;
+                return (
+                  <div key={topicId} className="whitespace-nowrap">
+                    {displayName} ({topicId})
+                  </div>
+                );
+              })}
+            </div>
+            {/* Tooltip arrow */}
+            <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const columns = [
     { label: "Identity", name: "displayName" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
     { label: "Flagged?", name: "flagged_account" },
-    { label: "Claims", name: "claims" },
+    {
+      label: "Claims",
+      name: "claims",
+      render: (row) => <ClaimTopicsButton claimsArray={row.claimsArray} />,
+    },
   ];
   const pendingColumns = [
     { label: "Identity", name: "displayName" },

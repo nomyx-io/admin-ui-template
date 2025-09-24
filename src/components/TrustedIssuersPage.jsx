@@ -12,6 +12,7 @@ const TrustedIssuersPage = ({ service }) => {
   const navigate = useNavigate();
   const [trustedIssuers, setTrustedIssuers] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const [claimTopicsLookup, setClaimTopicsLookup] = useState({});
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   // Helper function to extract error message
@@ -26,6 +27,20 @@ const TrustedIssuersPage = ({ service }) => {
   const fetchData = useCallback(async () => {
     try {
       const issuers = service.getTrustedIssuers && (await service.getTrustedIssuers());
+      const claimTopics = service.getClaimTopics && (await service.getClaimTopics());
+
+      // Create a lookup object for claim topics
+      const topicsLookup = {};
+      if (claimTopics) {
+        claimTopics.forEach((topic) => {
+          const topicId = topic.attributes?.topic || topic.topic || topic.id;
+          const displayName = topic.attributes?.displayName || topic.displayName || topic.name;
+          if (topicId) {
+            topicsLookup[topicId.toString()] = displayName || `Topic ${topicId}`;
+          }
+        });
+      }
+      setClaimTopicsLookup(topicsLookup);
 
       let data = [];
       if (issuers) {
@@ -66,6 +81,7 @@ const TrustedIssuersPage = ({ service }) => {
           data.push({
             id: item.id,
             claimTopics: claimTopicsString,
+            claimTopicsArray: sortedTopics, // Keep array for tooltip display
             address: item.attributes?.issuer || "Unknown",
             trustedIssuer: finalVerifierName,
           });
@@ -206,6 +222,44 @@ const TrustedIssuersPage = ({ service }) => {
     }
   };
 
+  // Component for Claim Topics Button with Tooltip
+  const ClaimTopicsButton = ({ claimTopicsArray }) => {
+    const [showTooltip, setShowTooltip] = useState(false);
+
+    if (!claimTopicsArray || claimTopicsArray.length === 0) {
+      return <span className="text-gray-500">No Topics</span>;
+    }
+
+    return (
+      <div className="relative inline-block">
+        <button
+          className="border border-[#7f56d9] hover:bg-[#7f56d9] text-[#7f56d9] hover:text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-200"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          Claim Topics
+        </button>
+
+        {showTooltip && (
+          <div className="absolute z-50 left-0 top-full mt-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg p-3 min-w-max">
+            <div className="space-y-1">
+              {claimTopicsArray.map((topicId) => {
+                const displayName = claimTopicsLookup[topicId] || `Topic ${topicId}`;
+                return (
+                  <div key={topicId} className="whitespace-nowrap">
+                    {displayName} ({topicId})
+                  </div>
+                );
+              })}
+            </div>
+            {/* Tooltip arrow */}
+            <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const columns = [
     {
       label: "Trusted Issuer",
@@ -218,7 +272,12 @@ const TrustedIssuersPage = ({ service }) => {
       ),
     },
     { label: "Address", name: "address", width: "45%" },
-    { label: "Managed Compliance Rules", name: "claimTopics", width: "30%" },
+    {
+      label: "Managed Compliance Rules",
+      name: "claimTopics",
+      width: "30%",
+      render: (row) => <ClaimTopicsButton claimTopicsArray={row.claimTopicsArray} />,
+    },
   ];
 
   const actions = [
