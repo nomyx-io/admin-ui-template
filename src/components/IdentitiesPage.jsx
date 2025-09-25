@@ -102,6 +102,7 @@ const IdentitiesPage = ({ service }) => {
                 identidyObj.pepMatched = false;
                 identidyObj.watchlistMatched = false;
                 identidyObj.recommended_compliance_rules = "";
+                identidyObj.hifiKYCStatus = "";
               }
               return identidyObj;
             });
@@ -137,6 +138,7 @@ const IdentitiesPage = ({ service }) => {
                 kyc_id: identity.attributes.personaReferenceId || "", // KYC ID set to personaReferenceId
                 pepMatched: identity.attributes.pepMatched,
                 watchlistMatched: identity.attributes.watchlistMatched,
+                hifiKYCStatus: identity.attributes?.hifiKYCStatus?.status || "-",
                 type: identityType || "", // Type of identity
                 status: status || "", // Status of identity
                 recommended_compliance_rules: templateId ? getTemplateNameById(templateId) : "",
@@ -321,6 +323,7 @@ const IdentitiesPage = ({ service }) => {
     { label: "Flagged?", name: "flagged_account" },
     { label: "Type", name: "type" },
     { label: "Status", name: "status" },
+    { label: "KYC Status", name: "hifiKYCStatus" },
   ];
 
   const actions = [
