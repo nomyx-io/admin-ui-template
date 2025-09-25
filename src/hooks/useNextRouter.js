@@ -18,7 +18,15 @@ export const useNavigate = () => {
 
 export const useParams = () => {
   const router = useRouter();
-  return router.query;
+  // Map Next.js route params to expected names
+  const params = { ...router.query };
+
+  // Map 'id' to 'identityId' for identity routes
+  if (router.pathname.includes('/identities/[id]') && params.id) {
+    params.identityId = params.id;
+  }
+
+  return params;
 };
 
 export const useLocation = () => {

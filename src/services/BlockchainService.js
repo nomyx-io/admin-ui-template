@@ -253,23 +253,46 @@ class BlockchainService {
     try {
       const service = await this.getService();
       const currentChain = this.manager.getCurrentChainId();
-      
+
       // Get locally stored names (development workaround for Parse auth)
-      const localNames = typeof window !== 'undefined' 
+      const localNames = typeof window !== 'undefined'
         ? JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}')
         : {};
-      
+
+      // Clear stale test data if present (temporary fix for "Test Clickable Links" issue)
+      if (localNames[1] === 'Test Clickable Links' && typeof window !== 'undefined') {
+        delete localNames[1];
+        localStorage.setItem('nomyx-claim-topic-names', JSON.stringify(localNames));
+        console.log('[Admin BlockchainService] Cleared stale test data from localStorage');
+      }
+
+      // Try to fetch names from Parse
+      let parseNames = {};
+      try {
+        const result = await ParseClient.run('getClaimTopicMetadata');
+        if (result && result.topics) {
+          result.topics.forEach(topic => {
+            parseNames[topic.topicId] = topic.displayName;
+          });
+          console.log(`[Admin BlockchainService] Fetched ${Object.keys(parseNames).length} claim topic names from Parse`);
+        }
+      } catch (parseError) {
+        console.warn(`[Admin BlockchainService] Could not fetch claim topic names from Parse:`, parseError);
+      }
+
       // For Stellar, try to get detailed topics with names
       if (currentChain?.includes("stellar") && typeof service.getClaimTopicsDetailed === "function") {
         console.log(`[Admin BlockchainService] Getting detailed claim topics for Stellar`);
         const detailedTopics = await service.getClaimTopicsDetailed();
         console.log(`[Admin BlockchainService] Retrieved ${detailedTopics.length} detailed claim topics`);
 
-        // Convert detailed topics to admin portal format, preferring local names
+        // Convert detailed topics to admin portal format, preferring blockchain data first
         return detailedTopics.map((topic) => {
           const topicId = topic.id;
-          const displayName = localNames[topicId] || topic.name || topic.displayName || `Claim Topic ${topicId}`;
-          
+          // Prefer blockchain name if it's not just a default fallback
+          const blockchainName = topic.name && !topic.name.startsWith('Topic ') ? topic.name : null;
+          const displayName = blockchainName || parseNames[topicId] || localNames[topicId] || topic.displayName || `Claim Topic ${topicId}`;
+
           return {
             id: topicId.toString(),
             attributes: {
@@ -284,12 +307,12 @@ class BlockchainService {
       const topics = await service.getClaimTopics();
       console.log(`[Admin BlockchainService] Retrieved ${topics.length} claim topics`);
 
-      // Convert to admin portal format, using local names if available
+      // Convert to admin portal format, using Parse names first, then local names if available
       return topics.map((topicId, index) => ({
         id: topicId.toString(),
         attributes: {
           topic: topicId,
-          displayName: localNames[topicId] || `Claim Topic ${topicId}`,
+          displayName: parseNames[topicId] || localNames[topicId] || `Claim Topic ${topicId}`,
         },
       }));
     } catch (error) {

@@ -380,15 +380,32 @@ class IdentityService {
     return this.blockchainService.unregisterIdentity(address);
   }
   
-  async softRemoveUser(address) {
+  async softRemoveUser(identity) {
     try {
-      // Handle both string and object address formats
-      const addressString = typeof address === 'string' ? address : (address?.identityAddress || address);
-      
-      console.log("[IdentityService] Soft removing user from Parse:", addressString);
-      
+      // Extract the identity ID and address from the identity object
+      let identityId = null;
+      let addressString = null;
+
+      if (typeof identity === 'string') {
+        // If a string is passed, it's likely the address (legacy behavior)
+        addressString = identity;
+      } else if (identity && typeof identity === 'object') {
+        // Extract ID from the identity object
+        identityId = identity.objectId || identity.id;
+        addressString = identity.identityAddress || identity.walletAddress;
+      }
+
+      console.log("[IdentityService] Soft removing user from Parse:", { identityId, addressString });
+
+      // If we have an ID, use it for deletion. Otherwise fall back to address
+      const deleteParam = identityId || addressString;
+
+      if (!deleteParam) {
+        throw new Error("No identity ID or address provided for deletion");
+      }
+
       // Use Cloud function to delete/soft-delete the identity
-      const result = await parseServerClient.deleteIdentity(addressString);
+      const result = await parseServerClient.deleteIdentity(deleteParam);
       
       if (result && result.success) {
         console.log("[IdentityService] Identity soft deleted successfully from Parse");
@@ -513,9 +530,10 @@ class IdentityService {
     }
     
     // For non-blockchain IDs, use Cloud function
+    console.log("[IdentityService] Calling getIdentityById with identityId:", identityId);
     try {
       const result = await parseServerClient.getIdentityById(identityId);
-      
+
       if (result) {
         console.log("[IdentityService] Retrieved identity via API route");
         return result;

@@ -52,10 +52,11 @@ const IdentitiesPage = ({ service }) => {
     };
     
     var intervalChecker = null;
-    // Initial check
+    // Always do initial check
+    checkWallet();
+
+    // Set up periodic check as a fallback (every 2 seconds) if not connected
     if (!manager.isWalletConnected()) {
-      checkWallet();
-      // Set up periodic check as a fallback (every 2 seconds)
       intervalChecker = setInterval(checkWallet, 2000);
     }
     
@@ -425,7 +426,9 @@ const IdentitiesPage = ({ service }) => {
             addressToRemove = addressToRemove.toUpperCase();
           }
           
+          // Keep addresses for blockchain operations, but also keep track of the record
           const identities = [addressToRemove];
+          const recordToDelete = record;  // Save the full record object
 
           for (const identity of identities) {
             // Step 1: Try to remove identity from blockchain
@@ -468,8 +471,8 @@ const IdentitiesPage = ({ service }) => {
                 ...prev,
                 loadingMessage: 'Updating database...'
               }));
-              // Wrap in Promise.resolve to ensure it's always async and catches sync errors
-              await Promise.resolve().then(() => service.softRemoveUser(identity)).catch(err => {
+              // Pass the full record object, not just the address
+              await Promise.resolve().then(() => service.softRemoveUser(recordToDelete)).catch(err => {
                 console.warn(`[IdentitiesPage] softRemoveUser failed:`, err);
                 // Continue even if database update fails
                 return null;
@@ -478,10 +481,6 @@ const IdentitiesPage = ({ service }) => {
               console.warn(`[IdentitiesPage] softRemoveUser outer catch:`, error);
             }
           }
-
-          // Refresh wallet identity status to update the UI indicator
-          const manager = BlockchainServiceManager.getInstance();
-          await manager.refreshWalletIdentityStatus();
 
           // Show success
           setTransactionModal({

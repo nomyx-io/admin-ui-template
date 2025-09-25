@@ -102,6 +102,7 @@ function DigitalIdentityDetailView({ service }) {
   const navigate = useNavigate();
 
   const getIdentity = useCallback(async () => {
+    console.log("[DigitalIdentityDetailPage] getIdentity called with identityId:", identityId, "userId:", userId);
     let result;
     if (identityId === "pending" && userId) {
       if (!service.getPendingIdentities) return;
@@ -120,6 +121,7 @@ function DigitalIdentityDetailView({ service }) {
       };
     } else {
       if (!service.getDigitalIdentity) return;
+      console.log("[DigitalIdentityDetailPage] Calling getDigitalIdentity with:", identityId);
       result = await service.getDigitalIdentity(identityId);
     }
     setIdentity(result);

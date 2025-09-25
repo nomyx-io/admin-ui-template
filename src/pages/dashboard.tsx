@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Card, Button, Space } from "antd";
 import Statistic from "antd/es/statistic";
@@ -15,11 +15,62 @@ const LockOutlinedIcon = LockOutlined as any;
 const CheckCircleOutlinedIcon = CheckCircleOutlined as any;
 const GlobalOutlinedIcon = GlobalOutlined as any;
 import AppLayout from "../components/AppLayout";
+import BlockchainService from "../services/BlockchainService";
+import IdentityService from "../services/IdentityService";
 
 const { Paragraph } = Typography;
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [counts, setCounts] = useState({
+    identities: 0,
+    trustedIssuers: 0,
+    claimTopics: 0,
+    activeClaims: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        // Initialize blockchain service
+        const blockchainService = new BlockchainService();
+        const selectedChain = localStorage.getItem('nomyx-selected-chain') || 'stellar-testnet';
+        await blockchainService.initialize(selectedChain);
+
+        // Initialize identity service with blockchain service
+        const identityService = new IdentityService(blockchainService, null);
+
+        // Fetch all counts
+        const [claimTopics, trustedIssuers, identities] = await Promise.all([
+          blockchainService.getClaimTopics(),
+          blockchainService.getTrustedIssuers(),
+          identityService.getActiveIdentities(selectedChain)
+        ]);
+
+        // Count active claims (identities with claims assigned)
+        const activeClaims = identities.filter(identity => {
+          const claims = identity.attributes?.claims || [];
+          return claims.length > 0;
+        }).reduce((total, identity) => {
+          return total + (identity.attributes?.claims?.length || 0);
+        }, 0);
+
+        setCounts({
+          identities: identities.length,
+          trustedIssuers: trustedIssuers.length,
+          claimTopics: claimTopics.length,
+          activeClaims: activeClaims
+        });
+      } catch (error) {
+        console.error('[Dashboard] Error fetching counts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCounts();
+  }, []);
 
   return (
     <AppLayout>
@@ -64,8 +115,9 @@ export default function DashboardPage() {
             <Card>
               <Statistic
                 title="Digital Identities"
-                value={0}
+                value={counts.identities}
                 prefix={<UserOutlinedIcon />}
+                loading={loading}
               />
               <Button 
                 type="primary" 
@@ -89,8 +141,9 @@ export default function DashboardPage() {
             <Card>
               <Statistic
                 title="Trusted Issuers"
-                value={0}
+                value={counts.trustedIssuers}
                 prefix={<LockOutlinedIcon />}
+                loading={loading}
               />
               <Button 
                 type="primary" 
@@ -114,8 +167,9 @@ export default function DashboardPage() {
             <Card>
               <Statistic
                 title="Claim Topics"
-                value={0}
+                value={counts.claimTopics}
                 prefix={<GlobalOutlinedIcon />}
+                loading={loading}
               />
               <Button 
                 type="primary" 
@@ -139,8 +193,9 @@ export default function DashboardPage() {
             <Card>
               <Statistic
                 title="Active Claims"
-                value={0}
+                value={counts.activeClaims}
                 prefix={<CheckCircleOutlinedIcon />}
+                loading={loading}
               />
               <Button 
                 type="primary" 
