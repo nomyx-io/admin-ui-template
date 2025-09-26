@@ -58,7 +58,7 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
             </li>
             <li>
               <Link to="/transactions" className="hover:underline">
-                Transaction History
+                Transfer History
               </Link>
             </li>
             <li>

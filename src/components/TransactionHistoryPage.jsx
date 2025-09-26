@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 
-import { Tabs, DatePicker, Input, Button } from "antd";
+import { Tabs, DatePicker, Input, Button, Tag } from "antd";
 import Parse from "parse";
 import { toast } from "react-toastify";
 
@@ -115,6 +115,23 @@ const TransactionHistoryPage = (service) => {
     setTransactions(rawTransactions);
   }, [rawTransactions]);
 
+  const getTokenName = (tokenAddress) => {
+    if (!tokenAddress) return "ETH"; // Default to ETH if no token address
+
+    const address = tokenAddress.toLowerCase();
+
+    // Map your environment addresses to token names
+    if (address === process.env.REACT_APP_HARDHAT_USDC_ADDRESS?.toLowerCase()) {
+      return "USDC";
+    }
+    if (address === process.env.REACT_APP_HARDHAT_USDT_ADDRESS?.toLowerCase()) {
+      return "USDT";
+    }
+
+    // For unknown tokens, show first 6 characters
+    return `${tokenAddress.slice(0, 6)}...`;
+  };
+
   // const handleAction = async (event, action, record) => {
   //   switch (action) {
   //     case NomyxAction.ViewTransaction:
@@ -137,6 +154,20 @@ const TransactionHistoryPage = (service) => {
   // };
 
   // Memoize the FilterSection to prevent unnecessary re-renders
+
+  const getTokenColor = (tokenName) => {
+    switch (tokenName) {
+      case "USDC":
+        return "blue";
+      case "USDT":
+        return "green";
+      case "ETH":
+        return "gray";
+      default:
+        return "default";
+    }
+  };
+
   const FilterSection = useMemo(
     () => (
       <div className="mb-4 p-4 bg-gray-50 rounded-lg">
@@ -182,12 +213,23 @@ const TransactionHistoryPage = (service) => {
       {
         label: "Amount",
         name: "amount",
-        render: (record) => `$${(record.amount / 1_000_000).toFixed(2)}`,
+        render: (record) => `${(record.amount / 1_000_000).toFixed(2)}`,
       },
       { label: "From", name: "fromAddress" },
       { label: "To", name: "toAddress" },
       //{ label: "Recipient", name: "toUserName" },
-      { label: "Fee", name: "fee", render: (record) => `${record.fee}%` },
+      {
+        label: "Token",
+        name: "token",
+        render: (record) => {
+          const tokenName = getTokenName(record.token);
+          return (
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <Tag color={getTokenColor(tokenName)}>{tokenName}</Tag>
+            </div>
+          );
+        },
+      },
       {
         label: "Timestamp",
         name: "timestamp",
@@ -203,16 +245,16 @@ const TransactionHistoryPage = (service) => {
         ),
       },
     ],
-    []
+    [getTokenColor]
   );
 
   return (
     <Tabs activeKey={activeTab} onChange={setActiveTab}>
-      <TabPane tab="Transaction History" key="Transactions">
+      <TabPane tab="Transfer History" key="Transactions">
         {FilterSection}
         <ObjectList
           key={`transactions-${transactions.length}`}
-          title="Transaction History"
+          title="Transfer History"
           description="Complete ledger of all transactions"
           columns={columns}
           data={transactions}
