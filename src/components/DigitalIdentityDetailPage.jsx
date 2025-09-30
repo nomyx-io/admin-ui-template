@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
+import { Breadcrumb, Button, Input, Select, message } from "antd";
+import Parse from "parse";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { ClaimCard } from "./ClaimCard";
@@ -16,6 +17,11 @@ function DigitalIdentityDetailView({ service }) {
   const [displayName, setDisplayName] = useState("");
   const [identity, setIdentity] = useState({});
   const personaData = identity?.personaData;
+  const [allUsers, setAllUsers] = useState([]); // [{id, email}]
+  const [selectedRefEmail, setSelectedRefEmail] = useState("");
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [savingRef, setSavingRef] = useState(false);
+  const [defaultRefEmailLabel, setDefaultRefEmailLabel] = useState("");
 
   // Determine identity type based on the templateId
   const templateId = personaData?.payload?.included?.filter((item) => item.type === "inquiry-template").map((item) => item.id)[0];
@@ -23,32 +29,21 @@ function DigitalIdentityDetailView({ service }) {
   const identityType =
     templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
 
-  // Process verifications
   // Process verifications with specific labels
   const verifications = personaData?.payload?.included
-    ?.filter((item) => item.type?.startsWith("verification")) // Safeguard: Ensure item.type exists
+    ?.filter((item) => item.type?.startsWith("verification"))
     .map((item, index) => {
-      // Define labels for KYC and KYB
-      const kycLabels = [
-        null, // First entry remains as-is
-        "Proof of Address Verification", // Second entry gets this label
-        "Selfie Verification", // Third entry gets this label
-        "Identity Verification", // Fourth entry gets this label
-      ];
-
+      const kycLabels = [null, "Proof of Address Verification", "Selfie Verification", "Identity Verification"];
       const kybLabels = [
-        "Business Address Verification", // First entry for KYB
-        "Bank Verification", // Second entry
-        "EIN Verification", // Third entry
-        "Incorporation Verification", // Fourth entry
-        "Optional Verification 1", // Fifth entry
-        "Optional Verification 2", // Sixth entry
+        "Business Address Verification",
+        "Bank Verification",
+        "EIN Verification",
+        "Incorporation Verification",
+        "Optional Verification 1",
+        "Optional Verification 2",
       ];
-
-      // Safeguard: Default label if item.type is undefined
       const defaultLabel = "Unknown Verification";
 
-      // Select labels based on identityType and index
       let label;
       if (identityType === "KYC") {
         label = kycLabels[index] || (item.type ? toTitleCase(item.type.split("/")[1].replace("-", " ")) : defaultLabel);
@@ -61,7 +56,7 @@ function DigitalIdentityDetailView({ service }) {
       return {
         id: item.id,
         kind: label,
-        status: item.attributes?.status?.toUpperCase() || "UNKNOWN", // Handle undefined status
+        status: item.attributes?.status?.toUpperCase() || "UNKNOWN",
       };
     });
 
@@ -81,7 +76,6 @@ function DigitalIdentityDetailView({ service }) {
         "Optional Document 2",
       ];
 
-      // Assign labels based on identity type
       let label;
       if (identityType === "KYC") {
         label = kycLabels[index] || toTitleCase(item.type.split("/")[1].replace("-", " "));
@@ -104,25 +98,31 @@ function DigitalIdentityDetailView({ service }) {
     let result;
     if (identityId === "pending" && userId) {
       if (!service.getPendingIdentities) return;
-      const user = (await service.getPendingIdentities()).filter((item) => item.id === userId)[0];
-      if (!user) {
+      const pendingUser = (await service.getPendingIdentities()).filter((item) => item.id === userId)[0];
+      if (!pendingUser) {
         navigate("/identities");
         return;
       }
       result = {
-        displayName: `${user.attributes.firstName} ${user.attributes.lastName}`.trim(),
-        address: user.attributes.walletAddress,
-        accountNumber: user.attributes.personaReferenceId,
-        personaData: user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
-        watchlistMatched: user.attributes.watchlistMatched,
-        pepMatched: user.attributes.pepMatched,
+        id: userId, // route id for pending
+        displayName: `${pendingUser.attributes.firstName} ${pendingUser.attributes.lastName}`.trim(),
+        address: pendingUser.attributes.walletAddress,
+        accountNumber: pendingUser.attributes.personaReferenceId,
+        personaData: pendingUser.attributes.personaVerificationData
+          ? JSON.parse(pendingUser.attributes.personaVerificationData ?? "")?.data?.attributes
+          : null,
+        watchlistMatched: pendingUser.attributes.watchlistMatched,
+        pepMatched: pendingUser.attributes.pepMatched,
       };
     } else {
       if (!service.getDigitalIdentity) return;
       result = await service.getDigitalIdentity(identityId);
+      if (result && !result.id) {
+        result.id = identityId;
+      }
     }
     setIdentity(result);
-  }, [service, identityId]);
+  }, [service, identityId, userId, navigate]);
 
   const backBtn = () => {
     navigate("/identities");
@@ -131,6 +131,66 @@ function DigitalIdentityDetailView({ service }) {
   useEffect(() => {
     getIdentity();
   }, [getIdentity]);
+
+  useEffect(() => {
+    (async () => {
+      const walletAddress = identity?.address; // resolve _User by wallet
+      if (!walletAddress) return;
+
+      setLoadingUsers(true);
+      try {
+        // 1) Load dropdown options
+        const users = await Parse.Cloud.run("getRegisteredUsers", {});
+        const mapped = (users || []).map((u) => ({ id: u.objectId || u.id, email: u.email })).filter((u) => !!u.id && !!u.email);
+        setAllUsers(mapped);
+
+        // 2) Current referrer for this wallet
+        const refEmail = await Parse.Cloud.run("getIdentityReferralEmail", { walletAddress });
+
+        // 3) Default from env (plain email)
+        const defaultEmail = (process.env.REACT_APP_DEFAULT_REFFERER || "").trim();
+        setDefaultRefEmailLabel(defaultEmail || "(not configured)");
+
+        // Choose selected value
+        if (refEmail) {
+          setSelectedRefEmail(refEmail);
+        } else if (defaultEmail) {
+          setSelectedRefEmail(defaultEmail);
+        } else {
+          setSelectedRefEmail("");
+        }
+      } catch (err) {
+        console.error("Failed to load referrer info:", err);
+      } finally {
+        setLoadingUsers(false);
+      }
+    })();
+  }, [identity?.address]);
+
+  const handleSaveReferredBy = async () => {
+    const walletAddress = identity?.address;
+    if (!walletAddress) {
+      message.error("Wallet address not available");
+      return;
+    }
+    if (!selectedRefEmail) {
+      message.warning("Please select a referrer email");
+      return;
+    }
+    setSavingRef(true);
+    try {
+      await Parse.Cloud.run("setIdentityReferralByEmail", {
+        walletAddress,
+        referrerEmail: selectedRefEmail.trim(),
+      });
+      message.success("Referred By saved.");
+    } catch (e) {
+      message.error(e?.message || "Could not save Referred By");
+    } finally {
+      setSavingRef(false);
+    }
+  };
+  // ---------------------------------------------------------------------------
 
   return (
     <div>
@@ -166,6 +226,7 @@ function DigitalIdentityDetailView({ service }) {
             <p className="absolute right-5 top-3">{displayName.length}/32</p>
           </div>
         </div>
+
         <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
           <label htmlFor="investorWalletAddress">Investor Wallet Address</label>
           <input
@@ -182,6 +243,33 @@ function DigitalIdentityDetailView({ service }) {
             className="font-light text-4xl max-[500px]:text-base text-gray-300"
           ></input>
         </div>
+
+        {/* Referred By (Email) selector for THIS identity */}
+        <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
+          <label htmlFor="referredByEmail">Referred By (Email)</label>
+          <div className="mt-3 w-full flex gap-2 items-center">
+            <Select
+              id="referredByEmail"
+              className="w-full"
+              showSearch
+              allowClear={false} // ← updates only (no clearing)
+              placeholder="Select referrer"
+              loading={loadingUsers}
+              value={selectedRefEmail || undefined}
+              onChange={(val) => setSelectedRefEmail(val || "")}
+              optionFilterProp="label"
+              filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+              options={allUsers.map((u) => ({ label: u.email, value: u.email }))}
+            />
+            <Button className="rounded-none h-11 px-6 bg-[#9952b3] text-white" loading={savingRef} onClick={handleSaveReferredBy}>
+              Save
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Defaults to <span className="font-mono">{defaultRefEmailLabel}</span> if none is set.
+          </p>
+        </div>
+
         {personaData && (
           <div className="flex flex-col gap-2 rounded-lg bg-gray-200 p-6">
             <div className="flex">
@@ -215,7 +303,6 @@ function DigitalIdentityDetailView({ service }) {
                 <p className="font-bold">Verifications</p>
                 <div className="border rounded-xl p-6 bg-white flex flex-col gap-3">
                   {verifications.map((item) => {
-                    // Safeguard: Handle undefined type or status
                     const kind = item.kind || "Unknown Verification";
                     const status = item.status || "UNKNOWN";
 
