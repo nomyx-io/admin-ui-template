@@ -30,52 +30,15 @@ export default function LoginPage() {
   const [selectedChain, setSelectedChain] = useState(process.env.NEXT_PUBLIC_SELECTED_CHAIN!);
   const serviceManagerRef = useRef(BlockchainServiceManager.getInstance());
 
-  // Initialize the blockchain service manager
-  useEffect(() => {
-    const initService = async () => {
-      try {
-        if (!serviceManagerRef.current.isServiceInitialized()) {
-          await serviceManagerRef.current.initialize(selectedChain);
-        }
-      } catch (error) {
-        console.error("[Admin Login] Failed to initialize blockchain service:", error);
-      }
-    };
-    initService();
-  }, [selectedChain]);
+  // DO NOT initialize blockchain service on login page
+  // It will be initialized after successful login using NEXT_PUBLIC_SELECTED_CHAIN
 
   const handleLogin = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       console.log("[Admin Login] Login attempt:", email);
-      
-      // For development/testing, allow admin@example.com with password123
-      if (email === "admin@example.com" && password === "password123") {
-        // Mock successful login
-        const mockToken = "dev-token-" + Date.now();
-        
-        // Store the session token
-        localStorage.setItem("sessionToken", mockToken);
-        
-        // Store token expiration (30 minutes from now)
-        const expirationTime = Date.now() + 60 * 30 * 1000;
-        localStorage.setItem("tokenExpiration", expirationTime.toString());
-        
-        // Store user info
-        localStorage.setItem("user", JSON.stringify({
-          email: email,
-          role: "admin",
-          id: "dev-user-1"
-        }));
 
-        console.log("[Admin Login] Dev login successful, redirecting to dashboard");
-        
-        // Redirect to dashboard
-        router.push("/dashboard");
-        return;
-      }
-      
-      // Try actual Parse authentication
+      // Use real Parse authentication (no mock login)
       try {
         const response = await axios.post(
           `${process.env.NEXT_PUBLIC_PARSE_SERVER_URL!}/functions/authLogin`,
@@ -104,6 +67,12 @@ export default function LoginPage() {
           // Update ParseClient with the new session token
           const ParseClient = await import("../services/ParseClient");
           ParseClient.default.updateSessionToken(sessionToken);
+
+          // Initialize blockchain service with NEXT_PUBLIC_SELECTED_CHAIN
+          if (!serviceManagerRef.current.isServiceInitialized()) {
+            console.log("[Admin Login] Initializing blockchain service with chain:", process.env.NEXT_PUBLIC_SELECTED_CHAIN);
+            await serviceManagerRef.current.initialize(process.env.NEXT_PUBLIC_SELECTED_CHAIN);
+          }
 
           // Use centralized login handling from BlockchainServiceManager
           const { BlockchainServiceManager } = await import("@nomyx/shared");

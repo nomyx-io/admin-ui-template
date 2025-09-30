@@ -184,7 +184,7 @@ class ParseServerClient {
     // Try to determine which one we have based on format
     // Parse object IDs are typically 10 characters, while Stellar addresses are 56 and start with 'G'
     const isStellarAddress = identityIdOrAddress.length === 56 && identityIdOrAddress.startsWith('G');
-    const isObjectId = identityIdOrAddress.length === 10 && !identityIdOrAddress.startsWith('G');
+    const isObjectId = identityIdOrAddress.length === 10;
 
     // Prefer identityId if we have what looks like an object ID
     const params = isObjectId

@@ -431,55 +431,27 @@ const IdentitiesPage = ({ service }) => {
           const recordToDelete = record;  // Save the full record object
 
           for (const identity of identities) {
-            // Step 1: Try to remove identity from blockchain
-            try {
-              setTransactionModal(prev => ({
-                ...prev,
-                loadingMessage: 'Removing identity from blockchain...'
-              }));
-              // Wrap in Promise.resolve to ensure it's always async and catches sync errors
-              await Promise.resolve().then(() => service.removeIdentity(identity)).catch(err => {
-                console.warn(`[IdentitiesPage] removeIdentity failed (may not exist):`, err);
-                // Silently ignore this error - identity might not exist on blockchain
-                return null;
-              });
-            } catch (error) {
-              console.warn(`[IdentitiesPage] removeIdentity outer catch:`, error);
-              // Continue even if removeIdentity fails
-            }
+            // Step 1: Remove identity from blockchain
+            setTransactionModal(prev => ({
+              ...prev,
+              loadingMessage: 'Removing identity from blockchain...'
+            }));
 
-            // Step 2: Try to unregister identity (may fail if not registered)
-            try {
-              setTransactionModal(prev => ({
-                ...prev,
-                loadingMessage: 'Unregistering identity...'
-              }));
-              // Wrap in Promise.resolve to ensure it's always async and catches sync errors
-              await Promise.resolve().then(() => service.unregisterIdentity(identity)).catch(err => {
-                console.warn(`[IdentitiesPage] unregisterIdentity failed (may not be registered):`, err);
-                // Silently ignore this error - identity might not be in registry
-                return null;
-              });
-            } catch (error) {
-              console.warn(`[IdentitiesPage] unregisterIdentity outer catch:`, error);
-              // Continue even if unregisterIdentity fails
-            }
+            // Try blockchain deletion - allow errors to propagate to outer catch
+            await service.removeIdentity(identity);
 
-            // Step 3: Soft remove from database (this should always work)
-            try {
-              setTransactionModal(prev => ({
-                ...prev,
-                loadingMessage: 'Updating database...'
-              }));
-              // Pass the full record object, not just the address
-              await Promise.resolve().then(() => service.softRemoveUser(recordToDelete)).catch(err => {
-                console.warn(`[IdentitiesPage] softRemoveUser failed:`, err);
-                // Continue even if database update fails
-                return null;
-              });
-            } catch (error) {
-              console.warn(`[IdentitiesPage] softRemoveUser outer catch:`, error);
-            }
+            // Step 2: Skip unregisterIdentity as it's redundant with removeIdentity for Stellar
+            // unregisterIdentity was calling the same remove_identity function on-chain
+            // which was already called in Step 1, causing a "Identity not found" error
+
+            // Step 3: Soft remove from database (only after blockchain succeeds)
+            setTransactionModal(prev => ({
+              ...prev,
+              loadingMessage: 'Updating database...'
+            }));
+
+            // Sync to Parse - pass the full record object, not just the address
+            await service.softRemoveUser(recordToDelete);
           }
 
           // Show success

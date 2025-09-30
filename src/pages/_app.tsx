@@ -27,15 +27,21 @@ if (typeof window !== "undefined") {
 function MyApp({ Component, pageProps }: AppProps) {
   const serviceManager = useRef(BlockchainServiceManager.getInstance()).current;
   
-  // Initialize service manager on mount
+  // Initialize service manager on mount (but skip on login page)
   useEffect(() => {
     const initServices = async () => {
+      // Skip initialization on login page
+      if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+        console.log('[Admin Portal] Skipping blockchain initialization on login page');
+        return;
+      }
+
       try {
         if (!serviceManager.isServiceInitialized()) {
-          // Get saved chain preference or default to ethereum-local
-          const savedChain = localStorage.getItem("nomyx-selected-chain") || 'ethereum-local';
-          // Pass login route for session validation service
-          await serviceManager.initialize(savedChain, '/login');
+          // Use NEXT_PUBLIC_SELECTED_CHAIN instead of localStorage
+          const targetChain = process.env.NEXT_PUBLIC_SELECTED_CHAIN || 'stellar-local';
+          console.log('[Admin Portal] Initializing blockchain service with chain:', targetChain);
+          await serviceManager.initialize(targetChain);
         }
 
         // Also set up Parse session if we have a session token

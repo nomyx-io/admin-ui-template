@@ -246,19 +246,17 @@ class IdentityService {
     try {
       // Try to set claims on blockchain first
       const result = await this.blockchainService.setClaims(address, claimTopics);
-      
+
       // If successful on blockchain, also update in Parse
       await this.updateIdentityClaims(address, claimTopics);
-      
+
       return result;
     } catch (blockchainError) {
-      console.log("[IdentityService] Blockchain setClaims failed, updating Parse only:", blockchainError.message);
-      
-      // If blockchain fails, at least save to Parse for UI display
-      await this.updateIdentityClaims(address, claimTopics);
-      
-      // Return success since we saved to Parse
-      return { success: true, fallback: 'parse' };
+      console.error("[IdentityService] Blockchain setClaims failed:", blockchainError);
+
+      // Re-throw the error - do not update Parse if blockchain fails
+      // This ensures blockchain remains the source of truth
+      throw blockchainError;
     }
   }
   
