@@ -1,29 +1,24 @@
-npm warn ignoring workspace config at /Users/nologik/nomyx/parse-projects/portals/admin-ui-template/.npmrc
+npm warn ignoring workspace config at /Volumes/nvme/Development/nomyx/parse-projects/portals/admin-ui-template/.npmrc
 
 > admin-portal@0.1.0 build
 > next build
 
  ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
- We detected multiple lockfiles and selected the directory of /Users/nologik/nomyx/parse-projects/package-lock.json as the root directory.
+ We detected multiple lockfiles and selected the directory of /Volumes/nvme/Development/nomyx/parse-projects/package-lock.json as the root directory.
  To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
    See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
  Detected additional lockfiles: 
-   * /Users/nologik/nomyx/parse-projects/portals/admin-ui-template/package-lock.json
+   * /Volumes/nvme/Development/nomyx/parse-projects/portals/admin-ui-template/package-lock.json
 
    ▲ Next.js 15.5.0
    - Environments: .env
 
    Creating an optimized production build ...
-   Downloading swc package @next/swc-wasm-nodejs... to /Users/nologik/Library/Caches/next-swc
- ⚠ Attempted to load /Users/nologik/nomyx/parse-projects/node_modules/next/next-swc-fallback/@next/swc-darwin-arm64/next-swc.darwin-arm64.node, but it was not installed
+ ⚠ Attempted to load /Volumes/nvme/Development/nomyx/parse-projects/node_modules/next/next-swc-fallback/@next/swc-darwin-arm64/next-swc.darwin-arm64.node, but it was not installed
  ⚠ Attempted to load @next/swc-darwin-arm64, but it was not installed
- ⚠ [Error: Failed to get registry from "npm".] {
-  [cause]: [Error: Command failed: npm config get registry --no-workspaces] {
-    status: null,
-    signal: 'SIGINT',
-    output: [ null, <Buffer >, <Buffer > ],
-    pid: 54730,
-    stdout: <Buffer >,
-    stderr: <Buffer >
-  }
-}
+ ⚠ Attempted to load @next/swc-wasm-nodejs, but it was not installed
+ ⚠ Attempted to load @next/swc-wasm-web, but it was not installed
+npm error Lifecycle script `build` failed with error:
+npm error Error: command failed
+npm error   in workspace: admin-portal@0.1.0
+npm error   at location: /Volumes/nvme/Development/nomyx/parse-projects/portals/admin-ui-template
