@@ -11,6 +11,7 @@ import { WalletPreference } from "../utils/Constants";
 import TransactionModal from "./shared/TransactionModal";
 import WalletConnectionModal from "./WalletConnectionModal";
 import PageCard from "./shared/PageCard";
+import { BlockchainServiceManager } from "@nomyx/shared";
 
 const EditClaims = ({ service }) => {
   const navigate = useNavigate();
@@ -107,10 +108,21 @@ const EditClaims = ({ service }) => {
           'Identity': identity.displayName || `${identity.address.substring(0, 6)}...${identity.address.substring(identity.address.length - 4)}`,
           'Address': identity.address,
           'Claims Updated': selectedClaimTopics.length,
-          'Claim IDs': selectedClaimTopics.join(', ') || 'None'
+          'Claim IDs': selectedClaimTopics.join(', ') || 'None',
+          'Transaction Hash': result?.transactionHash || result?.hash || result?.txHash
         }
       });
-      
+
+      // Refresh permission status to update wallet indicator
+      try {
+        const manager = BlockchainServiceManager.getInstance();
+        await manager.refreshPermissionStatus();
+        console.log('[EditClaims] Permission status refreshed after claim update');
+      } catch (refreshError) {
+        console.error('[EditClaims] Error refreshing permission status:', refreshError);
+        // Don't fail the whole operation if refresh fails
+      }
+
       // Navigate after a delay
       setTimeout(() => {
         navigate("/identities");

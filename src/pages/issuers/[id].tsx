@@ -24,11 +24,12 @@ export default function ViewIssuerPage() {
           const allIssuers = await blockchainService.getTrustedIssuers();
           
           // Find the issuer with matching address (handle both Ethereum and Stellar formats)
-          const issuer = allIssuers?.find((i: any) => 
-            i.attributes?.issuer === decodedAddress || // Ethereum format
-            i.issuer === decodedAddress || // Stellar format
-            i.issuer_address === decodedAddress // Alternative Stellar format
-          );
+          // Normalize addresses for comparison (case-insensitive)
+          const normalizedAddress = decodedAddress.toUpperCase();
+          const issuer = allIssuers?.find((i: any) => {
+            const issuerAddr = (i.attributes?.issuer || i.issuer || i.issuer_address || '').toUpperCase();
+            return issuerAddr === normalizedAddress;
+          });
           
           if (issuer) {
             setIssuerData(issuer);

@@ -10,7 +10,7 @@ import { RoleContext } from "../context/RoleContext"; // Import RoleContext for 
 import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
 import { WalletPreference } from "../utils/Constants";
-import { BlockchainServiceManager } from "@nomyx/shared";
+import { BlockchainServiceManager, getClaimTopicHelper } from "@nomyx/shared";
 
 const IdentitiesPage = ({ service }) => {
   const navigate = useNavigate();
@@ -127,15 +127,22 @@ const IdentitiesPage = ({ service }) => {
           if (tab === "Identities" || tab === "Claims") {
             // Fetch active identities for Identities and Claims tabs, filtered by chain
             fetchedIdentities = await service.getActiveIdentities(chainId);
-            fetchedIdentities = fetchedIdentities.map((identity) => {
+
+            // Get claim topic helper for name mapping
+            const claimHelper = getClaimTopicHelper();
+
+            // Use Promise.all to map claims to names asynchronously
+            fetchedIdentities = await Promise.all(fetchedIdentities.map(async (identity) => {
               let identidyObj = {};
               // Check if identity has attributes (blockchain format) or direct fields (Parse format)
               const data = identity.attributes || identity;
-              
+
               if (identity && data) {
                 // Map active identities fields
                 const claimsArray = data.claims || [];
-                identidyObj.claims = claimsArray.join(", "); // Convert claims array to comma-separated string
+                // Convert claim IDs to display names
+                const claimNames = await claimHelper.getClaimTopicNames(claimsArray);
+                identidyObj.claims = claimNames.join(", ");
                 // Ensure displayName is a string, not an object
                 const rawDisplayName = data.displayName || "";
                 identidyObj.displayName = typeof rawDisplayName === 'string' ? rawDisplayName : String(rawDisplayName);
@@ -174,7 +181,7 @@ const IdentitiesPage = ({ service }) => {
                 identidyObj.watchlistMatched = false;
               }
               return identidyObj;
-            });
+            }));
 
             if (tab === "Claims") {
               fetchedIdentities = fetchedIdentities.filter((identity) => !identity.claims || identity.claims.length === 0);
@@ -183,15 +190,22 @@ const IdentitiesPage = ({ service }) => {
             // Fetch active identities and filter for those without claims
             // This shows identities that need claim topics to be assigned (unverified)
             fetchedIdentities = await service.getActiveIdentities(chainId);
-            fetchedIdentities = fetchedIdentities.map((identity) => {
+
+            // Get claim topic helper for name mapping
+            const claimHelper = getClaimTopicHelper();
+
+            // Use Promise.all to map claims to names asynchronously
+            fetchedIdentities = await Promise.all(fetchedIdentities.map(async (identity) => {
               let identidyObj = {};
               // Check if identity has attributes (blockchain format) or direct fields (Parse format)
               const data = identity.attributes || identity;
-              
+
               if (identity && data) {
                 // Map active identities fields
                 const claimsArray = data.claims || [];
-                identidyObj.claims = claimsArray.join(", "); // Convert claims array to comma-separated string
+                // Convert claim IDs to display names
+                const claimNames = await claimHelper.getClaimTopicNames(claimsArray);
+                identidyObj.claims = claimNames.join(", ");
                 // Ensure displayName is a string, not an object
                 const rawDisplayName = data.displayName || "";
                 identidyObj.displayName = typeof rawDisplayName === 'string' ? rawDisplayName : String(rawDisplayName);
@@ -230,7 +244,7 @@ const IdentitiesPage = ({ service }) => {
                 identidyObj._rawClaims = [];
               }
               return identidyObj;
-            });
+            }));
             
             // Filter to only show identities without claims (pending verification)
             fetchedIdentities = fetchedIdentities.filter((identity) => 
