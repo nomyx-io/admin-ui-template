@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Space, message } from "antd";
+import { Button, Space, message, Typography, Spin, Result } from "antd";
 import Badge from "antd/es/badge";
 import Tooltip from "antd/es/tooltip";
 import Select from "antd/es/select";
 import Modal from "antd/es/modal";
+import { CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined } from "@ant-design/icons";
 import '@xyflow/react/dist/style.css';
 
 // Client-only wrapper for BlockchainSelectionManager
@@ -52,7 +53,15 @@ const ClientBlockchainSelector = (props: any) => {
           Badge,
           message,
           createDiamondArchitectureModal: DiamondModal ? () => DiamondModal : undefined,
-          // Pass React Flow components
+          // TransactionModal dependencies
+          Typography,
+          Spin,
+          Result,
+          CheckCircleOutlined,
+          CloseCircleOutlined,
+          LoadingOutlined,
+          createExplorerLink: mod.createExplorerLink,
+          // Pass React Flow components (required)
           ReactFlow: reactFlowMod.ReactFlow,
           ReactFlowProvider: reactFlowMod.ReactFlowProvider,
           Controls: reactFlowMod.Controls,

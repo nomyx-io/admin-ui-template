@@ -214,58 +214,10 @@ const EditClaims = ({ service }) => {
         // Always create at least one default topic if none exist
         if (data.length === 0) {
           console.error('[EditClaims] No claim topics found, using default');
-          data = [{
-            key: 1,
-            displayName: 'KYC Verification',
-            topic: 1
-          }];
+          return;
         }
         
         console.log('[EditClaims] Available claim topics:', data);
-        
-        // Skip the redundant code that overwrites data
-        // The data variable already has the claim topics from above
-        /*
-        // Alternatively, get compliance rules if the blockchain doesn't have claim topics
-        // This maintains backward compatibility with the Parse-based system
-        let result = await service.getClaimTopics();
-        if (!result || result.length === 0) {
-          // Fallback to compliance rules from Parse if no claim topics on blockchain
-          result = await service.getComplianceRules();
-          
-          // Map compliance rules to the format required by the Transfer component
-          data = result.map((item) => {
-            // Handle detailed format {id: number, name: string}
-            if (item && typeof item === 'object' && 'id' in item && 'name' in item) {
-              return {
-                key: item.id,
-                displayName: item.name,
-                topic: item.id,
-              };
-            }
-            // Handle format with attributes
-            else if (item && item.attributes) {
-              return {
-                key: item.attributes.topic,
-                displayName: item.attributes.displayName,
-                topic: item.attributes.topic,
-              };
-            } 
-            // Fallback for simple topic IDs
-            else if (typeof item === 'number' || typeof item === 'string') {
-              const topicId = Number(item);
-              return {
-                key: topicId,
-                displayName: `Claim Topic ${topicId}`,
-                topic: topicId,
-              };
-            } else {
-              console.warn('[EditClaims] Unknown claim topic format:', item);
-              return null;
-            }
-          }).filter(Boolean); // Remove any null entries
-        }
-        */
         
         // Set the claim topics that we already loaded above
         console.log('[EditClaims] Setting claim topics:', data);
