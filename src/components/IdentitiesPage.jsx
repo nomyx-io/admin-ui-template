@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
 import { Tabs } from "antd";
+import Parse from "parse";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -170,6 +171,38 @@ const IdentitiesPage = ({ service }) => {
       });
   };
 
+  const handleSendVerificationEmail = async (record) => {
+    const { email, displayName } = record;
+
+    if (!email) {
+      toast.error("Email address is missing for this user");
+      return;
+    }
+
+    toast.promise(
+      async () => {
+        try {
+          // Call Parse Cloud Function
+          const result = await Parse.Cloud.run("sendVerificationEmail", { email });
+          return result;
+        } catch (error) {
+          console.error("Error sending verification email:", error);
+          throw error;
+        }
+      },
+      {
+        pending: `Sending verification email to ${displayName || email}...`,
+        success: `Verification email sent successfully to ${email}`,
+        error: {
+          render({ data }) {
+            const errorMessage = getErrorMessage(data);
+            return `Failed to send verification email: ${errorMessage}`;
+          },
+        },
+      }
+    );
+  };
+
   const handleRemoveIdentity = async (event, action, record) => {
     if (walletPreference === WalletPreference.MANAGED) {
       const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -299,6 +332,7 @@ const IdentitiesPage = ({ service }) => {
   const pendingActions = [
     { label: "Approve", name: NomyxAction.CreatePendingIdentity },
     { label: "View", name: NomyxAction.ViewPendingIdentity },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: "mail" },
     {
       label: "Deny",
       name: NomyxAction.RemoveUser,
@@ -342,6 +376,9 @@ const IdentitiesPage = ({ service }) => {
         case NomyxAction.CreatePendingIdentity:
           const { displayName, kyc_id, identityAddress } = record;
           navigate(`/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}`);
+          break;
+        case NomyxAction.SendVerificationEmail:
+          await handleSendVerificationEmail(record);
           break;
         case NomyxAction.RemoveUser:
           await handleRemoveUser(record);
