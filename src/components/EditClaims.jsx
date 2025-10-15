@@ -169,27 +169,33 @@ const EditClaims = ({ service }) => {
         // In the future, this could also load from Parse if needed
         console.log('[EditClaims] Fetching detailed claim topics with names');
         
-        // Try to get detailed claim topics with names
+        // Try to get detailed claim topics with names - NORMALIZE ALL KEYS TO NUMBERS
         let data = [];
         const detailedTopics = await service.getClaimTopicsDetailed();
-        
+
         if (detailedTopics && detailedTopics.length > 0) {
           // Use detailed topics with names
-          data = detailedTopics.map(topic => ({
-            key: topic.id,
-            displayName: topic.name || `Claim Topic ${topic.id}`,
-            topic: topic.id
-          }));
+          data = detailedTopics.map(topic => {
+            const numericId = typeof topic.id === 'bigint' ? Number(topic.id) : Number(topic.id);
+            return {
+              key: numericId,
+              displayName: topic.name || `Claim Topic ${numericId}`,
+              topic: numericId
+            };
+          });
         } else {
           // Fallback: get regular claim topics and generate names
           const availableTopics = await service.getClaimTopics();
-          
+
           if (availableTopics && availableTopics.length > 0) {
-            data = availableTopics.map(topicId => ({
-              key: topicId,
-              displayName: `Claim Topic ${topicId}`,
-              topic: topicId
-            }));
+            data = availableTopics.map(topicId => {
+              const numericId = typeof topicId === 'bigint' ? Number(topicId) : Number(topicId);
+              return {
+                key: numericId,
+                displayName: `Claim Topic ${numericId}`,
+                topic: numericId
+              };
+            });
           }
         }
         
@@ -199,11 +205,15 @@ const EditClaims = ({ service }) => {
             const result = await service.getComplianceRules();
             if (result && result.length > 0) {
               console.log('[EditClaims] Using compliance rules from Parse as fallback');
-              data = result.map(rule => ({
-                key: rule.attributes?.topic || rule.id,
-                displayName: rule.attributes?.displayName || `Rule ${rule.id}`,
-                topic: rule.attributes?.topic || rule.id
-              }));
+              data = result.map(rule => {
+                const topicId = rule.attributes?.topic || rule.id;
+                const numericId = typeof topicId === 'bigint' ? Number(topicId) : Number(topicId);
+                return {
+                  key: numericId,
+                  displayName: rule.attributes?.displayName || `Rule ${numericId}`,
+                  topic: numericId
+                };
+              });
             }
           } catch (parseError) {
             console.log('[EditClaims] Could not fetch compliance rules from Parse:', parseError);
@@ -218,9 +228,9 @@ const EditClaims = ({ service }) => {
         }
         
         console.log('[EditClaims] Available claim topics:', data);
-        
+
         // Set the claim topics that we already loaded above
-        console.log('[EditClaims] Setting claim topics:', data);
+        console.log('[EditClaims] Setting claim topics with keys:', data.map(d => d.key));
         setClaimTopics(data);
 
         // Fetch the identity details
@@ -305,6 +315,9 @@ const EditClaims = ({ service }) => {
           }
           return typeof topic === 'number' ? topic : Number(topic);
         });
+
+        console.log('[EditClaims] Setting targetKeys:', claimKeys);
+        console.log('[EditClaims] Available keys in claimTopics:', data.map(d => d.key));
         setTargetKeys(claimKeys);
       } catch (error) {
         if (error.name !== 'AbortError') {

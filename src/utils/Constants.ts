@@ -20,6 +20,8 @@ enum NomyxAction {
   UpdateClaimTopic,
   DeleteClaimTopic,
   CreateTrustedIssuer,
+  ViewIssuer,
+  UpdateIssuer,
   RemoveTrustedIssuer,
   UpdateClaimTopics,
   CreateIdentity,

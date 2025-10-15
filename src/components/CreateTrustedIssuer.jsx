@@ -32,6 +32,11 @@ function CreateTrustedIssuer({ service }) {
     errorMessage: ''
   });
 
+  // Validation error states for inline display
+  const [verifierNameError, setVerifierNameError] = React.useState("");
+  const [walletAddressError, setWalletAddressError] = React.useState("");
+  const [targetKeysError, setTargetKeysError] = React.useState("");
+
   // Get user and dfnsToken from RoleContext (for DFNS operations)
   const { user, dfnsToken } = useContext(RoleContext);
   
@@ -78,7 +83,7 @@ function CreateTrustedIssuer({ service }) {
       console.log("[CreateTrustedIssuer] isValidAddress exists?", service && typeof service.isValidAddress);
       console.log("[CreateTrustedIssuer] addTrustedIssuer exists?", service && typeof service.addTrustedIssuer);
       if (service) {
-        // Try to get detailed claim topics with names first
+        // STEP 1: Load claim topics FIRST
         let result = null;
 
         if (service.getClaimTopicsDetailed && typeof service.getClaimTopicsDetailed === 'function') {
@@ -91,71 +96,85 @@ function CreateTrustedIssuer({ service }) {
 
         console.log("[CreateTrustedIssuer] Claim topics result:", result);
 
-        // Only try to load issuer data if we're editing (not creating)
-        if (id && id !== "create") {
-          const issuerData = await service?.getTrustedIssuersByObjectId(id);
-          if (issuerData) {
-            setVerifierName(issuerData.attributes?.verifierName || "");
-            setWalletAddress(issuerData.attributes?.issuer || "");
-
-            // Set targetKeys from issuerData claim topics
-            const issuerClaimTopics = issuerData.attributes?.claimTopics || [];
-            const selectedTopicIds = issuerClaimTopics.map((ct) => ct.topic);
-            setTargetKeys(selectedTopicIds);
-          }
-        }
-
         let data = [];
 
         if (result) {
-          // Handle different formats
+          // Handle different formats - NORMALIZE ALL KEYS TO NUMBERS
           if (Array.isArray(result) && result.length > 0) {
-            if (typeof result[0] === "number") {
+            if (typeof result[0] === "number" || typeof result[0] === "bigint") {
               // Basic format: array of numbers (no names available)
               result.forEach((topicId) => {
+                const numericId = typeof topicId === 'bigint' ? Number(topicId) : Number(topicId);
                 data.push({
-                  key: topicId,
-                  displayName: `Topic ${topicId}`,
-                  id: topicId.toString(),
-                  topic: topicId,
+                  key: numericId,
+                  displayName: `Topic ${numericId}`,
+                  id: numericId.toString(),
+                  topic: numericId,
                 });
               });
             } else if (result[0].name !== undefined || result[0].displayName !== undefined) {
               // Detailed format from getClaimTopicsDetailed
               result.forEach((item) => {
-                const displayName = item.displayName || item.name || `Topic ${item.id}`;
+                const numericId = typeof item.id === 'bigint' ? Number(item.id) : Number(item.id);
+                const displayName = item.displayName || item.name || `Topic ${numericId}`;
                 data.push({
-                  key: item.id,
+                  key: numericId,
                   displayName: displayName,
-                  id: item.id.toString(),
-                  topic: item.id,
+                  id: numericId.toString(),
+                  topic: numericId,
                 });
               });
             } else if (result[0].attributes) {
               // Parse format: array of objects with attributes
               result.forEach((item) => {
+                const topicId = item.attributes?.topic || item.attributes?.topicId;
+                const numericId = typeof topicId === 'bigint' ? Number(topicId) : Number(topicId);
                 data.push({
-                  key: item.attributes?.topic || item.attributes?.topicId,
-                  displayName: item.attributes?.displayName || `Topic ${item.attributes?.topic || item.attributes?.topicId}`,
+                  key: numericId,
+                  displayName: item.attributes?.displayName || `Topic ${numericId}`,
                   id: item.id,
-                  topic: item.attributes?.topic || item.attributes?.topicId,
+                  topic: numericId,
                 });
               });
             } else {
               // Unknown format, try to handle gracefully
               result.forEach((item, index) => {
                 const topicId = item.topic || item.topicId || item.id || index;
-                const displayName = item.displayName || item.name || `Topic ${topicId}`;
+                const numericId = typeof topicId === 'bigint' ? Number(topicId) : Number(topicId);
+                const displayName = item.displayName || item.name || `Topic ${numericId}`;
                 data.push({
-                  key: topicId,
+                  key: numericId,
                   displayName: displayName,
-                  id: topicId.toString(),
-                  topic: topicId,
+                  id: numericId.toString(),
+                  topic: numericId,
                 });
               });
             }
           }
+
+          // Set claimTopics FIRST
           setClaimTopics(data);
+          console.log("[CreateTrustedIssuer] Set claimTopics with keys:", data.map(d => d.key));
+        }
+
+        // STEP 2: THEN load issuer data if editing (after claimTopics is set)
+        if (id && id !== "create") {
+          const issuerData = await service?.getTrustedIssuersByObjectId(id);
+          if (issuerData) {
+            setVerifierName(issuerData.attributes?.verifierName || "");
+            setWalletAddress(issuerData.attributes?.issuer || "");
+
+            // Set targetKeys from issuerData claim topics - NORMALIZE TO NUMBERS
+            const issuerClaimTopics = issuerData.attributes?.claimTopics || [];
+            const selectedTopicIds = issuerClaimTopics.map((ct) => {
+              const topic = ct.topic;
+              return typeof topic === 'bigint' ? Number(topic) : Number(topic);
+            });
+
+            console.log("[CreateTrustedIssuer] Setting targetKeys:", selectedTopicIds);
+            console.log("[CreateTrustedIssuer] Available keys in claimTopics:", data.map(d => d.key));
+            setTargetKeys(selectedTopicIds);
+          }
         }
       }
     })();
@@ -174,66 +193,78 @@ function CreateTrustedIssuer({ service }) {
 
   const onChange = (nextTargetKeys, direction, moveKeys) => {
     setTargetKeys(nextTargetKeys);
+    if (targetKeysError && nextTargetKeys.length > 0) {
+      setTargetKeysError("");
+    }
   };
   const onSelectChange = (sourceSelectedKeys, targetSelectedKeys) => {
     setSelectedKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
   };
 
   function validateTrustedIssuer(verifierName, walletAddress, targetKeys) {
+    // Clear previous errors
+    setVerifierNameError("");
+    setWalletAddressError("");
+    setTargetKeysError("");
+
+    let isValid = true;
+
+    // Check 1: Verifier name is not empty
     if (verifierName?.trim() === "") {
+      setVerifierNameError("Trusted Issuer display name is required");
       toast.error("Trusted Issuer display Name is required");
-      return false;
+      isValid = false;
     }
-
-    if (!isAlphanumericAndSpace(verifierName)) {
+    // Check 2: Verifier name is alphanumeric
+    else if (!isAlphanumericAndSpace(verifierName)) {
+      setVerifierNameError("Display name must contain only alphanumeric characters and spaces");
       toast.error("Trusted Issuer display Name must contain only alphanumeric characters");
-      return false;
+      isValid = false;
     }
 
+    // Check 3: Wallet address is not empty
     if (walletAddress === "") {
+      setWalletAddressError("Trusted Issuer wallet address is required");
       toast.error("Trusted Issuer Wallet is required");
-      return false;
+      isValid = false;
     }
-
-    if (!service || typeof service.isValidAddress !== "function") {
+    // Check 4: Service has isValidAddress method
+    else if (!service || typeof service.isValidAddress !== "function") {
+      setWalletAddressError("Address validation service not available");
       console.error("[CreateTrustedIssuer] isValidAddress method not available on service");
       toast.error("Address validation service not available");
-      return false;
+      isValid = false;
     }
-
-    if (!service.isValidAddress(walletAddress)) {
+    // Check 5: Wallet address is valid for current blockchain
+    else if (!service.isValidAddress(walletAddress)) {
+      setWalletAddressError("Invalid wallet address for the selected blockchain");
       toast.error("Invalid Wallet Address in Trusted Issuer Wallet Address");
-      return false;
+      isValid = false;
     }
 
+    // Check 6: At least one compliance rule selected
     if (targetKeys.length < 1) {
+      setTargetKeysError("Please assign at least 1 compliance rule");
       toast.error("Assign Atleast 1 Compliance Rule");
-      return false;
+      isValid = false;
     }
 
-    return true;
+    return isValid;
   }
 
   const saveTrustedIssuer = async () => {
-    // Get wallet type from BlockchainSelectionManager (wallet-agnostic)
     const walletType = getWalletType();
-    console.log("[CreateTrustedIssuer] saveTrustedIssuer called");
-    console.log("[CreateTrustedIssuer] walletType:", walletType);
-    console.log("[CreateTrustedIssuer] isConnected:", isConnected);
-    console.log("[CreateTrustedIssuer] service available:", !!service);
-    console.log("[CreateTrustedIssuer] service.addTrustedIssuer available:", !!(service && service.addTrustedIssuer));
-
     const trimmedVerifierName = verifierName.trim();
 
     if (!validateTrustedIssuer(trimmedVerifierName, walletAddress, targetKeys)) {
       return;
     }
-    
+
     // For local development, we can proceed without wallet connection
-    const isLocalDev = typeof window !== 'undefined' && 
-                       (window.location.hostname === 'localhost' || 
+    const isLocalDev = typeof window !== 'undefined' &&
+                       (window.location.hostname === 'localhost' ||
                         window.location.hostname === '127.0.0.1');
-    
+
     // Check if wallet is connected (skip for local dev)
     if (!isLocalDev && !isConnected) {
       toast.error("Please connect your wallet first");
@@ -429,7 +460,6 @@ function CreateTrustedIssuer({ service }) {
           });
         }
       } else {
-        // This should not happen with the wallet-agnostic approach
         console.error("[CreateTrustedIssuer] Unable to determine how to proceed. WalletType:", walletType, "Service:", !!service);
         toast.error("Unable to process request. Please ensure wallet is connected.");
       }
@@ -546,31 +576,45 @@ function CreateTrustedIssuer({ service }) {
       <div>
         <div>
           <label htmlFor="trustedIssuerName">Trusted Issuer display name *</label>
-          <div className="mt-3 relative w-full flex border rounded-lg">
+          <div className={`mt-3 relative w-full flex border rounded-lg ${verifierNameError ? 'border-red-500' : ''}`}>
             <Input
               id="trustedIssuerName"
               value={verifierName}
-              className="border w-full p-2 rounded-lg text-xl"
+              className={`border w-full p-2 rounded-lg text-xl ${verifierNameError ? 'border-red-500' : ''}`}
               placeholder="ID Verifier Name"
               type="text"
               maxLength={32}
-              onChange={(e) => setVerifierName(e.target.value)}
+              onChange={(e) => {
+                setVerifierName(e.target.value);
+                if (verifierNameError) setVerifierNameError("");
+              }}
             />
             <p className="absolute right-5 top-3">{verifierName.length}/32</p>
           </div>
+          {verifierNameError && (
+            <p className="mt-1 text-sm text-red-500">{verifierNameError}</p>
+          )}
         </div>
         <div className="mt-10 mb-6">
           <label htmlFor="trustedIssuerWallet">Trusted Issuer Wallet *</label>
-          <div className="mt-3 relative w-full flex border rounded-lg">
+          <div className={`mt-3 relative w-full flex border rounded-lg ${walletAddressError ? 'border-red-500' : ''}`}>
             <Input
               id="trustedIssuerWallet"
               value={walletAddress}
-              className="border w-full p-2 rounded-lg text-xl"
+              className={`border w-full p-2 rounded-lg text-xl ${walletAddressError ? 'border-red-500' : ''}`}
               placeholder="Wallet Address"
               type="text"
-              onChange={(e) => (id === "create" ? setWalletAddress(e.target.value.trim()) : "")}
+              onChange={(e) => {
+                if (id === "create") {
+                  setWalletAddress(e.target.value.trim());
+                  if (walletAddressError) setWalletAddressError("");
+                }
+              }}
             />
           </div>
+          {walletAddressError && (
+            <p className="mt-1 text-sm text-red-500">{walletAddressError}</p>
+          )}
           <p className="my-4">Manage Compliance Rule IDs</p>
         </div>
         <div className="my-5">
@@ -590,6 +634,9 @@ function CreateTrustedIssuer({ service }) {
             )}
             listStyle={{ width: "50%", minWidth: "120px" }}
           />
+          {targetKeysError && (
+            <p className="mt-2 text-sm text-red-500">{targetKeysError}</p>
+          )}
         </div>
         <div className="flex justify-end max-[600px]:justify-center mt-6">
           {id === "create" ? (

@@ -239,7 +239,6 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                             marginRight: "1rem",
                             color: "var(--link-color)",
                             transition: "0.5s all",
-                            lineHeight: "0.2",
                           }}
                         >
                           {action.label}

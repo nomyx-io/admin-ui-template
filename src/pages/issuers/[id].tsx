@@ -23,11 +23,11 @@ export default function ViewIssuerPage() {
           const decodedAddress = decodeURIComponent(id as string);
           const allIssuers = await blockchainService.getTrustedIssuers();
           
-          // Find the issuer with matching address (handle both Ethereum and Stellar formats)
+          // Find the issuer with matching address
           // Normalize addresses for comparison (case-insensitive)
           const normalizedAddress = decodedAddress.toUpperCase();
           const issuer = allIssuers?.find((i: any) => {
-            const issuerAddr = (i.attributes?.issuer || i.issuer || i.issuer_address || '').toUpperCase();
+            const issuerAddr = (i.issuerAddress || '').toUpperCase();
             return issuerAddr === normalizedAddress;
           });
           
@@ -76,21 +76,21 @@ export default function ViewIssuerPage() {
               <Descriptions bordered column={1}>
                 <Descriptions.Item label="ID">{issuerData.id || id}</Descriptions.Item>
                 <Descriptions.Item label="Name">
-                  {issuerData.attributes?.name || issuerData.name || issuerData.verifierName || "N/A"}
+                  {issuerData.name || "N/A"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Address">
-                  <code>{issuerData.attributes?.issuer || issuerData.attributes?.address || issuerData.issuer || issuerData.issuer_address || "N/A"}</code>
+                  <code>{issuerData.issuerAddress || "N/A"}</code>
                 </Descriptions.Item>
                 <Descriptions.Item label="Claim Topics">
-                  {(issuerData.attributes?.claimTopics || issuerData.claimTopics || issuerData.claim_topics)?.map((topic: any) => (
-                    <Tag key={typeof topic === 'object' ? topic.topic || JSON.stringify(topic) : topic}>
-                      {typeof topic === 'object' ? topic.topic || JSON.stringify(topic) : topic}
+                  {issuerData.claimTopics?.map((topic: number) => (
+                    <Tag key={topic}>
+                      {topic}
                     </Tag>
                   )) || "No claim topics"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Status">
-                  <Tag color={(issuerData.attributes?.active ?? issuerData.active ?? true) ? "green" : "red"}>
-                    {(issuerData.attributes?.active ?? issuerData.active ?? true) ? "Active" : "Inactive"}
+                  <Tag color={(issuerData.isActive ?? true) ? "green" : "red"}>
+                    {(issuerData.isActive ?? true) ? "Active" : "Inactive"}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Created At">

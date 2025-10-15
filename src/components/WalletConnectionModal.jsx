@@ -20,21 +20,32 @@ const WalletConnectionModal = ({ visible, onClose, onConnect }) => {
   const handleConnect = async (walletType) => {
     setConnecting(true);
     setError(null);
-    
+
     try {
       console.log(`[WalletConnectionModal] Connecting ${walletType} wallet...`);
-      
-      // Connect wallet through BlockchainServiceManager
-      const walletInfo = await manager.connectWallet(walletType);
-      
+
+      // NEW WALLET-AGNOSTIC API
+      // 1. Import wallet provider factory
+      const { WalletProviderFactory } = await import('@nomyx/shared');
+
+      // 2. Get wallet provider for the specified type
+      const provider = WalletProviderFactory.getProvider(walletType);
+
+      // 3. Connect the wallet (triggers WebAuthn/extension popup)
+      const currentChain = manager.getCurrentChain();
+      await provider.connect(currentChain.chainType || currentChain.chain);
+
+      // 4. Set the connected provider as the signer
+      const walletInfo = await manager.setSigner(provider);
+
       if (walletInfo) {
         console.log(`[WalletConnectionModal] Wallet connected successfully:`, walletInfo.address);
-        
+
         // Notify parent component of successful connection
         if (onConnect) {
           onConnect(walletInfo);
         }
-        
+
         // Close modal
         onClose(true);
       } else {

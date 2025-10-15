@@ -86,41 +86,26 @@ const TrustedIssuersPage = ({ service }) => {
   });
 
   // Transform the raw data into the format needed for the table
+  // Now using standardized TrustedIssuer interface from blockchain adapters
   const trustedIssuers = [];
   if (rawIssuers) {
     rawIssuers.forEach((item) => {
-      // Handle both wrapped (Ethereum) and unwrapped (Stellar) data formats
-      let issuerData;
-      
-      if (item && item.attributes) {
-        // Ethereum format with attributes wrapper
-        issuerData = item.attributes;
-      } else if (item && (item.issuerAddress || item.issuer_address || item.name)) {
-        // Stellar format without wrapper
-        issuerData = {
-          issuer: item.issuerAddress || item.issuer_address,
-          verifierName: item.name || `Issuer ${(item.issuerAddress || item.issuer_address || '').substring(0, 8)}...`,
-          claimTopics: item.claimTopics || item.claim_topics || []
-        };
-      } else {
+      if (!item || !item.issuerAddress) {
         console.warn("[TrustedIssuersPage] Skipping malformed issuer item:", item);
         return;
       }
 
-      // Handle claim topics - they may be numbers or objects with topic property
+      // Handle claim topics - convert array to comma-separated string
       let claimTopicsString = "N/A";
-      if (issuerData.claimTopics && Array.isArray(issuerData.claimTopics)) {
-        claimTopicsString = issuerData.claimTopics
-          .map((topic) => typeof topic === 'object' ? topic.topic : topic)
-          .filter(t => t !== undefined && t !== null)
-          .join(",") || "N/A";
+      if (item.claimTopics && Array.isArray(item.claimTopics) && item.claimTopics.length > 0) {
+        claimTopicsString = item.claimTopics.join(",");
       }
 
       trustedIssuers.push({
-        id: issuerData.issuer || item.id || "unknown",  // Use address as ID for routing
+        id: item.issuerAddress,  // Use address as ID for routing
         claimTopics: claimTopicsString,
-        address: issuerData.issuer || "N/A",
-        trustedIssuer: issuerData.verifierName || issuerData.name || "Unknown Issuer",
+        address: item.issuerAddress,
+        trustedIssuer: item.name || "Unknown Issuer",
       });
     });
   }
@@ -221,7 +206,8 @@ const TrustedIssuersPage = ({ service }) => {
   ];
 
   const actions = [
-    { label: "Update Compliance Rules", name: NomyxAction.UpdateClaimTopics },
+    { label: "View", name: NomyxAction.ViewIssuer },
+    { label: "Update", name: NomyxAction.UpdateIssuer },
     {
       label: "Remove",
       name: NomyxAction.RemoveTrustedIssuer,
@@ -237,9 +223,13 @@ const TrustedIssuersPage = ({ service }) => {
       case NomyxAction.CreateTrustedIssuer:
         navigate("/issuers/create");
         break;
-      case NomyxAction.UpdateClaimTopics:
-        // Use address as the ID for navigation
+      case NomyxAction.ViewIssuer:
+        // Use address as the ID for navigation to view page
         navigate("/issuers/" + encodeURIComponent(record.address));
+        break;
+      case NomyxAction.UpdateIssuer:
+        // Navigate to edit page to update claim topics
+        navigate("/issuers/" + encodeURIComponent(record.address) + "/edit");
         break;
       case NomyxAction.RemoveTrustedIssuer:
         removeTrustedIssuer(record.address);

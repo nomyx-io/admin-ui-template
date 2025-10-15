@@ -795,11 +795,71 @@ class BlockchainService {
   }
 
   async getClaimsForClaimTopics(topicId) {
-    console.log(`[Admin BlockchainService] Getting claims for claim topic: ${topicId}`);
+    console.log(`[Admin BlockchainService] Getting claims for claim topic: ${topicId} (from Parse)`);
 
-    // TODO: Implement actual claim fetching from blockchain
-    // For now, return empty array as claims functionality is not yet implemented
-    return [];
+    if (!this.initialized) {
+      console.warn("[Admin BlockchainService] Service not fully initialized, returning empty array");
+      return [];
+    }
+
+    try {
+      // Get all identities from Parse via nomyx-ts
+      const identities = await this.getIdentities();
+      console.log(`[Admin BlockchainService] Checking ${identities.length} identities for topic ${topicId}`);
+
+      // Get all trusted issuers from Parse for mapping
+      const trustedIssuers = await this.getTrustedIssuers();
+
+      const identitiesWithClaim = [];
+
+      // For each identity, check if they have this claim topic
+      for (const identity of identities) {
+        const address = identity.attributes?.address || identity.address;
+        if (!address) continue;
+
+        try {
+          // Get identity's claims from Parse via service
+          const claims = await this.getIdentityClaims(address);
+
+          // Check if this identity has the specific claim topic
+          const hasClaim = claims.some(claim => {
+            const claimTopic = typeof claim === 'object' ? claim.topic : claim;
+            const numericTopic = typeof claimTopic === 'bigint' ? Number(claimTopic) : Number(claimTopic);
+            const numericTopicId = typeof topicId === 'bigint' ? Number(topicId) : Number(topicId);
+            return numericTopic === numericTopicId;
+          });
+
+          if (hasClaim) {
+            // Find trusted issuers that manage this topic
+            const trustedIssuerObj = trustedIssuers.find(issuer => {
+              const issuerTopics = issuer.attributes?.claimTopics || [];
+              return issuerTopics.some(ct => {
+                const ctTopic = typeof ct.topic === 'bigint' ? Number(ct.topic) : Number(ct.topic);
+                const numericTopicId = typeof topicId === 'bigint' ? Number(topicId) : Number(topicId);
+                return ctTopic === numericTopicId;
+              });
+            });
+
+            identitiesWithClaim.push({
+              attributes: {
+                identity: address,
+                identityObj: identity,
+                trustedIssuerObj: trustedIssuerObj || null
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`[Admin BlockchainService] Error getting claims for identity ${address}:`, error);
+          // Continue with other identities
+        }
+      }
+
+      console.log(`[Admin BlockchainService] Found ${identitiesWithClaim.length} identities with topic ${topicId}`);
+      return identitiesWithClaim;
+    } catch (error) {
+      console.error(`[Admin BlockchainService] Error getting claims for topic:`, error);
+      return [];
+    }
   }
 
   async createIdentity(ownerAddress) {
