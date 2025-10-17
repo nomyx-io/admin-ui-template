@@ -56,14 +56,20 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
     }
   }, [router, requireAuth]);
 
-  const handleLogout = () => {
-    // Clear all possible session keys
+  const handleLogout = async () => {
+    // Use centralized logout handling from BlockchainServiceManager
+    // This clears: session tokens, DFNS token, user info, and stops session validation
+    const { BlockchainServiceManager } = await import('@nomyx/shared');
+    const manager = BlockchainServiceManager.getInstance();
+    manager.handleLogout();
+
+    // Also clear any legacy/portal-specific tokens
     localStorage.removeItem("sessionToken");
-    localStorage.removeItem("nomyx-session-token");
     localStorage.removeItem("access_token");
     localStorage.removeItem("tokenExpiration");
     localStorage.removeItem("user");
-    localStorage.removeItem("nomyx-user-info");
+
+    console.log("[Admin Logout] Logout complete, redirecting to login");
     router.push("/login");
   };
 
