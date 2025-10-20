@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
 import { Tabs } from "antd";
+import Parse from "parse";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
+import InvestmentRequestModal from "./InvestmentRequestModal"; // Import the new modal
 import ObjectList from "./ObjectList";
-import { RoleContext } from "../context/RoleContext"; // Import RoleContext
+import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
 import { WalletPreference } from "../utils/Constants";
@@ -21,6 +23,11 @@ const IdentitiesPage = ({ service }) => {
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
   const location = useLocation();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // New state for investment request modal
+  const [investmentModalVisible, setInvestmentModalVisible] = useState(false);
+  const [selectedIdentityForInvestment, setSelectedIdentityForInvestment] = useState(null);
+  const [tokenProjects, setTokenProjects] = useState([]);
 
   // Helper function to extract error message
   const getErrorMessage = (error) => {
@@ -52,6 +59,24 @@ const IdentitiesPage = ({ service }) => {
 
     return templateMap[inquiryTemplateId] || null;
   }
+
+  // Fetch token projects
+  const fetchTokenProjects = useCallback(async () => {
+    try {
+      if (service && service.getTokenProjects) {
+        const projects = await service.getTokenProjects();
+        setTokenProjects(projects || []);
+      }
+    } catch (error) {
+      console.error("Error fetching token projects:", error);
+      toast.error("Failed to fetch token projects");
+    }
+  }, [service]);
+
+  // Fetch token projects on component mount
+  useEffect(() => {
+    fetchTokenProjects();
+  }, [fetchTokenProjects]);
 
   const fetchData = useCallback(
     async (tab) => {
@@ -347,6 +372,32 @@ const IdentitiesPage = ({ service }) => {
     }
   };
 
+  // Handle investment request submission
+  const handleInvestmentRequestSubmit = async (requestData) => {
+    try {
+      // Call Parse Cloud Function
+      const result = await Parse.Cloud.run("sendInvestmentRequest", {
+        identityId: requestData.identityId,
+        identityAddress: requestData.identityAddress,
+        projectIds: requestData.projectIds,
+        subject: requestData.subject,
+        emailBody: requestData.emailBody,
+      });
+
+      if (result.success) {
+        toast.success("Investment request sent successfully!");
+        console.log("Investment request ID:", result.requestId);
+      } else {
+        throw new Error(result.message || "Failed to send investment request");
+      }
+    } catch (error) {
+      console.error("Error sending investment request:", error);
+      const errorMessage = getErrorMessage(error);
+      toast.error(`Failed to send investment request: ${errorMessage}`);
+      throw error;
+    }
+  };
+
   const columns = [
     { label: "Identity", name: "displayName" },
     { label: "Address", name: "identityAddress", width: "350px" },
@@ -367,6 +418,7 @@ const IdentitiesPage = ({ service }) => {
   const actions = [
     { label: "Edit Rules", name: NomyxAction.EditClaims },
     { label: "View", name: NomyxAction.ViewIdentity },
+    { label: "Request for Investment", name: NomyxAction.RequestInvestment }, // New action
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
@@ -415,6 +467,10 @@ const IdentitiesPage = ({ service }) => {
           break;
         case NomyxAction.RemoveIdentity:
           handleRemoveIdentity(event, action, record);
+          break;
+        case NomyxAction.RequestInvestment: // Handle new action
+          setSelectedIdentityForInvestment(record);
+          setInvestmentModalVisible(true);
           break;
         case NomyxAction.CreatePendingIdentity:
           const { displayName, kyc_id, identityAddress } = record;
@@ -480,6 +536,18 @@ const IdentitiesPage = ({ service }) => {
           />
         </TabPane>
       </Tabs>
+
+      {/* Investment Request Modal */}
+      <InvestmentRequestModal
+        visible={investmentModalVisible}
+        onClose={() => {
+          setInvestmentModalVisible(false);
+          setSelectedIdentityForInvestment(null);
+        }}
+        selectedIdentity={selectedIdentityForInvestment}
+        tokenProjects={tokenProjects}
+        onSubmit={handleInvestmentRequestSubmit}
+      />
     </>
   );
 };
