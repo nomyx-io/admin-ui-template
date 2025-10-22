@@ -73,13 +73,9 @@ export default function LoginPage() {
         localStorage.setItem("sessionToken", sessionToken);
         console.log("[Admin Login] Stored session token for Parse Cloud functions");
 
-        // Store DFNS token if available
-        if (result.dfns_token) {
-          localStorage.setItem("nomyx-dfns-token", result.dfns_token);
-          console.log("[Admin Login] ✅ Stored DFNS token for wallet operations");
-        } else {
-          console.log("[Admin Login] ⚠️ No DFNS token received (wallet operations may be unavailable)");
-        }
+        // SECURITY: DFNS delegated token is stored securely on backend (Parse Session)
+        // Frontend never receives or stores the delegated token
+        console.log("[Admin Login] DFNS wallet operations will use session token (delegated token stored securely on backend)");
 
         // Update ParseClient with the new session token
         const ParseClient = await import("../services/ParseClient");
@@ -92,9 +88,10 @@ export default function LoginPage() {
         }
 
         // Use centralized login handling from BlockchainServiceManager
+        // SECURITY: No longer pass dfns_token (it's stored securely on backend)
         const { BlockchainServiceManager } = await import("@nomyx/shared");
         const manager = BlockchainServiceManager.getInstance();
-        manager.handleLoginSuccess(result.access_token, result.user, result.dfns_token);
+        manager.handleLoginSuccess(result.access_token, result.user);
         console.log("[Admin Login] Handled login success via BlockchainServiceManager");
 
         console.log("[Admin Login] Login successful, redirecting to dashboard");
@@ -217,6 +214,12 @@ export default function LoginPage() {
         console.log("[Admin Login] attestation.kind:", attestation.kind);
         console.log("[Admin Login] attestation.credentialInfo:", attestation.credentialInfo);
         console.log("[Admin Login] All attestation keys:", Object.keys(attestation));
+
+        // Store attestation credential info in localStorage for later wallet creation
+        if (attestation.credentialInfo?.credId) {
+          localStorage.setItem('nomyx-dfns-credId', attestation.credentialInfo.credId);
+          console.log("[Admin Login] Stored DFNS credential ID in localStorage");
+        }
       } catch (createError: any) {
         console.error("[Admin Login] WebAuthn credential creation failed:", createError);
         throw new Error(`WebAuthn credential creation failed: ${createError.message}. Please make sure you're using HTTPS or localhost, and that your browser supports WebAuthn.`);
@@ -241,13 +244,18 @@ export default function LoginPage() {
 
       console.log("[Admin Login] Constructed signedChallenge:", JSON.stringify(signedChallenge, null, 2));
 
+      // Get current chain ID for wallet creation
+      const currentChainId = serviceManagerRef.current.getCurrentChainId() || process.env.NEXT_PUBLIC_SELECTED_CHAIN || 'stellar-local';
+      console.log("[Admin Login] Using chain ID for wallet creation:", currentChainId);
+
       // Step 3: Call registerComplete with signed challenge
       console.log("[Admin Login] Step 3: Calling registerComplete");
-      await axios.post(
+      const registerCompleteResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_PARSE_SERVER_URL!}/functions/registerComplete`,
         {
           signedChallenge,
           temporaryAuthenticationToken: challengeData.temporaryAuthenticationToken,
+          chainCode: currentChainId,
         },
         {
           headers: {
@@ -259,23 +267,128 @@ export default function LoginPage() {
 
       console.log("[Admin Login] ✅ DFNS registration successful!");
 
+      // Check if wallets were created during registration
+      const registrationData = registerCompleteResponse.data.result;
+      const createdWallets = registrationData?.user?.wallets || registrationData?.wallets || [];
+      console.log(`[Admin Login] 📋 Wallets created during registration: ${createdWallets.length}`);
+      if (createdWallets.length > 0) {
+        createdWallets.forEach((wallet: any, index: number) => {
+          console.log(`[Admin Login]   Wallet ${index + 1}: ${wallet.id} | Network: ${wallet.network} | Address: ${wallet.address}`);
+        });
+      }
+
+      // Determine if we need to create a wallet for the current network
+      // Get DFNS network name for current chain
+      const getDFNSNetworkName = (chainId: string): string => {
+        // Stellar networks - distinguish between mainnet and testnet
+        if (chainId === 'stellar-mainnet') return 'Stellar';
+        if (chainId === 'stellar-testnet' || chainId === 'stellar-local') return 'StellarTestnet';
+
+        // Ethereum networks
+        if (chainId.includes('basesep')) return 'BaseSepolia';
+        if (chainId.includes('optsep')) return 'OptimismSepolia';
+        if (chainId.includes('sepolia')) return 'Sepolia';
+        return 'Ethereum';
+      };
+
+      const targetNetwork = getDFNSNetworkName(currentChainId);
+      const walletExistsForNetwork = createdWallets.some((w: any) => w.network === targetNetwork);
+
+      console.log(`[Admin Login] Target network: ${targetNetwork}`);
+      console.log(`[Admin Login] Wallet exists for ${targetNetwork}: ${walletExistsForNetwork}`);
+
+      // Step 3.5: Login to get session token with DFNS delegated token
+      console.log("[Admin Login] Step 3.5: Logging in to initialize secure DFNS session...");
+      setTransactionModal({
+        visible: true,
+        status: 'loading',
+        title: 'Initializing Session',
+        loadingMessage: 'Establishing secure connection...',
+        successMessage: '',
+        errorMessage: ''
+      });
+
+      // Login will create a Parse Session with the DFNS delegated token stored securely
+      let sessionTokenForWallet: string;
+      try {
+        const loginResponse = await axios.post(
+          `${process.env.NEXT_PUBLIC_PARSE_SERVER_URL!}/functions/authLogin`,
+          { email, password },
+          {
+            headers: {
+              "X-Parse-Application-Id": process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID!,
+              "X-Parse-Javascript-Key": process.env.NEXT_PUBLIC_PARSE_JAVASCRIPT_KEY!,
+            },
+          }
+        );
+
+        const loginData = loginResponse.data;
+        const loginResult = loginData.result || loginData;
+        sessionTokenForWallet = loginResult.sessionToken || loginResult.access_token;
+        console.log("[Admin Login] ✅ Session initialized with DFNS token stored securely on backend");
+      } catch (loginError: any) {
+        console.error("[Admin Login] ❌ Failed to initialize session:", loginError);
+
+        // Show error and skip wallet creation
+        setTransactionModal({
+          visible: true,
+          status: 'error',
+          title: 'Session Error',
+          loadingMessage: '',
+          successMessage: '',
+          errorMessage: `Registration succeeded but couldn't initialize session: ${loginError.message || 'Unknown error'}. Please try logging in again.`
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        setTransactionModal({ ...transactionModal, visible: false });
+        return;
+      }
+
+      // Step 3.6: Check wallet status
+      // NOTE: Automatic wallet creation removed due to DFNS organization permissions
+      // Wallets must be created via service account or admin-initiated flow
+      if (!walletExistsForNetwork) {
+        console.log("[Admin Login] Step 3.6: No wallet found for network");
+        console.log("[Admin Login] Automatic wallet creation skipped - requires separate wallet setup");
+      } else {
+        console.log("[Admin Login] ✅ Wallet already exists for network");
+      }
+
       // Show success message briefly
+      const successMessage = walletExistsForNetwork
+        ? 'DFNS registration complete! Wallet already exists. Redirecting...'
+        : 'DFNS registration complete! You can set up your wallet from the dashboard. Redirecting...';
+
       setTransactionModal({
         visible: true,
         status: 'success',
-        title: 'Registration Successful',
+        title: 'Registration Complete',
         loadingMessage: '',
-        successMessage: 'DFNS registration complete! Logging you in...',
+        successMessage,
         errorMessage: ''
       });
 
       // Wait a moment for user to see success message
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Step 4: Automatically retry login with the same credentials
-      console.log("[Admin Login] Step 4: Retrying login after registration");
+      // Step 4: Store session and redirect
+      console.log("[Admin Login] Step 4: Storing session and redirecting");
       setTransactionModal({ ...transactionModal, visible: false });
-      await handleLogin(email, password);
+
+      localStorage.setItem("sessionToken", sessionTokenForWallet);
+      localStorage.setItem("tokenExpiration", (Date.now() + 60 * 30 * 1000).toString());
+
+      // Update ParseClient
+      const ParseClient = await import("../services/ParseClient");
+      ParseClient.default.updateSessionToken(sessionTokenForWallet);
+
+      // Initialize blockchain service
+      if (!serviceManagerRef.current.isServiceInitialized()) {
+        console.log("[Admin Login] Initializing blockchain service with chain:", process.env.NEXT_PUBLIC_SELECTED_CHAIN);
+        await serviceManagerRef.current.initialize(process.env.NEXT_PUBLIC_SELECTED_CHAIN);
+      }
+
+      router.push("/dashboard");
 
     } catch (error: any) {
       console.error("[Admin Login] DFNS registration failed:", error);

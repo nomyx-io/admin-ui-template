@@ -4,7 +4,7 @@ import ConfigProvider from "antd/es/config-provider";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 const { ToastContainer } = require("react-toastify");
 import { RoleProvider } from "../context/RoleContext";
-import { BlockchainServiceManager } from "@nomyx/shared";
+import { BlockchainServiceManager, WalletProviderFactory } from "@nomyx/shared";
 import ErrorBoundary from "../components/ErrorBoundary";
 import Parse from "parse";
 
@@ -19,9 +19,21 @@ if (typeof window !== "undefined") {
 
   Parse.initialize(appId, jsKey);
   Parse.serverURL = serverURL;
+
+  // CRITICAL: Disable Parse SDK automatic retries to prevent "Challenge already used" errors
+  // The Parse SDK retries 5XX errors by default (REQUEST_ATTEMPT_LIMIT = 5)
+  // This causes issues with DFNS single-use challenges
+  (Parse as any).CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
+  console.log('[Admin Portal] Parse retry limit set to 1 (no retries)');
+
   // Make Parse available globally for components that need it
   (window as any).Parse = Parse;
   console.log('[Admin Portal] Parse initialized and available as window.Parse');
+
+  // Initialize WalletProviderFactory with Parse instance
+  // This allows DFNS wallet to use the portal's Parse instance
+  WalletProviderFactory.initialize(Parse);
+  console.log('[Admin Portal] WalletProviderFactory initialized with Parse instance');
 }
 
 function MyApp({ Component, pageProps }: AppProps) {
