@@ -101,7 +101,7 @@ function CreateDigitalId({ service }) {
                   // Get the newly created identity
                   identity = await DfnsService.getIdentity(walletAddress);
                   console.log("New identity created:", identity);
-                  identityCreatedOrExists = true;
+                  if (completeResponse) identityCreatedOrExists = true;
                 } else {
                   console.log("Identity already exists, skipping creation:", identity);
                   toast.info("Identity already exists for this address, proceeding with registration");
@@ -143,7 +143,7 @@ function CreateDigitalId({ service }) {
                   if (addIdentityCompleteError) throw new Error(addIdentityCompleteError);
 
                   console.log("Identity registered in Diamond successfully");
-                  identityRegisteredOrExists = true;
+                  if (addIdentityCompleteResponse) identityRegisteredOrExists = true;
                 }
 
                 // Step 5: Update identity metadata
