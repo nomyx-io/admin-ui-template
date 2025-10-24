@@ -70,97 +70,109 @@ function CreateDigitalId({ service }) {
         toast
           .promise(
             (async () => {
-              // Step 1: Check if identity already exists
-              let identity = null;
               try {
-                identity = await DfnsService.getIdentity(walletAddress);
-                console.log("Existing identity check:", identity);
-              } catch (error) {
-                console.log("No existing identity found, will create new one");
-              }
+                let identityCreatedOrExists = false;
+                let identityRegisteredOrExists = false;
 
-              // Step 2: Create identity only if it doesn't exist
-              if (!identity || identity === "0x0000000000000000000000000000000000000000") {
-                console.log("Creating new identity...");
-
-                const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
-                if (initError) throw new Error(initError);
-
-                const { completeResponse, error: completeError } = await DfnsService.completeCreateIdentity(
-                  user.walletId,
-                  dfnsToken,
-                  initiateResponse.challenge,
-                  initiateResponse.requestBody
-                );
-                if (completeError) throw new Error(completeError);
-
-                // Get the newly created identity
-                identity = await DfnsService.getIdentity(walletAddress);
-                console.log("New identity created:", identity);
-              } else {
-                console.log("Identity already exists, skipping creation:", identity);
-                toast.info("Identity already exists for this address, proceeding with registration");
-              }
-
-              // Step 3: Check if identity is already registered in Diamond
-              let needsRegistration = true;
-              try {
-                const isRegistered = await service.isVerified(walletAddress);
-                if (isRegistered) {
-                  console.log("Identity already registered in Diamond");
-                  needsRegistration = false;
-                  toast.info("Identity already registered in Diamond, skipping registration");
+                // Step 1: Check if identity already exists
+                let identity = null;
+                try {
+                  identity = await DfnsService.getIdentity(walletAddress);
+                  console.log("Existing identity check:", identity);
+                } catch (error) {
+                  console.log("No existing identity found, will create new one");
                 }
-              } catch (error) {
-                console.log("Error checking registration, proceeding with registration:", error);
-              }
 
-              // Step 4: Register identity in Diamond only if needed
-              if (needsRegistration) {
-                console.log("Registering identity in Diamond...");
+                // Step 2: Create identity only if it doesn't exist
+                if (!identity || identity === "0x0000000000000000000000000000000000000000") {
+                  console.log("Creating new identity...");
 
-                const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
-                  walletAddress,
-                  identity,
-                  user.walletId,
-                  dfnsToken
-                );
-                if (addIdentityInitError) throw new Error(addIdentityInitError);
+                  const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
+                  if (initError) throw new Error(initError);
 
-                const { addIdentityCompleteResponse, error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
-                  user.walletId,
-                  dfnsToken,
-                  addIdentityInitResponse.challenge,
-                  addIdentityInitResponse.requestBody
-                );
-                if (addIdentityCompleteError) throw new Error(addIdentityCompleteError);
+                  const { completeResponse, error: completeError } = await DfnsService.completeCreateIdentity(
+                    user.walletId,
+                    dfnsToken,
+                    initiateResponse.challenge,
+                    initiateResponse.requestBody
+                  );
+                  if (completeError) throw new Error(completeError);
 
-                console.log("Identity registered in Diamond successfully");
-              }
-
-              // Step 5: Update identity metadata
-              await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
-                displayName: trimmedDisplayName,
-                walletAddress: walletAddress.toLocaleLowerCase(),
-                accountNumber: trimmedAccountNumber,
-              });
-
-              // Step 6: Approve user if needed
-              if (searchParams.has("walletAddress")) {
-                const userExists = await service.isUser(walletAddress.toLocaleLowerCase());
-                if (userExists) {
-                  await toast.promise(service.approveUser(walletAddress.toLocaleLowerCase()), {
-                    pending: "Approving user...",
-                    success: "User approved successfully",
-                    error: {
-                      render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
-                    },
-                  });
+                  // Get the newly created identity
+                  identity = await DfnsService.getIdentity(walletAddress);
+                  console.log("New identity created:", identity);
+                  identityCreatedOrExists = true;
                 } else {
-                  toast.error(`User with wallet address ${walletAddress} does not exist.`);
+                  console.log("Identity already exists, skipping creation:", identity);
+                  toast.info("Identity already exists for this address, proceeding with registration");
+                  identityCreatedOrExists = true;
                 }
+
+                // Step 3: Check if identity is already registered in Diamond
+                let needsRegistration = true;
+                try {
+                  const isRegistered = await service.isVerified(walletAddress);
+                  if (isRegistered) {
+                    console.log("Identity already registered in Diamond");
+                    needsRegistration = false;
+                    toast.info("Identity already registered in Diamond, skipping registration");
+                    identityRegisteredOrExists = true;
+                  }
+                } catch (error) {
+                  console.log("Error checking registration, proceeding with registration:", error);
+                }
+
+                // Step 4: Register identity in Diamond only if needed
+                if (needsRegistration) {
+                  console.log("Registering identity in Diamond...");
+
+                  const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
+                    walletAddress,
+                    identity,
+                    user.walletId,
+                    dfnsToken
+                  );
+                  if (addIdentityInitError) throw new Error(addIdentityInitError);
+
+                  const { addIdentityCompleteResponse, error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
+                    user.walletId,
+                    dfnsToken,
+                    addIdentityInitResponse.challenge,
+                    addIdentityInitResponse.requestBody
+                  );
+                  if (addIdentityCompleteError) throw new Error(addIdentityCompleteError);
+
+                  console.log("Identity registered in Diamond successfully");
+                  identityRegisteredOrExists = true;
+                }
+
+                // Step 5: Update identity metadata
+                await service.updateIdentity(walletAddress.toLowerCase(), {
+                  displayName: trimmedDisplayName,
+                  walletAddress: walletAddress.toLowerCase(),
+                  accountNumber: trimmedAccountNumber,
+                });
+
+                // Step 6: Approve user only if identity was created/exists AND registered/exists
+                if (searchParams.has("walletAddress") && identityCreatedOrExists && identityRegisteredOrExists) {
+                  const userExists = await service.isUser(walletAddress.toLowerCase());
+                  if (userExists) {
+                    await toast.promise(service.approveUser(walletAddress.toLowerCase()), {
+                      pending: "Approving user...",
+                      success: "User approved successfully",
+                      error: {
+                        render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
+                      },
+                    });
+                  } else {
+                    toast.error(`User with wallet address ${walletAddress} does not exist.`);
+                  }
+                }
+                navigate("/identities");
+              } catch (err) {
+                console.error("Error in digital ID flow:", err);
+                throw err; // toast handles error display
               }
-              navigate("/identities");
             })(),
             {
               pending: "Processing Digital Identity...",
@@ -178,6 +190,9 @@ function CreateDigitalId({ service }) {
         toast
           .promise(
             (async () => {
+              let identityCreatedOrExists = false;
+              let identityRegisteredOrExists = false;
+
               // Step 1: Check if identity already exists
               let identity = null;
               try {
@@ -193,9 +208,11 @@ function CreateDigitalId({ service }) {
                 await service.createIdentity(walletAddress);
                 identity = await service.getIdentity(walletAddress);
                 console.log("New identity created:", identity);
+                identityCreatedOrExists = true;
               } else {
                 console.log("Identity already exists, skipping creation:", identity);
                 toast.info("Identity already exists for this address, proceeding with registration");
+                identityCreatedOrExists = true;
               }
 
               // Step 3: Check if identity is already registered in Diamond
@@ -206,6 +223,7 @@ function CreateDigitalId({ service }) {
                   console.log("Identity already registered in Diamond");
                   needsRegistration = false;
                   toast.info("Identity already registered in Diamond, skipping registration");
+                  identityRegisteredOrExists = true;
                 }
               } catch (error) {
                 console.log("Error checking registration, proceeding with registration:", error);
@@ -216,24 +234,25 @@ function CreateDigitalId({ service }) {
                 console.log("Registering identity in Diamond...");
                 await service.addIdentity(walletAddress, identity);
                 console.log("Identity registered in Diamond successfully");
+                identityRegisteredOrExists = true;
               }
 
               // Step 5: Update identity metadata
               try {
-                await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
+                await service.updateIdentity(walletAddress.toLowerCase(), {
                   displayName: trimmedDisplayName,
-                  walletAddress: walletAddress.toLocaleLowerCase(),
+                  walletAddress: walletAddress.toLowerCase(),
                   accountNumber: trimmedAccountNumber,
                 });
               } catch (error) {
                 console.error("Error updating identity:", error);
               }
 
-              // Step 6: Approve user if needed
-              if (searchParams.has("walletAddress")) {
-                const userExists = await service.isUser(walletAddress.toLocaleLowerCase());
+              // Step 6: Approve user only if identity was created/exists AND registered/exists
+              if (searchParams.has("walletAddress") && identityCreatedOrExists && identityRegisteredOrExists) {
+                const userExists = await service.isUser(walletAddress.toLowerCase());
                 if (userExists) {
-                  await service.approveUser(walletAddress.toLocaleLowerCase());
+                  await service.approveUser(walletAddress.toLowerCase());
                 } else {
                   toast.error(`User with wallet address ${walletAddress} does not exist.`);
                 }
