@@ -161,7 +161,7 @@ function CreateDigitalId({ service }) {
       // Step 4: Register identity in Diamond only if needed
       if (needsRegistration) {
         console.log("Registering identity in Diamond...");
-        toast.update(toastId, { render: "Registering identity in Diamond..." });
+        toast.update(toastId, { render: "Registering identity on blockchain." });
 
         const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
           walletAddress,
