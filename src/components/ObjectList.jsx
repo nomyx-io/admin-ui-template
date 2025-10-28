@@ -32,16 +32,41 @@ export const ConfirmationDialog = ({ message, onConfirm, onCancel }) => {
   );
 };
 
-const ObjectList = ({ title, description, tabs, columns, actions, globalActions, search, data, pageSize = 10, onAction }) => {
+const ObjectList = ({
+  title,
+  description,
+  tabs,
+  columns,
+  actions,
+  globalActions,
+  search,
+  data,
+  pageSize = 10,
+  onAction,
+  loading = false,
+  hasMore = false,
+  onLoadMore = null,
+  totalCount = 0,
+  useServerPagination = false,
+  currentPage = 1,
+  onPageChange = null,
+  searchTerm = "",
+  onSearch = null,
+}) => {
   const [pageData, setPageData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [pageCount, setPageCount] = useState(0);
   const [itemOffset, setItemOffset] = useState(0);
   const [activeTab, setActiveTab] = useState(tabs ? tabs[0].id : null);
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState(searchTerm);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogContent, setDialogContent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Update local search text when external searchTerm changes (e.g., tab change)
+  useEffect(() => {
+    setSearchText(searchTerm);
+  }, [searchTerm]);
 
   const handleAction = (event, action, confirm, object) => {
     event.preventDefault();
@@ -67,11 +92,19 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
   };
 
   const handleSearch = (text) => {
-    //todo: implement tab filtering
     setSearchText(text);
-    let filteredData = data.filter((item) => recursiveSearch(item, text));
-    setItemOffset(0);
-    setFilteredData(filteredData);
+
+    if (useServerPagination) {
+      // Server-side search - notify parent
+      if (onSearch) {
+        onSearch(text);
+      }
+    } else {
+      // Client-side search
+      let filtered = data.filter((item) => recursiveSearch(item, text));
+      setItemOffset(0);
+      setFilteredData(filtered);
+    }
   };
 
   const handleCancel = () => {
@@ -80,24 +113,40 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
   };
 
   const handlePageClick = (event) => {
-    const newOffset = (event.selected * pageSize) % data.length;
-    setItemOffset(newOffset);
+    if (useServerPagination) {
+      // Server-side pagination - notify parent to fetch new page
+      if (onPageChange) {
+        onPageChange(event.selected + 1); // react-paginate uses 0-based index
+      }
+    } else {
+      // Client-side pagination
+      const newOffset = (event.selected * pageSize) % filteredData.length;
+      setItemOffset(newOffset);
+    }
   };
 
   useEffect(() => {
     if (!searchText && data && data.length > 0) setFilteredData(data);
-    const endOffset = itemOffset + pageSize;
-    let pageData = filteredData.slice(itemOffset, endOffset);
-    setPageData(pageData);
-    setPageCount(Math.ceil(filteredData.length / pageSize));
-  }, [itemOffset, pageSize, showDialog, data, filteredData, searchText]);
+
+    if (useServerPagination) {
+      // For server-side pagination, show current page data
+      setPageData(data);
+      setPageCount(Math.ceil(totalCount / pageSize));
+    } else {
+      // Client-side pagination
+      const endOffset = itemOffset + pageSize;
+      let paginatedData = filteredData.slice(itemOffset, endOffset);
+      setPageData(paginatedData);
+      setPageCount(Math.ceil(filteredData.length / pageSize));
+    }
+  }, [itemOffset, pageSize, showDialog, data, filteredData, searchText, useServerPagination, totalCount]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000); // 2 second timeout
+    }, 1000);
 
-    return () => clearTimeout(timer); // Clear timeout if the component is unmounted
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -125,7 +174,7 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
         <section className="controls">
           {search && (
             <div className="search">
-              <input type="text" placeholder="Search..." onKeyUp={(e) => handleSearch(e.target.value)} />
+              <input type="text" placeholder="Search..." value={searchText} onChange={(e) => handleSearch(e.target.value)} />
             </div>
           )}
 
@@ -146,6 +195,13 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
           )}
         </section>
       </header>
+
+      {useServerPagination && totalCount > 0 && (
+        <div style={{ padding: "0.5rem 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+          Showing {Math.min((currentPage - 1) * pageSize + 1, totalCount)} - {Math.min(currentPage * pageSize, totalCount)} of {totalCount}{" "}
+          {title.toLowerCase()}
+        </div>
+      )}
 
       <table>
         <thead>
@@ -177,7 +233,7 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                 {columns.map((column) => {
                   let fieldName = typeof column === "object" ? column.name : column;
                   let key = fieldName + "-" + record.id;
-                  if (column.name != "flagged_account")
+                  if (column.name !== "flagged_account")
                     return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{getValue(fieldName, record)}</>}</td>;
                   else
                     return (
@@ -221,10 +277,15 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
         </tbody>
       </table>
 
-      {pageData.length === 0 && isLoading && (
+      {pageData.length === 0 && (isLoading || loading) && (
         <div className="empty">
-          {/* A simple loading timout to be replaced by more robust Loading notifications*/}
           <p>Loading {title}...</p>
+        </div>
+      )}
+
+      {pageData.length === 0 && !isLoading && !loading && (
+        <div className="empty">
+          <p>No {title.toLowerCase()} found.</p>
         </div>
       )}
 
@@ -237,6 +298,7 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
           pageRangeDisplayed={5}
           pageCount={pageCount}
           renderOnZeroPageCount={null}
+          forcePage={useServerPagination ? currentPage - 1 : undefined}
         />
       </div>
 
