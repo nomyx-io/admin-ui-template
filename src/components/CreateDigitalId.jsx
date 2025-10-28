@@ -71,7 +71,7 @@ function CreateDigitalId({ service }) {
       }
     } catch (error) {
       // Only log unexpected errors that weren't already handled
-      if (error.message !== "USER_CANCELLED") {
+      if (error.message !== "USER_CANCELLED" || error.message !== "USER_REJECTED") {
         console.error("Unexpected error in digital ID flow:", error);
       }
     }
@@ -103,7 +103,7 @@ function CreateDigitalId({ service }) {
         const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
 
         if (initError) {
-          if (initError.includes("cancel") || initError.includes("reject")) {
+          if (initError.includes("cancel")) {
             toast.update(toastId, {
               render: "Identity creation cancelled",
               type: "warning",
@@ -111,6 +111,14 @@ function CreateDigitalId({ service }) {
               autoClose: 3000,
             });
             throw new Error("USER_CANCELLED");
+          } else if (initError.includes("reject")) {
+            toast.update(toastId, {
+              render: "Identity creation rejected",
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+            throw new Error("USER_REJECTED");
           }
           throw new Error(initError);
         }
@@ -123,7 +131,7 @@ function CreateDigitalId({ service }) {
         );
 
         if (completeError) {
-          if (completeError.includes("cancel") || completeError.includes("reject")) {
+          if (completeError.includes("cancel")) {
             toast.update(toastId, {
               render: "Identity creation cancelled",
               type: "warning",
@@ -131,6 +139,14 @@ function CreateDigitalId({ service }) {
               autoClose: 3000,
             });
             throw new Error("USER_CANCELLED");
+          } else if (completeError.includes("reject")) {
+            toast.update(toastId, {
+              render: "Identity creation rejected",
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+            throw new Error("USER_REJECTED");
           }
           throw new Error(completeError);
         }
@@ -144,12 +160,12 @@ function CreateDigitalId({ service }) {
         identityCreatedOrExists = true;
       }
 
-      // Step 3: Check if identity is already registered in Diamond
+      // Step 3: Check if identity is already registered in Blockchain
       let needsRegistration = true;
       try {
         const isRegistered = await service.isVerified(walletAddress);
         if (isRegistered) {
-          console.log("Identity already registered in Diamond");
+          console.log("Identity already registered in Blockchain");
           needsRegistration = false;
           identityRegisteredOrExists = true;
           toast.update(toastId, { render: "Identity already registered, updating metadata..." });
@@ -158,9 +174,9 @@ function CreateDigitalId({ service }) {
         console.log("Error checking registration, proceeding with registration:", error);
       }
 
-      // Step 4: Register identity in Diamond only if needed
+      // Step 4: Register identity in Blockchain only if needed
       if (needsRegistration) {
-        console.log("Registering identity in Diamond...");
+        console.log("Registering identity in Blockchain...");
         toast.update(toastId, { render: "Registering identity on blockchain." });
 
         const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
@@ -171,7 +187,7 @@ function CreateDigitalId({ service }) {
         );
 
         if (addIdentityInitError) {
-          if (addIdentityInitError.includes("cancel") || addIdentityInitError.includes("reject")) {
+          if (addIdentityInitError.includes("cancel")) {
             toast.update(toastId, {
               render: "Identity registration cancelled",
               type: "warning",
@@ -179,6 +195,14 @@ function CreateDigitalId({ service }) {
               autoClose: 3000,
             });
             throw new Error("USER_CANCELLED");
+          } else if (addIdentityInitError.includes("reject")) {
+            toast.update(toastId, {
+              render: "Identity registration rejected",
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+            throw new Error("USER_REJECTED");
           }
           throw new Error(addIdentityInitError);
         }
@@ -191,7 +215,7 @@ function CreateDigitalId({ service }) {
         );
 
         if (addIdentityCompleteError) {
-          if (addIdentityCompleteError.includes("cancel") || addIdentityCompleteError.includes("reject")) {
+          if (addIdentityCompleteError.includes("cancel")) {
             toast.update(toastId, {
               render: "Identity registration cancelled",
               type: "warning",
@@ -199,11 +223,19 @@ function CreateDigitalId({ service }) {
               autoClose: 3000,
             });
             throw new Error("USER_CANCELLED");
+          } else if (addIdentityCompleteError.includes("reject")) {
+            toast.update(toastId, {
+              render: "Identity registration rejected",
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+            throw new Error("USER_REJECTED");
           }
           throw new Error(addIdentityCompleteError);
         }
 
-        console.log("Identity registered in Diamond successfully");
+        console.log("Identity registered in Blockchain successfully");
         if (addIdentityCompleteResponse) identityRegisteredOrExists = true;
       }
 
@@ -253,7 +285,7 @@ function CreateDigitalId({ service }) {
 
       navigate("/identities");
     } catch (error) {
-      if (error.message === "USER_CANCELLED") {
+      if (error.message === "USER_CANCELLED" || error.message === "USER_REJECTED") {
         // Already handled by toast.update above, just exit gracefully
         return;
       }
@@ -302,14 +334,22 @@ function CreateDigitalId({ service }) {
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;
         } catch (error) {
-          if (error.code === 4001 || error.message?.includes("cancel") || error.message?.includes("reject")) {
+          if (error.code === 4001 || error.message?.includes("cancel")) {
             toast.update(toastId, {
-              render: "Identity creation cancelled by user",
+              render: "Identity creation cancelled",
               type: "warning",
               isLoading: false,
               autoClose: 3000,
             });
             throw new Error("USER_CANCELLED");
+          } else if (error.message?.includes("reject")) {
+            toast.update(toastId, {
+              render: "Identity creation rejected",
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+            throw new Error("USER_REJECTED");
           }
           throw error;
         }
@@ -319,12 +359,12 @@ function CreateDigitalId({ service }) {
         identityCreatedOrExists = true;
       }
 
-      // Step 3: Check if identity is already registered in Diamond
+      // Step 3: Check if identity is already registered in Blockchain
       let needsRegistration = true;
       try {
         const isRegistered = await service.isVerified(walletAddress);
         if (isRegistered) {
-          console.log("Identity already registered in Diamond");
+          console.log("Identity already registered in Blockchain");
           needsRegistration = false;
           identityRegisteredOrExists = true;
           toast.update(toastId, { render: "Identity already registered, updating metadata..." });
@@ -333,24 +373,32 @@ function CreateDigitalId({ service }) {
         console.log("Error checking registration, proceeding with registration:", error);
       }
 
-      // Step 4: Register identity in Diamond only if needed
+      // Step 4: Register identity in Blockchain only if needed
       if (needsRegistration) {
-        console.log("Registering identity in Diamond...");
-        toast.update(toastId, { render: "Registering identity in Diamond..." });
+        console.log("Registering identity in Blockchain...");
+        toast.update(toastId, { render: "Registering identity in Blockchain..." });
 
         try {
           await service.addIdentity(walletAddress, identity);
-          console.log("Identity registered in Diamond successfully");
+          console.log("Identity registered in Blockchain successfully");
           identityRegisteredOrExists = true;
         } catch (error) {
-          if (error.code === 4001 || error.message?.includes("cancel") || error.message?.includes("reject")) {
+          if (error.code === 4001 || error.message?.includes("cancel")) {
             toast.update(toastId, {
-              render: "Identity registration cancelled by user",
+              render: "Identity registration cancelled",
               type: "warning",
               isLoading: false,
               autoClose: 3000,
             });
             throw new Error("USER_CANCELLED");
+          } else if (error.message?.includes("reject")) {
+            toast.update(toastId, {
+              render: "Identity registration rejected",
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+            throw new Error("USER_REJECTED");
           }
           throw error;
         }
@@ -407,7 +455,7 @@ function CreateDigitalId({ service }) {
 
       navigate("/identities");
     } catch (error) {
-      if (error.message === "USER_CANCELLED") {
+      if (error.message === "USER_CANCELLED" || error.message === "USER_REJECTED") {
         // Already handled by toast.update above, just exit gracefully
         return;
       }
