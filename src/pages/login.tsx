@@ -38,9 +38,11 @@ export default function LoginPage() {
   const [walletSuccessModal, setWalletSuccessModal] = useState<{
     visible: boolean;
     walletAddress: string;
+    explorerUrl?: string | null;
   }>({
     visible: false,
-    walletAddress: ''
+    walletAddress: '',
+    explorerUrl: null
   });
 
   const [transactionModal, setTransactionModal] = useState({
@@ -246,10 +248,15 @@ export default function LoginPage() {
           // Hide transaction modal
           setTransactionModal({ ...transactionModal, visible: false });
 
+          // Get explorer URL from current chain config
+          const currentChain = serviceManagerRef.current.getCurrentChain();
+          const explorerUrl = currentChain?.config?.chain_explorer_url || null;
+
           // Show wallet success modal
           setWalletSuccessModal({
             visible: true,
-            walletAddress: currentWallet.address
+            walletAddress: currentWallet.address,
+            explorerUrl: explorerUrl
           });
 
           // Wait for user to close the modal (handled by modal close handler)
@@ -371,7 +378,7 @@ export default function LoginPage() {
   // Handle wallet success modal close - complete login flow
   const handleWalletModalClose = async () => {
     // Close modal
-    setWalletSuccessModal({ visible: false, walletAddress: '' });
+    setWalletSuccessModal({ visible: false, walletAddress: '', explorerUrl: null });
 
     // Complete the login flow - this code was after the modal show in original flow
     console.log("[Admin Login] Completing login after wallet modal close");
@@ -451,6 +458,7 @@ export default function LoginPage() {
       <WalletSuccessModal
         visible={walletSuccessModal.visible}
         walletAddress={walletSuccessModal.walletAddress}
+        explorerUrl={walletSuccessModal.explorerUrl}
         onClose={handleWalletModalClose}
       />
     </LoginLayout>
