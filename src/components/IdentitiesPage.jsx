@@ -372,32 +372,6 @@ const IdentitiesPage = ({ service }) => {
     }
   };
 
-  // Handle investment request submission
-  const handleInvestmentRequestSubmit = async (requestData) => {
-    try {
-      // Call Parse Cloud Function
-      const result = await Parse.Cloud.run("sendInvestmentRequest", {
-        identityId: requestData.identityId,
-        identityAddress: requestData.identityAddress,
-        projectIds: requestData.projectIds,
-        subject: requestData.subject,
-        emailBody: requestData.emailBody,
-      });
-
-      if (result.success) {
-        toast.success("Investment request sent successfully!");
-        console.log("Investment request ID:", result.requestId);
-      } else {
-        throw new Error(result.message || "Failed to send investment request");
-      }
-    } catch (error) {
-      console.error("Error sending investment request:", error);
-      const errorMessage = getErrorMessage(error);
-      toast.error(`Failed to send investment request: ${errorMessage}`);
-      throw error;
-    }
-  };
-
   const columns = [
     { label: "Identity", name: "displayName" },
     { label: "Address", name: "identityAddress", width: "350px" },
@@ -546,7 +520,6 @@ const IdentitiesPage = ({ service }) => {
         }}
         selectedIdentity={selectedIdentityForInvestment}
         tokenProjects={tokenProjects}
-        onSubmit={handleInvestmentRequestSubmit}
       />
     </>
   );

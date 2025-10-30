@@ -4,10 +4,14 @@ import { Modal, Checkbox, Input, Button, Card, Spin } from "antd";
 import ReactQuill from "react-quill";
 import { toast } from "react-toastify";
 import "react-quill/dist/quill.snow.css";
+// eslint-disable-next-line import/order
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
+// eslint-disable-next-line import/order
+import { saveAs } from "file-saver";
 
 const { TextArea } = Input;
 
-const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProjects, onSubmit }) => {
+const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProjects }) => {
   const [selectedProjects, setSelectedProjects] = useState([]);
   const [subject, setSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
@@ -41,7 +45,6 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
       setEmailBody(defaultTemplate);
       setSubject(`Investment Opportunity: ${selectedProjects.length} Project${selectedProjects.length > 1 ? "s" : ""} Available`);
     } else {
-      // Clear email body and subject when no projects are selected
       setEmailBody("");
       setSubject("");
     }
@@ -51,7 +54,14 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
     setSelectedProjects((prev) => (prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId]));
   };
 
-  const handleSubmit = async () => {
+  // Convert HTML to plain text for Word document
+  const htmlToText = (html) => {
+    const temp = document.createElement("div");
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || "";
+  };
+
+  const generateWordDocument = async () => {
     if (selectedProjects.length === 0) {
       toast.error("Please select at least one token project");
       return;
@@ -63,19 +73,121 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
     }
 
     if (!emailBody.trim()) {
-      toast.error("Please enter an email body");
+      toast.error("Please enter document content");
       return;
     }
 
     setLoading(true);
     try {
-      await onSubmit({
-        identityId: selectedIdentity.id,
-        identityAddress: selectedIdentity.identityAddress,
-        projectIds: selectedProjects,
-        subject,
-        emailBody,
+      const documentSections = [];
+
+      // Title
+      documentSections.push(
+        new Paragraph({
+          text: subject,
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 400 },
+        })
+      );
+
+      // Greeting
+      documentSections.push(
+        new Paragraph({
+          text: `Dear ${selectedIdentity.displayName || "Investor"},`,
+          spacing: { after: 200 },
+        })
+      );
+
+      // Introduction
+      documentSections.push(
+        new Paragraph({
+          text: "We are pleased to present you with exclusive investment opportunities that align with your investment profile.",
+          spacing: { after: 400 },
+        })
+      );
+
+      // Investment Opportunities Section
+      documentSections.push(
+        new Paragraph({
+          text: "Investment Opportunities",
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 200, after: 200 },
+        })
+      );
+
+      // Add each selected project
+      selectedProjects.forEach((projectId, index) => {
+        const project = tokenProjects.find((p) => p.id === projectId);
+
+        documentSections.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${index + 1}. ${project?.title || "Project"}`,
+                bold: true,
+                size: 24,
+              }),
+            ],
+            spacing: { before: 200, after: 100 },
+          })
+        );
+
+        documentSections.push(
+          new Paragraph({
+            text: project?.description || "No description available",
+            spacing: { after: 200, left: 400 },
+          })
+        );
       });
+
+      // Next Steps Section
+      documentSections.push(
+        new Paragraph({
+          text: "Next Steps",
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 400, after: 200 },
+        })
+      );
+
+      documentSections.push(
+        new Paragraph({
+          text: "We would be delighted to discuss these opportunities with you in more detail. Please let us know your availability for a call or meeting.",
+          spacing: { after: 400 },
+        })
+      );
+
+      // Closing
+      documentSections.push(
+        new Paragraph({
+          text: "Best regards,",
+          spacing: { before: 200, after: 100 },
+        })
+      );
+
+      documentSections.push(
+        new Paragraph({
+          text: "Investment Team",
+          spacing: { after: 200 },
+        })
+      );
+
+      // Create the document
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: documentSections,
+          },
+        ],
+      });
+
+      // Generate and download the file
+      const blob = await Packer.toBlob(doc);
+      const fileName = `Investment_Request_${selectedIdentity.displayName?.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.docx`;
+      saveAs(blob, fileName);
+
+      toast.success("Word document downloaded successfully!");
 
       // Reset form
       setSelectedProjects([]);
@@ -83,7 +195,8 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
       setEmailBody("");
       onClose();
     } catch (error) {
-      console.error("Error submitting investment request:", error);
+      console.error("Error generating Word document:", error);
+      toast.error("Failed to generate Word document");
     } finally {
       setLoading(false);
     }
@@ -104,7 +217,7 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
     <Modal
       title={
         <div style={{ fontSize: "20px", fontWeight: 600, color: "#1890ff" }}>
-          📧 Request Investment from {selectedIdentity?.displayName || "Identity"}
+          📄 Create Investment Request Document for {selectedIdentity?.displayName || "Identity"}
         </div>
       }
       open={visible}
@@ -130,7 +243,6 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
                     transition: "all 0.3s",
                   }}
                   onClick={(e) => {
-                    // Prevent card click from interfering with checkbox
                     e.stopPropagation();
                     handleProjectToggle(project.id);
                   }}
@@ -156,11 +268,11 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
           </div>
         </div>
 
-        {/* Subject Line */}
+        {/* Document Title */}
         <div style={{ marginBottom: "24px" }}>
-          <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "12px", color: "#262626" }}>Email Subject</h3>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "12px", color: "#262626" }}>Document Title</h3>
           <Input
-            placeholder="Enter email subject"
+            placeholder="Enter document title"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             size="large"
@@ -168,18 +280,21 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
           />
         </div>
 
-        {/* Email Body Editor */}
+        {/* Document Content Editor */}
         <div style={{ marginBottom: "24px" }}>
-          <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "12px", color: "#262626" }}>Email Body</h3>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "12px", color: "#262626" }}>Document Content (Preview)</h3>
           <div style={{ background: "#fff", border: "1px solid #d9d9d9", borderRadius: "4px" }}>
             <ReactQuill
               value={emailBody}
               onChange={setEmailBody}
               modules={modules}
               style={{ minHeight: "300px" }}
-              placeholder="Compose your investment request email..."
+              placeholder="Edit your investment request document content..."
             />
           </div>
+          <p style={{ fontSize: "12px", color: "#999", marginTop: "8px" }}>
+            Note: The Word document will be formatted with proper headings and spacing.
+          </p>
         </div>
 
         {/* Action Buttons */}
@@ -191,13 +306,14 @@ const InvestmentRequestModal = ({ visible, onClose, selectedIdentity, tokenProje
           </Button>
           <Button
             type="primary"
-            onClick={handleSubmit}
+            onClick={generateWordDocument}
             loading={loading}
             disabled={selectedProjects.length === 0 || !subject.trim() || !emailBody.trim()}
             size="large"
-            style={{ minWidth: "120px" }}
+            style={{ minWidth: "150px" }}
+            icon={<span style={{ marginRight: "8px" }}>📥</span>}
           >
-            Send Request
+            Download Word
           </Button>
         </div>
       </div>
