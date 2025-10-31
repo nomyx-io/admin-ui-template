@@ -250,30 +250,32 @@ function CreateDigitalId({ service }) {
         return;
       }
 
-      // Step 5: Update identity metadata
-      toast.update(toastId, { render: "Updating identity metadata..." });
-      await service.updateIdentity(walletAddress.toLowerCase(), {
-        displayName: trimmedDisplayName,
-        walletAddress: walletAddress.toLowerCase(),
-        accountNumber: trimmedAccountNumber,
-      });
+      // 5 and 6 are now done via a server trigger to minimize frontend intera
 
-      // Step 6: Approve user only if requested via searchParams
-      if (searchParams.has("walletAddress")) {
-        const userExists = await service.isUser(walletAddress.toLowerCase());
-        if (userExists) {
-          toast.update(toastId, { render: "Approving user..." });
-          await service.approveUser(walletAddress.toLowerCase());
-        } else {
-          toast.update(toastId, {
-            render: `User with wallet address ${walletAddress} does not exist`,
-            type: "error",
-            isLoading: false,
-            autoClose: 3000,
-          });
-          return;
-        }
-      }
+      // // Step 5: Update identity metadata
+      // toast.update(toastId, { render: "Updating identity metadata..." });
+      // await service.updateIdentity(walletAddress.toLowerCase(), {
+      //   displayName: trimmedDisplayName,
+      //   walletAddress: walletAddress.toLowerCase(),
+      //   accountNumber: trimmedAccountNumber,
+      // });
+
+      // // Step 6: Approve user only if requested via searchParams
+      // if (searchParams.has("walletAddress")) {
+      //   const userExists = await service.isUser(walletAddress.toLowerCase());
+      //   if (userExists) {
+      //     toast.update(toastId, { render: "Approving user..." });
+      //     await service.approveUser(walletAddress.toLowerCase());
+      //   } else {
+      //     toast.update(toastId, {
+      //       render: `User with wallet address ${walletAddress} does not exist`,
+      //       type: "error",
+      //       isLoading: false,
+      //       autoClose: 3000,
+      //     });
+      //     return;
+      //   }
+      // }
 
       // All steps completed successfully
       toast.update(toastId, {
