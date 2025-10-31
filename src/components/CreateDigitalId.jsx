@@ -174,28 +174,30 @@ function CreateDigitalId({ service }) {
                 console.log("Identity registered in Diamond successfully");
               }
 
-              // Step 5: Update identity metadata
-              await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
-                displayName: trimmedDisplayName,
-                walletAddress: walletAddress.toLocaleLowerCase(),
-                accountNumber: trimmedAccountNumber,
-              });
+              // 5 and 6 are now done via a server trigger to minimize frontend interaction
+
+              // // Step 5: Update identity metadata
+              // await service.updateIdentity(walletAddress.toLocaleLowerCase(), {
+              //   displayName: trimmedDisplayName,
+              //   walletAddress: walletAddress.toLocaleLowerCase(),
+              //   accountNumber: trimmedAccountNumber,
+              // });
 
               // Step 6: Approve user if needed
-              if (searchParams.has("walletAddress")) {
-                const userExists = await service.isUser(walletAddress.toLocaleLowerCase());
-                if (userExists) {
-                  await toast.promise(service.approveUser(walletAddress.toLocaleLowerCase()), {
-                    pending: "Approving user...",
-                    success: "User approved successfully",
-                    error: {
-                      render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
-                    },
-                  });
-                } else {
-                  toast.error(`User with wallet address ${walletAddress} does not exist.`);
-                }
-              }
+              // if (searchParams.has("walletAddress")) {
+              //   const userExists = await service.isUser(walletAddress.toLocaleLowerCase());
+              //   if (userExists) {
+              //     await toast.promise(service.approveUser(walletAddress.toLocaleLowerCase()), {
+              //       pending: "Approving user...",
+              //       success: "User approved successfully",
+              //       error: {
+              //         render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
+              //       },
+              //     });
+              //   } else {
+              //     toast.error(`User with wallet address ${walletAddress} does not exist.`);
+              //   }
+              // }
               navigate("/identities");
             })(),
             {
