@@ -146,28 +146,30 @@ function CreateDigitalId({ service }) {
                   if (addIdentityCompleteResponse) identityRegisteredOrExists = true;
                 }
 
-                // Step 5: Update identity metadata
-                await service.updateIdentity(walletAddress.toLowerCase(), {
-                  displayName: trimmedDisplayName,
-                  walletAddress: walletAddress.toLowerCase(),
-                  accountNumber: trimmedAccountNumber,
-                });
+                // now handled by server trigger
 
-                // Step 6: Approve user only if identity was created/exists AND registered/exists
-                if (searchParams.has("walletAddress") && identityCreatedOrExists && identityRegisteredOrExists) {
-                  const userExists = await service.isUser(walletAddress.toLowerCase());
-                  if (userExists) {
-                    await toast.promise(service.approveUser(walletAddress.toLowerCase()), {
-                      pending: "Approving user...",
-                      success: "User approved successfully",
-                      error: {
-                        render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
-                      },
-                    });
-                  } else {
-                    toast.error(`User with wallet address ${walletAddress} does not exist.`);
-                  }
-                }
+                // // Step 5: Update identity metadata
+                // await service.updateIdentity(walletAddress.toLowerCase(), {
+                //   displayName: trimmedDisplayName,
+                //   walletAddress: walletAddress.toLowerCase(),
+                //   accountNumber: trimmedAccountNumber,
+                // });
+
+                // // Step 6: Approve user only if identity was created/exists AND registered/exists
+                // if (searchParams.has("walletAddress") && identityCreatedOrExists && identityRegisteredOrExists) {
+                //   const userExists = await service.isUser(walletAddress.toLowerCase());
+                //   if (userExists) {
+                //     await toast.promise(service.approveUser(walletAddress.toLowerCase()), {
+                //       pending: "Approving user...",
+                //       success: "User approved successfully",
+                //       error: {
+                //         render: ({ data }) => <div>{data?.reason || "An error occurred while approving user"}</div>,
+                //       },
+                //     });
+                //   } else {
+                //     toast.error(`User with wallet address ${walletAddress} does not exist.`);
+                //   }
+                // }
                 navigate("/identities");
               } catch (err) {
                 console.error("Error in digital ID flow:", err);
