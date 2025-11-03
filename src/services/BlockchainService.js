@@ -732,6 +732,7 @@ class BlockchainService {
         updatedAt: project.get("updatedAt"),
         createdAt: project.get("createdAt"),
         fields: project.get("fields"),
+        projectInfo: project.get("projectInfo"),
       }));
     } catch (error) {
       console.error("Error fetching token projects:", error);
