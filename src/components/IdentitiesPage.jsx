@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import ObjectList from "./ObjectList";
-import { RoleContext } from "../context/RoleContext"; // Import RoleContext
+import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
 import { WalletPreference } from "../utils/Constants";
@@ -16,9 +16,21 @@ const { TabPane } = Tabs;
 const IdentitiesPage = ({ service }) => {
   const navigate = useNavigate();
   const [identities, setIdentities] = useState([]);
+  const [claimsIdentities, setClaimsIdentities] = useState([]);
   const [pendingIdentities, setPendingIdentities] = useState([]);
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [pagination, setPagination] = useState({
+    identities: { page: 1, limit: 10, totalCount: 0, hasMore: false },
+    claims: { page: 1, limit: 10, totalCount: 0, hasMore: false },
+    pending: { page: 1, limit: 10, totalCount: 0, hasMore: false },
+  });
+  const [loading, setLoading] = useState({
+    identities: false,
+    claims: false,
+    pending: false,
+  });
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   // Helper function to extract error message
@@ -31,57 +43,116 @@ const IdentitiesPage = ({ service }) => {
   };
 
   const fetchData = useCallback(
-    async (tab) => {
+    async (tab, page = 1, search = "") => {
+      const loadingKey = tab === "Pending" ? "pending" : tab === "Claims" ? "claims" : "identities";
+      const paginationType = tab === "Pending" ? "pending" : tab === "Claims" ? "claims" : "identities";
+
+      // Set loading state for specific tab
+      setLoading((prev) => ({ ...prev, [loadingKey]: true }));
+
       try {
         let fetchedIdentities = [];
-        if (service) {
-          if (tab === "Identities" || tab === "Claims") {
-            // Fetch active identities for Identities and Claims tabs
-            fetchedIdentities = await service.getActiveIdentities();
-            fetchedIdentities = fetchedIdentities.map((identity) => {
-              let identidyObj = {};
-              if (identity && identity.attributes) {
-                // Map active identities fields
-                const claimsArray = identity.attributes.claims || [];
+        let paginationData = null;
 
-                // Sort claims numerically before joining
+        if (tab === "Identities") {
+          // Call paginated cloud function for active identities
+          const result = await Parse.Cloud.run("getActiveIdentities", {
+            page,
+            limit: pagination.identities.limit,
+            withoutClaims: false, // Get all identities
+            searchTerm: search,
+          });
+
+          if (result && result.data) {
+            fetchedIdentities = result.data.map((identity) => {
+              let identityObj = {
+                claims: identity.claims || "",
+                displayName: identity.displayName || "",
+                email: identity.email || "",
+                kyc_id: identity.kyc_id || "",
+                identityAddress: identity.identityAddress || "",
+                id: identity.id || "",
+                pepMatched: identity.pepMatched || false,
+                watchlistMatched: identity.watchlistMatched || false,
+              };
+
+              // Re-sort claims numerically on the client side
+              if (identityObj.claims) {
+                const claimsArray = identityObj.claims.split(", ");
                 const sortedClaims = claimsArray
-                  .map((claim) => parseInt(claim, 10)) // Convert to numbers
-                  .filter((claim) => !isNaN(claim)) // Remove any non-numeric values
-                  .sort((a, b) => a - b) // Sort numerically
-                  .map((claim) => claim.toString()); // Convert back to strings
+                  .map((claim) => parseInt(claim, 10))
+                  .filter((claim) => !isNaN(claim))
+                  .sort((a, b) => a - b)
+                  .map((claim) => claim.toString());
 
-                identidyObj.claims = sortedClaims.join(", "); // Convert sorted claims array to comma-separated string
-                identidyObj.displayName = identity.attributes.displayName || "";
-                identidyObj.email = identity?.email || "";
-                identidyObj.kyc_id = identity.attributes.accountNumber || "";
-                identidyObj.identityAddress = identity.attributes.address || "";
-                identidyObj.id = identity.id;
-                identidyObj.pepMatched = identity?.pepMatched || false;
-                identidyObj.watchlistMatched = identity?.watchlistMatched || false;
-              } else {
-                // Default empty values if attributes are missing
-                identidyObj.claims = "";
-                identidyObj.displayName = "";
-                identidyObj.email = "";
-                identidyObj.kyc_id = "";
-                identidyObj.identityAddress = "";
-                identidyObj.id = "";
-                identidyObj.pepMatched = false;
-                identidyObj.watchlistMatched = false;
+                identityObj.claims = sortedClaims.join(", ");
               }
-              return identidyObj;
+
+              return identityObj;
             });
 
-            if (tab === "Claims") {
-              fetchedIdentities = fetchedIdentities.filter((identity) => !identity.claims || identity.claims.length === 0);
-            }
-          } else if (tab === "Pending") {
-            fetchedIdentities = await service.getPendingIdentities();
-            fetchedIdentities = fetchedIdentities.map((identity) => {
-              const firstName = identity.attributes.firstName || "";
-              const lastName = identity.attributes.lastName || "";
-              const personaData = identity.attributes.personaVerificationData ? JSON.parse(identity.attributes.personaVerificationData) : {};
+            paginationData = result.pagination;
+          }
+
+          setIdentities(fetchedIdentities);
+          setPagination((prev) => ({
+            ...prev,
+            identities: {
+              ...prev.identities,
+              ...paginationData,
+              page: page,
+            },
+          }));
+        } else if (tab === "Claims") {
+          // Call paginated cloud function for identities without claims
+          const result = await Parse.Cloud.run("getActiveIdentities", {
+            page,
+            limit: pagination.claims.limit,
+            withoutClaims: true, // Get only identities without claims
+            searchTerm: search,
+          });
+
+          if (result && result.data) {
+            fetchedIdentities = result.data.map((identity) => {
+              let identityObj = {
+                claims: identity.claims || "",
+                displayName: identity.displayName || "",
+                email: identity.email || "",
+                kyc_id: identity.kyc_id || "",
+                identityAddress: identity.identityAddress || "",
+                id: identity.id || "",
+                pepMatched: identity.pepMatched || false,
+                watchlistMatched: identity.watchlistMatched || false,
+              };
+
+              return identityObj;
+            });
+
+            paginationData = result.pagination;
+          }
+
+          setClaimsIdentities(fetchedIdentities);
+          setPagination((prev) => ({
+            ...prev,
+            claims: {
+              ...prev.claims,
+              ...paginationData,
+              page: page,
+            },
+          }));
+        } else if (tab === "Pending") {
+          // Call paginated cloud function for pending identities
+          const result = await Parse.Cloud.run("getPendingIdentities", {
+            page,
+            limit: pagination.pending.limit,
+            searchTerm: search,
+          });
+
+          if (result && result.data) {
+            fetchedIdentities = result.data.map((user) => {
+              const firstName = user.firstName || "";
+              const lastName = user.lastName || "";
+              const personaData = user.personaVerificationData ? JSON.parse(user.personaVerificationData) : {};
 
               const templateId =
                 personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
@@ -98,43 +169,101 @@ const IdentitiesPage = ({ service }) => {
               const status = name.split(".")[1]?.toUpperCase() || "";
 
               return {
-                displayName: `${firstName} ${lastName}`.trim(), // Concatenate first and last names
-                email: identity.attributes.username || "",
-                identityAddress: identity.attributes.walletAddress || "", // Wallet address remains the same
-                kyc_id: identity.attributes.personaReferenceId || "", // KYC ID set to personaReferenceId
-                pepMatched: identity.attributes.pepMatched,
-                watchlistMatched: identity.attributes.watchlistMatched,
-                type: identityType || "", // Type of identity
-                status: status || "", // Status of identity
-                ...identity, // Include other identity attributes as is
+                id: user.objectId,
+                displayName: `${firstName} ${lastName}`.trim(),
+                email: user.username || user.email || "",
+                identityAddress: user.walletAddress || "",
+                kyc_id: user.personaReferenceId || "",
+                pepMatched: user.pepMatched || false,
+                watchlistMatched: user.watchlistMatched || false,
+                type: identityType || "",
+                status: status || "",
+                attributes: {
+                  firstName,
+                  lastName,
+                  username: user.username,
+                  walletAddress: user.walletAddress,
+                  personaReferenceId: user.personaReferenceId,
+                  personaVerificationData: user.personaVerificationData,
+                  pepMatched: user.pepMatched,
+                  watchlistMatched: user.watchlistMatched,
+                },
               };
             });
-          }
-        } else {
-          console.error("Service object is not available");
-        }
 
-        // Set the state for identities or pending identities
-        if (tab === "Identities" || tab === "Claims") {
-          setIdentities(fetchedIdentities);
-        } else if (tab === "Pending") {
+            paginationData = result.pagination;
+          }
+
           setPendingIdentities(fetchedIdentities);
+          setPagination((prev) => ({
+            ...prev,
+            pending: {
+              ...prev.pending,
+              ...paginationData,
+              page: page,
+            },
+          }));
         }
       } catch (error) {
         console.error("Error fetching data:", error);
         const errorMessage = getErrorMessage(error);
         toast.error(`Failed to fetch data: ${errorMessage}`);
+      } finally {
+        // Clear loading state for specific tab
+        setLoading((prev) => ({ ...prev, [loadingKey]: false }));
       }
     },
-    [service]
+    [pagination.identities.limit, pagination.claims.limit, pagination.pending.limit]
   );
 
   useEffect(() => {
-    fetchData(activeTab);
-  }, [activeTab, service, refreshTrigger, fetchData]);
+    // Reset pagination and search when tab changes or refresh is triggered
+    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
+
+    setPagination((prev) => ({
+      ...prev,
+      [paginationType]: {
+        ...prev[paginationType],
+        page: 1,
+      },
+    }));
+
+    setSearchTerm(""); // Clear search when switching tabs
+    fetchData(activeTab, 1, "");
+  }, [activeTab, refreshTrigger]);
 
   const handleTabChange = (key) => {
     setActiveTab(key);
+  };
+
+  const handlePageChange = (newPage) => {
+    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
+
+    setPagination((prev) => ({
+      ...prev,
+      [paginationType]: {
+        ...prev[paginationType],
+        page: newPage,
+      },
+    }));
+
+    fetchData(activeTab, newPage, searchTerm);
+  };
+
+  const handleSearch = (newSearchTerm) => {
+    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
+
+    // Reset to page 1 when searching
+    setPagination((prev) => ({
+      ...prev,
+      [paginationType]: {
+        ...prev[paginationType],
+        page: 1,
+      },
+    }));
+
+    setSearchTerm(newSearchTerm);
+    fetchData(activeTab, 1, newSearchTerm);
   };
 
   const handleRemoveUser = async (record) => {
@@ -143,8 +272,7 @@ const IdentitiesPage = ({ service }) => {
       .promise(
         async () => {
           const deleted = await service.softRemoveUser(identityAddress);
-          //console.log('deleted: ', deleted);
-          return deleted; // Return the deleted status
+          return deleted;
         },
         {
           pending: `Removing ${displayName}...`,
@@ -164,7 +292,7 @@ const IdentitiesPage = ({ service }) => {
         }
       )
       .then(() => {
-        fetchData(activeTab); // Trigger fetchData after removal is complete
+        setRefreshTrigger((prev) => !prev);
       })
       .catch((error) => {
         console.error("Error in handleRemoveUser:", error);
@@ -182,7 +310,6 @@ const IdentitiesPage = ({ service }) => {
     toast.promise(
       async () => {
         try {
-          // Call Parse Cloud Function
           const result = await Parse.Cloud.run("sendVerificationEmail", { email });
           return result;
         } catch (error) {
@@ -212,11 +339,9 @@ const IdentitiesPage = ({ service }) => {
           await toast.promise(
             (async () => {
               try {
-                // Step 1: Initiate Remove Identity
                 const { initiateResponse, error: removeInitError } = await DfnsService.initiateRemoveIdentity(identity, user.walletId, dfnsToken);
                 if (removeInitError) throw new Error(removeInitError);
 
-                // Step 2: Complete Remove Identity
                 const { completeResponse, error: removeCompleteError } = await DfnsService.completeRemoveIdentity(
                   user.walletId,
                   dfnsToken,
@@ -225,10 +350,8 @@ const IdentitiesPage = ({ service }) => {
                 );
                 if (removeCompleteError) throw new Error(removeCompleteError);
 
-                // Step 3: Delay before initiating Unregister Identity
                 await delay(2000);
 
-                // Step 4: Initiate Unregister Identity
                 const { initiateResponse: unregisterInitResponse, error: unregisterInitError } = await DfnsService.initiateUnregisterIdentity(
                   identity,
                   user.walletId,
@@ -236,7 +359,6 @@ const IdentitiesPage = ({ service }) => {
                 );
                 if (unregisterInitError) throw new Error(unregisterInitError);
 
-                // Step 5: Complete Unregister Identity
                 const { completeResponse: unregisterCompleteResponse, error: unregisterCompleteError } = await DfnsService.completeUnregisterIdentity(
                   user.walletId,
                   dfnsToken,
@@ -245,7 +367,6 @@ const IdentitiesPage = ({ service }) => {
                 );
                 if (unregisterCompleteError) throw new Error(unregisterCompleteError);
 
-                // Step 6: Delay before refreshing state
                 await delay(2500);
                 setRefreshTrigger((prev) => !prev);
               } catch (error) {
@@ -275,14 +396,11 @@ const IdentitiesPage = ({ service }) => {
             const identities = [record.identityAddress];
 
             for (const identity of identities) {
-              // Step 1: Call removeIdentity
               await service.removeIdentity(identity);
-              // Step 2: Call unregisterIdentity
               await service.unregisterIdentity(identity);
             }
 
-            // After successful removal, trigger a refresh of the component
-            setRefreshTrigger((prev) => !prev); // This needs to be tested upon updated removal event contract redeployment
+            setRefreshTrigger((prev) => !prev);
           } catch (error) {
             console.error("Error in private wallet remove identity:", error);
             throw error;
@@ -318,6 +436,14 @@ const IdentitiesPage = ({ service }) => {
     { label: "Flagged?", name: "flagged_account" },
     { label: "Type", name: "type" },
     { label: "Status", name: "status" },
+  ];
+
+  const addRulesColumns = [
+    { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
+    { label: "Address", name: "identityAddress", width: "350px" },
+    { label: "KYC ID Account #", name: "kyc_id" },
+    { label: "Flagged?", name: "flagged_account" },
   ];
 
   const actions = [
@@ -394,6 +520,29 @@ const IdentitiesPage = ({ service }) => {
     }
   };
 
+  // Get current data and pagination based on active tab
+  const getCurrentData = () => {
+    if (activeTab === "Identities") {
+      return identities;
+    } else if (activeTab === "Claims") {
+      return claimsIdentities;
+    } else if (activeTab === "Pending") {
+      return pendingIdentities;
+    }
+    return [];
+  };
+
+  const getCurrentPagination = () => {
+    if (activeTab === "Identities") {
+      return pagination.identities;
+    } else if (activeTab === "Claims") {
+      return pagination.claims;
+    } else if (activeTab === "Pending") {
+      return pagination.pending;
+    }
+    return { page: 1, limit: 10, totalCount: 0, hasMore: false };
+  };
+
   return (
     <>
       <Tabs activeKey={activeTab} onChange={handleTabChange}>
@@ -405,10 +554,18 @@ const IdentitiesPage = ({ service }) => {
             actions={actions}
             globalActions={globalActions}
             search={search}
-            data={identities}
+            data={getCurrentData()}
             pageSize={10}
             onAction={handleAction}
             onGlobalAction={handleAction}
+            loading={loading.identities}
+            hasMore={pagination.identities.hasMore}
+            totalCount={pagination.identities.totalCount}
+            useServerPagination={true}
+            currentPage={pagination.identities.page}
+            onPageChange={handlePageChange}
+            searchTerm={searchTerm}
+            onSearch={handleSearch}
           />
         </TabPane>
         <TabPane tab="Pending" key="Pending">
@@ -419,24 +576,40 @@ const IdentitiesPage = ({ service }) => {
             actions={pendingActions}
             globalActions={globalActions}
             search={search}
-            data={pendingIdentities}
+            data={getCurrentData()}
             pageSize={10}
             onAction={handleAction}
             onGlobalAction={handleAction}
+            loading={loading.pending}
+            hasMore={pagination.pending.hasMore}
+            totalCount={pagination.pending.totalCount}
+            useServerPagination={true}
+            currentPage={pagination.pending.page}
+            onPageChange={handlePageChange}
+            searchTerm={searchTerm}
+            onSearch={handleSearch}
           />
         </TabPane>
         <TabPane tab="Add Rules" key="Claims">
           <ObjectList
             title="Add Rules"
             description="Identies that have yet to be related to Compliance Rules"
-            columns={columns}
+            columns={addRulesColumns}
             actions={claimsActions}
             globalActions={globalActions}
             search={search}
-            data={identities}
+            data={getCurrentData()}
             pageSize={10}
             onAction={handleAction}
             onGlobalAction={handleAction}
+            loading={loading.claims}
+            hasMore={pagination.claims.hasMore}
+            totalCount={pagination.claims.totalCount}
+            useServerPagination={true}
+            currentPage={pagination.claims.page}
+            onPageChange={handlePageChange}
+            searchTerm={searchTerm}
+            onSearch={handleSearch}
           />
         </TabPane>
       </Tabs>
