@@ -4,7 +4,7 @@ import ConfigProvider from "antd/es/config-provider";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 const { ToastContainer } = require("react-toastify");
 import { RoleProvider } from "../context/RoleContext";
-import { BlockchainServiceManager, WalletProviderFactory } from "@nomyx/shared";
+import { BlockchainServiceManager, WalletProviderFactory, PortalStorage } from "@nomyx/shared";
 import ErrorBoundary from "../components/ErrorBoundary";
 import Parse from "parse";
 
@@ -57,7 +57,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         }
 
         // Also set up Parse session if we have a session token
-        const sessionToken = localStorage.getItem('sessionToken');
+        const sessionToken = PortalStorage.getItem('sessionToken');
         if (sessionToken && typeof window !== 'undefined' && (window as any).Parse) {
           try {
             await (window as any).Parse.User.become(sessionToken);
@@ -66,12 +66,46 @@ function MyApp({ Component, pageProps }: AppProps) {
             console.warn('[Admin Portal] Could not restore Parse session:', error);
           }
         }
+
+        // Restore wallet state if previously connected
+        if (typeof window !== 'undefined') {
+          const savedAddress = PortalStorage.getItem('nomyx-wallet-address');
+          const savedType = PortalStorage.getItem('nomyx-wallet-type');
+
+          if (savedAddress && savedType) {
+            console.log('[Admin Portal] Auto-reconnecting wallet:', savedType, savedAddress);
+            try {
+              // NEW WALLET-AGNOSTIC API
+              // 1. Import wallet provider factory
+              const { WalletProviderFactory } = await import('@nomyx/shared');
+
+              // 2. Get wallet provider for the saved type
+              const provider = WalletProviderFactory.getProvider(savedType as any);
+
+              // 3. Connect the wallet
+              const currentChain = serviceManager.getCurrentChain();
+              const currentChainId = serviceManager.getCurrentChainId();
+              await provider.connect(currentChain.type, currentChainId || undefined);
+
+              // 4. Set the connected provider as the signer
+              await serviceManager.setSigner(provider);
+
+              console.log('[Admin Portal] Wallet reconnected successfully');
+            } catch (error) {
+              console.error('[Admin Portal] Failed to reconnect wallet:', error);
+              // Clear invalid wallet state
+              PortalStorage.removeItem('nomyx-wallet-address');
+              PortalStorage.removeItem('nomyx-wallet-type');
+              PortalStorage.removeItem('nomyx-wallet-permission');
+            }
+          }
+        }
       } catch (error) {
         console.error('[Admin Portal] Failed to initialize blockchain services:', error);
       }
     };
     initServices();
-  }, []);
+  }, [serviceManager]);
 
   return (
     <ErrorBoundary>

@@ -3,6 +3,8 @@
  * This avoids the session token authentication issue by using server-side Master Key
  */
 
+import { PortalStorage } from '@nomyx/shared';
+
 interface CloudFunctionOptions {
   params?: any;
   sessionToken?: string;
@@ -16,9 +18,9 @@ class ParseServerClient {
     // Use relative URL for API routes
     this.baseUrl = '/api/parse';
     
-    // Try to get session token from localStorage if available
+    // Try to get session token from PortalStorage if available
     if (typeof window !== 'undefined') {
-      this.sessionToken = localStorage.getItem('sessionToken');
+      this.sessionToken = PortalStorage.getItem('sessionToken');
     }
   }
 
@@ -28,7 +30,7 @@ class ParseServerClient {
   setSessionToken(token: string) {
     this.sessionToken = token;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sessionToken', token);
+      PortalStorage.setItem('sessionToken', token);
     }
   }
 
@@ -38,7 +40,7 @@ class ParseServerClient {
   clearSessionToken() {
     this.sessionToken = null;
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('sessionToken');
+      PortalStorage.removeItem('sessionToken');
     }
   }
 
@@ -46,7 +48,7 @@ class ParseServerClient {
    * Call a Parse Cloud function via the API route
    */
   async run(functionName: string, params?: any): Promise<any> {
-    const token = this.sessionToken || (typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null);
+    const token = this.sessionToken || (typeof window !== 'undefined' ? PortalStorage.getItem('sessionToken') : null);
     
     if (!token) {
       console.warn('[ParseServerClient] No session token available, request may fail');
@@ -79,18 +81,18 @@ class ParseServerClient {
           // Clear all session data
           this.clearSessionToken();
           if (typeof window !== 'undefined') {
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('sessionToken');
-            localStorage.removeItem('username');
+            PortalStorage.removeItem('currentUser');
+            PortalStorage.removeItem('sessionToken');
+            PortalStorage.removeItem('username');
             // Clear any other auth-related items
             const keysToRemove = [];
-            for (let i = 0; i < localStorage.length; i++) {
-              const key = localStorage.key(i);
+            for (let i = 0; i < PortalStorage.length; i++) {
+              const key = PortalStorage.key(i);
               if (key && (key.includes('session') || key.includes('auth') || key.includes('token'))) {
                 keysToRemove.push(key);
               }
             }
-            keysToRemove.forEach(key => localStorage.removeItem(key));
+            keysToRemove.forEach(key => PortalStorage.removeItem(key));
 
             // Show a message if antd is available
             if ((window as any).antd?.message) {
@@ -124,8 +126,8 @@ class ParseServerClient {
         // Clear session and redirect
         this.clearSessionToken();
         if (typeof window !== 'undefined') {
-          // Clear all localStorage items
-          localStorage.clear();
+          // Clear all PortalStorage items
+          PortalStorage.clear();
 
           // Show a message if antd is available
           if ((window as any).antd?.message) {

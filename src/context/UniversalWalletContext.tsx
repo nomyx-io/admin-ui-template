@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { 
-  WalletProviderFactory, 
-  IWalletProvider, 
-  WalletChainType, 
+import {
+  WalletProviderFactory,
+  IWalletProvider,
+  WalletChainType,
   WalletStatus,
-  WalletProviderType 
+  WalletProviderType,
+  PortalStorage
 } from '@nomyx/shared';
 import { toast } from 'react-toastify';
 
@@ -51,7 +52,7 @@ export const UniversalWalletProvider: React.FC<{ children: React.ReactNode }> = 
   const [selectedChain, setSelectedChain] = useState<string>(() => {
     // Load from localStorage or default
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('nomyx-selected-chain') || 'ethereum-local';
+      return PortalStorage.getItem('nomyx-selected-chain') || 'ethereum-local';
     }
     return 'ethereum-local';
   });
@@ -63,7 +64,7 @@ export const UniversalWalletProvider: React.FC<{ children: React.ReactNode }> = 
   const [walletProvider, setWalletProvider] = useState(() => {
     // Load last used wallet provider from localStorage
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('nomyx-wallet-provider') || '';
+      return PortalStorage.getItem('nomyx-wallet-provider') || '';
     }
     return '';
   });
@@ -73,7 +74,7 @@ export const UniversalWalletProvider: React.FC<{ children: React.ReactNode }> = 
   // Save chain selection to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('nomyx-selected-chain', selectedChain);
+      PortalStorage.setItem('nomyx-selected-chain', selectedChain);
       console.log(`[UniversalWallet] Saved chain selection: ${selectedChain}`);
     }
   }, [selectedChain]);
@@ -83,9 +84,9 @@ export const UniversalWalletProvider: React.FC<{ children: React.ReactNode }> = 
     const autoReconnect = async () => {
       if (typeof window === 'undefined') return;
       
-      const savedProvider = localStorage.getItem('nomyx-wallet-provider');
-      const savedAccount = localStorage.getItem('nomyx-wallet-account');
-      const savedChain = localStorage.getItem('nomyx-selected-chain');
+      const savedProvider = PortalStorage.getItem('nomyx-wallet-provider');
+      const savedAccount = PortalStorage.getItem('nomyx-wallet-account');
+      const savedChain = PortalStorage.getItem('nomyx-selected-chain');
       
       if (savedProvider && savedAccount && !isConnected && !isConnecting) {
         console.log(`[UniversalWallet] Attempting auto-reconnect to ${savedProvider}`);
@@ -141,8 +142,8 @@ export const UniversalWalletProvider: React.FC<{ children: React.ReactNode }> = 
       
       // Save wallet provider to localStorage for auto-reconnect
       if (typeof window !== 'undefined') {
-        localStorage.setItem('nomyx-wallet-provider', provider.metadata.name);
-        localStorage.setItem('nomyx-wallet-account', address);
+        PortalStorage.setItem('nomyx-wallet-provider', provider.metadata.name);
+        PortalStorage.setItem('nomyx-wallet-account', address);
         console.log(`[UniversalWallet] Saved wallet provider: ${provider.metadata.name}`);
       }
       
@@ -173,8 +174,8 @@ export const UniversalWalletProvider: React.FC<{ children: React.ReactNode }> = 
     
     // Clear wallet from localStorage
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('nomyx-wallet-provider');
-      localStorage.removeItem('nomyx-wallet-account');
+      PortalStorage.removeItem('nomyx-wallet-provider');
+      PortalStorage.removeItem('nomyx-wallet-account');
       console.log('[UniversalWallet] Cleared saved wallet');
     }
     

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Spin } from "antd";
 import dynamic from "next/dynamic";
+import { PortalStorage } from "@nomyx/shared";
 
 const NextNavBar = dynamic(() => import("./NextNavBar"), { 
   ssr: false,
@@ -26,10 +27,10 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
     }
 
     // Check if user is authenticated - check multiple possible token keys
-    const sessionToken = localStorage.getItem("nomyx-session-token") ||
-                        localStorage.getItem("sessionToken") ||
-                        localStorage.getItem("access_token");
-    const tokenExpiration = localStorage.getItem("tokenExpiration");
+    const sessionToken = PortalStorage.getItem("nomyx-session-token") ||
+                        PortalStorage.getItem("sessionToken") ||
+                        PortalStorage.getItem("access_token");
+    const tokenExpiration = PortalStorage.getItem("tokenExpiration");
 
     if (!sessionToken || !tokenExpiration) {
       router.push("/login");
@@ -39,9 +40,9 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
     // Check if token is expired
     const expirationTime = parseInt(tokenExpiration);
     if (Date.now() > expirationTime) {
-      localStorage.removeItem("sessionToken");
-      localStorage.removeItem("tokenExpiration");
-      localStorage.removeItem("user");
+      PortalStorage.removeItem("sessionToken");
+      PortalStorage.removeItem("tokenExpiration");
+      PortalStorage.removeItem("user");
       router.push("/login");
       return;
     }
@@ -50,7 +51,7 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
     setLoading(false);
 
     // Get saved chain preference
-    const savedChain = localStorage.getItem("nomyx-selected-chain");
+    const savedChain = PortalStorage.getItem("nomyx-selected-chain");
     if (savedChain) {
       setSelectedChain(savedChain);
     }
@@ -64,10 +65,10 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
     manager.handleLogout();
 
     // Also clear any legacy/portal-specific tokens
-    localStorage.removeItem("sessionToken");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("tokenExpiration");
-    localStorage.removeItem("user");
+    PortalStorage.removeItem("sessionToken");
+    PortalStorage.removeItem("access_token");
+    PortalStorage.removeItem("tokenExpiration");
+    PortalStorage.removeItem("user");
 
     console.log("[Admin Logout] Logout complete, redirecting to login");
     router.push("/login");
@@ -75,7 +76,7 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
 
   const handleChainChange = async (chainId: string) => {
     setSelectedChain(chainId);
-    localStorage.setItem("nomyx-selected-chain", chainId);
+    PortalStorage.setItem("nomyx-selected-chain", chainId);
     
     // Switch chain using BlockchainServiceManager without reloading
     try {

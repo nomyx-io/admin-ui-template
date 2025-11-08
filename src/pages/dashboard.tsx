@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Card, Button, Space } from "antd";
+import { PortalStorage } from "@nomyx/shared";
 import Statistic from "antd/es/statistic";
 import Typography from "antd/es/typography";
 import Row from "antd/es/row";
@@ -35,7 +36,7 @@ export default function DashboardPage() {
       try {
         // Initialize blockchain service
         const blockchainService = new BlockchainService();
-        const selectedChain = localStorage.getItem('nomyx-selected-chain') || 'stellar-testnet';
+        const selectedChain = PortalStorage.getItem('nomyx-selected-chain') || 'stellar-testnet';
         await blockchainService.initialize(selectedChain);
 
         // Initialize identity service with blockchain service

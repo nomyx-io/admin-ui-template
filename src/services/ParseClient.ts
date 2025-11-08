@@ -1,4 +1,5 @@
 import Parse, { RequestOptions } from "parse";
+import { PortalStorage } from "@nomyx/shared";
 
 class ParseClient {
   private static instance: ParseClient;
@@ -65,7 +66,7 @@ class ParseClient {
    * Setup session token for Parse authentication
    */
   private setupSessionToken() {
-    const sessionToken = localStorage.getItem('sessionToken');
+    const sessionToken = PortalStorage.getItem('sessionToken');
 
     if (sessionToken && sessionToken !== this.sessionToken) {
       this.sessionToken = sessionToken;
@@ -115,7 +116,7 @@ class ParseClient {
    * Ensure session token is current before making requests
    */
   private ensureSessionToken() {
-    const currentToken = localStorage.getItem('sessionToken');
+    const currentToken = PortalStorage.getItem('sessionToken');
     if (currentToken !== this.sessionToken) {
       this.setupSessionToken();
     }
@@ -724,7 +725,7 @@ class ParseClient {
       } else {
         console.warn(`[ParseClient] No session token available for ${cloudFunction}`);
         // Check localStorage directly
-        const storedToken = localStorage.getItem('sessionToken');
+        const storedToken = PortalStorage.getItem('sessionToken');
         console.log(`[ParseClient] Token in localStorage: ${storedToken ? storedToken.substring(0, 20) + '...' : 'None'}`);
       }
 

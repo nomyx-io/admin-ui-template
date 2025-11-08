@@ -1,4 +1,4 @@
-import { BlockchainServiceManager, UnifiedBlockchainService, ChainConfigService } from "@nomyx/shared";
+import { BlockchainServiceManager, UnifiedBlockchainService, ChainConfigService, PortalStorage } from "@nomyx/shared";
 import PubSub from "pubsub-js";
 
 import ParseClient from "../services/ParseClient"; // Import the singleton instance
@@ -205,7 +205,7 @@ class BlockchainService {
 
         // Get local names if available
         const localNames = typeof window !== 'undefined'
-          ? JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}')
+          ? JSON.parse(PortalStorage.getItem('nomyx-claim-topic-names') || '{}')
           : {};
 
         // Return in the format expected by the frontend
@@ -256,14 +256,14 @@ class BlockchainService {
 
       // Get locally stored names (development workaround for Parse auth)
       const localNames = typeof window !== 'undefined'
-        ? JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}')
+        ? JSON.parse(PortalStorage.getItem('nomyx-claim-topic-names') || '{}')
         : {};
 
       // Clear stale test data if present (temporary fix for "Test Clickable Links" issue)
       if (localNames[1] === 'Test Clickable Links' && typeof window !== 'undefined') {
         delete localNames[1];
-        localStorage.setItem('nomyx-claim-topic-names', JSON.stringify(localNames));
-        console.log('[Admin BlockchainService] Cleared stale test data from localStorage');
+        PortalStorage.setItem('nomyx-claim-topic-names', JSON.stringify(localNames));
+        console.log('[Admin BlockchainService] Cleared stale test data from PortalStorage');
       }
 
       // Try to fetch names from Parse
@@ -365,9 +365,9 @@ class BlockchainService {
           console.error(`[Admin BlockchainService] Failed to store claim topic metadata in Parse:`, parseError);
           // Store locally as fallback
           if (typeof window !== 'undefined') {
-            const claimTopicNames = JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}');
+            const claimTopicNames = JSON.parse(PortalStorage.getItem('nomyx-claim-topic-names') || '{}');
             claimTopicNames[topicId] = displayName;
-            localStorage.setItem('nomyx-claim-topic-names', JSON.stringify(claimTopicNames));
+            PortalStorage.setItem('nomyx-claim-topic-names', JSON.stringify(claimTopicNames));
             console.log(`[Admin BlockchainService] Stored claim topic name locally as fallback`);
           }
         }
@@ -426,10 +426,10 @@ class BlockchainService {
 
       // Fallback to local storage if Parse fails
       if (typeof window !== 'undefined') {
-        const claimTopicNames = JSON.parse(localStorage.getItem('nomyx-claim-topic-names') || '{}');
+        const claimTopicNames = JSON.parse(PortalStorage.getItem('nomyx-claim-topic-names') || '{}');
         const numericTopicId = parseInt(topic, 10);
         claimTopicNames[numericTopicId] = displayName;
-        localStorage.setItem('nomyx-claim-topic-names', JSON.stringify(claimTopicNames));
+        PortalStorage.setItem('nomyx-claim-topic-names', JSON.stringify(claimTopicNames));
         console.log(`[Admin BlockchainService] Stored claim topic name locally as fallback`);
 
         return {

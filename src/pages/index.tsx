@@ -1,14 +1,15 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
+import { PortalStorage } from "@nomyx/shared";
 
 export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
     // Check if user is authenticated
-    const sessionToken = localStorage.getItem("sessionToken");
-    const tokenExpiration = localStorage.getItem("tokenExpiration");
-    
+    const sessionToken = PortalStorage.getItem("sessionToken");
+    const tokenExpiration = PortalStorage.getItem("tokenExpiration");
+
     if (!sessionToken || !tokenExpiration) {
       router.push("/login");
       return;
@@ -17,9 +18,9 @@ export default function Home() {
     // Check if token is expired
     const expirationTime = parseInt(tokenExpiration);
     if (Date.now() > expirationTime) {
-      localStorage.removeItem("sessionToken");
-      localStorage.removeItem("tokenExpiration");
-      localStorage.removeItem("user");
+      PortalStorage.removeItem("sessionToken");
+      PortalStorage.removeItem("tokenExpiration");
+      PortalStorage.removeItem("user");
       router.push("/login");
       return;
     }

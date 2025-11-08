@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BlockchainServiceManager, UnifiedBlockchainService } from '@nomyx/shared';
+import { BlockchainServiceManager, UnifiedBlockchainService, PortalStorage } from '@nomyx/shared';
 
 /**
  * CRITICAL: SINGLE SOURCE OF TRUTH REQUIREMENT
@@ -42,7 +42,7 @@ export function useBlockchainService() {
         
         // Initialize if not already done
         if (!manager.isServiceInitialized()) {
-          const defaultChain = localStorage.getItem('nomyx-selected-chain') || 'ethereum-local';
+          const defaultChain = PortalStorage.getItem('nomyx-selected-chain') || 'ethereum-local';
           await manager.initialize(defaultChain);
         }
         

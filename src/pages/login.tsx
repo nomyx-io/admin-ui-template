@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
+import type { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
-import axios from "axios";
+import { signIn, getCsrfToken, getSession } from "next-auth/react";
 import { toast } from "react-toastify";
-import { createBlockchainSelectionManager, createWalletSuccessModal, createExplorerLink, BlockchainServiceManager } from "@nomyx/shared";
+import { createBlockchainSelectionManager, createWalletSuccessModal, createExplorerLink, BlockchainServiceManager, PortalStorage } from "@nomyx/shared";
 import { Modal } from "antd";
 import TransactionModal from "../components/shared/TransactionModal";
 
@@ -56,111 +57,67 @@ export default function LoginPage() {
     showDetails: false
   });
 
-  // DO NOT initialize blockchain service on login page
-  // It will be initialized after successful login using NEXT_PUBLIC_SELECTED_CHAIN
+  // Check if already logged in and redirect
+  useEffect(() => {
+    const checkAndRedirect = async () => {
+      const session = await getSession();
+      if (session?.user?.accessToken) {
+        router.push("/dashboard");
+      }
+    };
+    checkAndRedirect();
+  }, [router]);
 
+  // Handle standard login with NextAuth
   const handleLogin = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       console.log("[Admin Login] Login attempt:", email);
 
-      // Use real Parse authentication (no mock login)
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_PARSE_SERVER_URL!}/functions/authLogin`,
-        { email, password },
-        {
-          headers: {
-            "X-Parse-Application-Id": process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID!,
-            "X-Parse-Javascript-Key": process.env.NEXT_PUBLIC_PARSE_JAVASCRIPT_KEY!,
-          },
-        }
-      );
+      const result = await signIn("standard", {
+        email: email.toLowerCase(),
+        password,
+        redirect: false,
+      });
 
-      const data = response.data;
-      const result = data.result || data;
-
-      if (result?.access_token) {
-        // Store token expiration (30 minutes from now)
-        const expirationTime = Date.now() + 60 * 30 * 1000;
-        localStorage.setItem("tokenExpiration", expirationTime.toString());
-
-        // Store session token for Parse Cloud functions
-        const sessionToken = result.sessionToken || result.access_token;
-        localStorage.setItem("sessionToken", sessionToken);
-        console.log("[Admin Login] Stored session token for Parse Cloud functions");
-
-        // SECURITY: DFNS delegated token is stored securely on backend (Parse Session)
-        // Frontend never receives or stores the delegated token
-        console.log("[Admin Login] DFNS wallet operations will use session token (delegated token stored securely on backend)");
-
-        // Update ParseClient with the new session token
-        const ParseClient = await import("../services/ParseClient");
-        ParseClient.default.updateSessionToken(sessionToken);
-
-        // Initialize blockchain service with NEXT_PUBLIC_SELECTED_CHAIN
-        if (!serviceManagerRef.current.isServiceInitialized()) {
-          console.log("[Admin Login] Initializing blockchain service with chain:", process.env.NEXT_PUBLIC_SELECTED_CHAIN);
-          await serviceManagerRef.current.initialize(process.env.NEXT_PUBLIC_SELECTED_CHAIN);
-        }
-
-        // Use centralized login handling from BlockchainServiceManager
-        // SECURITY: No longer pass dfns_token (it's stored securely on backend)
-        const { BlockchainServiceManager } = await import("@nomyx/shared");
-        const manager = BlockchainServiceManager.getInstance();
-        manager.handleLoginSuccess(result.access_token, result.user);
-        console.log("[Admin Login] Handled login success via BlockchainServiceManager");
-
-        console.log("[Admin Login] Login successful, redirecting to dashboard");
-
-        // Redirect to dashboard
-        router.push("/dashboard");
-      } else {
-        // Show error modal
-        setTransactionModal({
-          visible: true,
-          status: 'error',
-          title: 'Login Failed',
-          loadingMessage: '',
-          successMessage: '',
-          errorMessage: 'Invalid credentials. Please check your email and password.'
-        });
-      }
-    } catch (error: any) {
-      // FIRST: Extract error message BEFORE any logging to check if this is expected auto-registration case
-      let errorMessage = 'Login failed. Please check your credentials and try again.';
-
-      if (error.response?.data?.error) {
-        // Parse Cloud error
-        errorMessage = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        // Generic Parse error
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        // JavaScript error
-        errorMessage = error.message;
-      }
-
-      // Check for DFNS "User not found" error and trigger auto-registration
-      // Do this BEFORE logging to prevent Next.js overlay
-      if (errorMessage.includes('User not found')) {
-        console.log("[Admin Login] DFNS user not found - triggering auto-registration");
+      // Check if login failed due to user not found - trigger DFNS registration
+      if (!result?.ok && result?.status === 401) {
+        console.log("[Admin Login] Login failed with 401 - attempting DFNS registration");
         setIsLoading(false);
         await handleDfnsRegistration(email, password);
         return;
       }
 
-      // ONLY log error if it's NOT the expected registration case
-      console.error("[Admin Login] Login error:", error);
+      if (!result?.ok) {
+        toast.error("An error occurred during login.");
+        throw new Error("Login failed");
+      }
 
-      // Show error in modal
-      setTransactionModal({
-        visible: true,
-        status: 'error',
-        title: 'Login Failed',
-        loadingMessage: '',
-        successMessage: '',
-        errorMessage: errorMessage
-      });
+      // Check session with retries
+      const maxRetries = 5;
+      let session = null;
+
+      for (let i = 0; i < maxRetries; i++) {
+        session = await getSession();
+        if (session?.user?.accessToken) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      if (!session?.user?.accessToken) {
+        toast.error("Session initialization failed");
+        throw new Error("Session initialization failed");
+      }
+
+      // Store session token in PortalStorage for compatibility with Parse SDK
+      PortalStorage.setItem("sessionToken", session.user.accessToken);
+      PortalStorage.setItem("tokenExpiration", (Date.now() + 60 * 30 * 1000).toString());
+
+      toast.success("Login successful!");
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("[Admin Login] Error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +148,7 @@ export default function LoginPage() {
 
       // Call shared registration utility
       const result = await registerDFNSUser({
-        email,
+        email: email.toLowerCase(),
         password,
         parseServerUrl: process.env.NEXT_PUBLIC_PARSE_SERVER_URL!,
         parseAppId: process.env.NEXT_PUBLIC_PARSE_APPLICATION_ID!,
@@ -208,7 +165,6 @@ export default function LoginPage() {
       });
 
       if (!result.success) {
-        // Show error in modal (NOT throw - prevents Next.js overlay)
         setTransactionModal({
           visible: true,
           status: 'error',
@@ -231,7 +187,6 @@ export default function LoginPage() {
 
       // Show appropriate success modal based on wallet status
       if (createdWallets.length > 0) {
-        // Map chain ID to DFNS network name to find current wallet
         const getDFNSNetworkName = (chainId: string): string => {
           if (chainId === 'stellar-mainnet') return 'Stellar';
           if (chainId === 'stellar-testnet' || chainId === 'stellar-local') return 'StellarTestnet';
@@ -245,107 +200,74 @@ export default function LoginPage() {
         const currentWallet = createdWallets.find((w: any) => w.network === targetNetwork);
 
         if (currentWallet) {
-          // Hide transaction modal
           setTransactionModal({ ...transactionModal, visible: false });
 
-          // Get explorer URL from current chain config
           const currentChain = serviceManagerRef.current.getCurrentChain();
           const explorerUrl = currentChain?.config?.chain_explorer_url || null;
 
-          // Show wallet success modal
           setWalletSuccessModal({
             visible: true,
             walletAddress: currentWallet.address,
             explorerUrl: explorerUrl
           });
-
-          // Wait for user to close the modal (handled by modal close handler)
           return;
-        } else {
-          // Show generic success for other networks
-          setTransactionModal({
-            visible: true,
-            status: 'success',
-            title: 'Registration Complete',
-            loadingMessage: '',
-            successMessage: 'DFNS registration complete! You can set up your wallet from the dashboard. Redirecting...',
-            errorMessage: '',
-            data: undefined,
-            showDetails: false
-          });
-
-          await new Promise(resolve => setTimeout(resolve, 1500));
         }
-      } else {
-        // No wallets created yet
-        setTransactionModal({
-          visible: true,
-          status: 'success',
-          title: 'Registration Complete',
-          loadingMessage: '',
-          successMessage: 'DFNS registration complete! You can set up your wallet from the dashboard. Redirecting...',
-          errorMessage: '',
-          data: undefined,
-          showDetails: false
-        });
-
-        await new Promise(resolve => setTimeout(resolve, 1500));
       }
+
+      // Show success and auto-login
+      toast.success("Registration complete! Logging in...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Hide modal
       setTransactionModal({ ...transactionModal, visible: false });
 
-      // Store session and redirect
-      console.log("[Admin Login] Storing session and redirecting");
+      // Retry login after successful registration
+      const retryResult = await signIn("standard", {
+        email: email.toLowerCase(),
+        password,
+        redirect: false,
+      });
 
-      localStorage.setItem("sessionToken", result.sessionToken!);
-      localStorage.setItem("tokenExpiration", (Date.now() + 60 * 30 * 1000).toString());
+      if (retryResult?.ok) {
+        const maxRetries = 5;
+        let session = null;
 
-      // Update ParseClient
-      const ParseClient = await import("../services/ParseClient");
-      ParseClient.default.updateSessionToken(result.sessionToken!);
+        for (let i = 0; i < maxRetries; i++) {
+          session = await getSession();
+          if (session?.user?.accessToken) {
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
 
-      // Initialize blockchain service
-      if (!serviceManagerRef.current.isServiceInitialized()) {
-        console.log("[Admin Login] Initializing blockchain service with chain:", process.env.NEXT_PUBLIC_SELECTED_CHAIN);
-        await serviceManagerRef.current.initialize(process.env.NEXT_PUBLIC_SELECTED_CHAIN);
+        if (session?.user?.accessToken) {
+          PortalStorage.setItem("sessionToken", session.user.accessToken);
+          PortalStorage.setItem("tokenExpiration", (Date.now() + 60 * 30 * 1000).toString());
+
+          toast.success("Login successful!");
+          router.push("/dashboard");
+          return;
+        }
       }
 
-      // Use centralized login handling from BlockchainServiceManager
-      const { BlockchainServiceManager } = await import("@nomyx/shared");
-      const manager = BlockchainServiceManager.getInstance();
-      manager.handleLoginSuccess(result.sessionToken!, result.user);
-
-      router.push("/dashboard");
-
+      toast.error("Registration succeeded but login failed. Please try logging in again.");
     } catch (error: any) {
       console.error("[Admin Login] DFNS registration failed:", error);
 
-      let errorMessage = 'DFNS registration failed. Please try again.';
-
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      // Show registration error in modal (NOT throw)
       setTransactionModal({
         visible: true,
         status: 'error',
         title: 'Registration Failed',
         loadingMessage: '',
         successMessage: '',
-        errorMessage: errorMessage,
+        errorMessage: error.message || 'DFNS registration failed. Please try again.',
         data: undefined,
         showDetails: false
       });
     }
   };
 
-  // Handle wallet connection request - open the modal
+  // Handle wallet connection request
   const handleWalletConnectRequest = async () => {
     console.log("[Admin Login] Opening wallet selection modal");
     setShowWalletModal(true);
@@ -355,14 +277,11 @@ export default function LoginPage() {
   const handleWalletConnect = async (address: string, provider: any) => {
     console.log("[Admin Login] Wallet connected:", address, provider);
     setShowWalletModal(false);
-    
+
     if (address) {
-      // Store wallet info
-      localStorage.setItem("walletAddress", address);
-      localStorage.setItem("walletProvider", provider);
-      
-      // TODO: Implement wallet authentication with backend
-      // For now, just redirect to dashboard
+      PortalStorage.setItem("walletAddress", address);
+      PortalStorage.setItem("walletProvider", provider);
+
       toast.success(`Connected wallet: ${address.substring(0, 8)}...${address.substring(address.length - 6)}`);
       router.push("/dashboard");
     }
@@ -371,40 +290,58 @@ export default function LoginPage() {
   // Handle wallet disconnection
   const handleWalletDisconnect = async () => {
     console.log("[Admin Login] Wallet disconnected");
-    localStorage.removeItem("walletAddress");
-    localStorage.removeItem("walletProvider");
+    PortalStorage.removeItem("walletAddress");
+    PortalStorage.removeItem("walletProvider");
   };
 
-  // Handle wallet success modal close - complete login flow
+  // Handle wallet success modal close
   const handleWalletModalClose = async () => {
-    // Close modal
     setWalletSuccessModal({ visible: false, walletAddress: '', explorerUrl: null });
 
-    // Complete the login flow - this code was after the modal show in original flow
-    console.log("[Admin Login] Completing login after wallet modal close");
+    const email = (document.querySelector('input[type="email"]') as HTMLInputElement)?.value || '';
+    const password = (document.querySelector('input[type="password"]') as HTMLInputElement)?.value || '';
 
-    // Get the stored session token from the registration result
-    const sessionToken = localStorage.getItem("sessionToken");
-    if (!sessionToken) {
-      toast.error("Session lost. Please try logging in again.");
+    if (!email || !password) {
+      toast.error('Unable to proceed with login. Please refresh and try again.');
       return;
     }
 
-    // Initialize blockchain service
-    if (!serviceManagerRef.current.isServiceInitialized()) {
-      console.log("[Admin Login] Initializing blockchain service with chain:", process.env.NEXT_PUBLIC_SELECTED_CHAIN);
-      await serviceManagerRef.current.initialize(process.env.NEXT_PUBLIC_SELECTED_CHAIN);
+    toast.info("Completing login...", { autoClose: 2000 });
+
+    try {
+      const retryResult = await signIn("standard", {
+        email: email.toLowerCase(),
+        password,
+        redirect: false,
+      });
+
+      if (retryResult?.ok) {
+        const maxRetries = 5;
+        let session = null;
+
+        for (let i = 0; i < maxRetries; i++) {
+          session = await getSession();
+          if (session?.user?.accessToken) {
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        if (session?.user?.accessToken) {
+          PortalStorage.setItem("sessionToken", session.user.accessToken);
+          PortalStorage.setItem("tokenExpiration", (Date.now() + 60 * 30 * 1000).toString());
+
+          toast.success("Login successful!");
+          router.push("/dashboard");
+          return;
+        }
+      }
+
+      toast.error("Login failed. Please try again.");
+    } catch (error) {
+      console.error("Login retry error:", error);
+      toast.error("An error occurred. Please try again.");
     }
-
-    // Use centralized login handling from BlockchainServiceManager
-    const { BlockchainServiceManager } = await import("@nomyx/shared");
-    const manager = BlockchainServiceManager.getInstance();
-
-    // Get user from localStorage if available
-    const user = JSON.parse(localStorage.getItem("currentUser") || "{}");
-    manager.handleLoginSuccess(sessionToken, user);
-
-    router.push("/dashboard");
   };
 
   return (
