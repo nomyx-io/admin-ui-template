@@ -385,7 +385,6 @@ function CreateDigitalId({ service }) {
         let needsRegistration = true;
         try {
           const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
-          console.log(isRegistered);
 
           if (isRegistered) {
             console.log("Identity already registered in Blockchain");
@@ -696,7 +695,6 @@ function CreateDigitalId({ service }) {
         let needsRegistration = true;
         try {
           const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
-          console.log(isRegistered);
           if (isRegistered) {
             console.log("Identity already registered in Blockchain");
             needsRegistration = false;
