@@ -28,6 +28,7 @@ enum NomyxAction {
   RemoveUser,
   EditClaims,
   AddClaims,
+  SendVerificationEmail,
 }
 
 enum WalletPreference {
