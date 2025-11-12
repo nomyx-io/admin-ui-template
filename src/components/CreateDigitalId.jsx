@@ -104,6 +104,21 @@ function CreateDigitalId({ service }) {
     }
   }
 
+  // Helper: Poll for blockchain verification until true
+  async function waitForVerification(service, walletAddress, maxAttempts = 12, delayMs = 5000) {
+    for (let i = 0; i < maxAttempts; i++) {
+      const isRegistered = await service.isVerified(walletAddress);
+      console.log(`Verification check (${i + 1}/${maxAttempts}):`, isRegistered);
+
+      if (isRegistered) return true;
+
+      // Wait before next attempt
+      await awaitTimeout(delayMs);
+    }
+
+    return false; // After all attempts, still not verified
+  }
+
   // Helper: Save operation state
   function saveOperationState(walletAddr, state) {
     const stateKey = `identity-creation-${walletAddr.toLowerCase()}`;
@@ -227,7 +242,7 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 3, "Get identity");
+          identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get identity");
           console.log("Existing identity check:", identity);
 
           if (identity && identity !== "0x0000000000000000000000000000000000000000") {
@@ -305,16 +320,50 @@ function CreateDigitalId({ service }) {
             throw new Error(completeError);
           }
 
+          // Wait for blockchain confirmation if the response includes a transaction hash
+          if (completeResponse?.transactionHash && service?.provider?.waitForTransaction) {
+            console.log("⏳ Waiting for createIdentity tx confirmation:", completeResponse.transactionHash);
+            toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
+
+            const txHash = completeResponse.transactionHash;
+            const maxAttempts = 10; // roughly ~2 minutes total
+            const delayMs = 10000; // 10s between retries
+
+            let confirmed = false;
+
+            for (let i = 0; i < maxAttempts; i++) {
+              try {
+                const receipt = await service.provider.waitForTransaction(txHash, 1, delayMs);
+                if (receipt && receipt.status === 1) {
+                  confirmed = true;
+                  console.log(`Transaction ${txHash} confirmed in block ${receipt.blockNumber}`);
+                  break;
+                } else {
+                  console.warn(`⚠️ Attempt ${i + 1}: tx not confirmed yet, retrying...`);
+                }
+              } catch (err) {
+                console.warn(`waitForTransaction failed (attempt ${i + 1}/${maxAttempts}):`, err.message);
+              }
+
+              // Wait before retrying
+              await awaitTimeout(delayMs);
+            }
+
+            if (!confirmed) {
+              throw new Error(`Transaction ${txHash} not confirmed after ${maxAttempts * (delayMs / 1000)} seconds`);
+            }
+          } else {
+            console.log("⚠️ No transaction hash from Dfns, waiting 10s before proceeding...");
+            await awaitTimeout(10000);
+          }
+
           return completeResponse;
         };
 
-        await retryWithBackoff(createIdentity, 3, "Create identity");
+        await retryWithBackoff(createIdentity, 8, "Create identity");
 
-        // Wait a bit for the identity to be available
-        await awaitTimeout(2000);
-
-        identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 5, "Get created identity");
-
+        // After confirmation, check for identity on-chain
+        identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get created identity");
         console.log("New identity created:", identity);
         identityCreatedOrExists = true;
 
@@ -335,7 +384,7 @@ function CreateDigitalId({ service }) {
       if (!identityRegisteredOrExists) {
         let needsRegistration = true;
         try {
-          const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 3, "Check registration");
+          const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
 
           if (isRegistered) {
             console.log("Identity already registered in Blockchain");
@@ -423,7 +472,7 @@ function CreateDigitalId({ service }) {
             return addIdentityCompleteResponse;
           };
 
-          const registrationResponse = await retryWithBackoff(registerIdentity, 3, "Register identity");
+          const registrationResponse = await retryWithBackoff(registerIdentity, 8, "Register identity");
 
           // Wait for transaction confirmation if we have a transaction hash
           if (registrationResponse?.transactionHash) {
@@ -434,10 +483,11 @@ function CreateDigitalId({ service }) {
           }
 
           // Verify registration succeeded
-          const isNowRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 5, "Verify registration");
+          const isNowRegistered = await waitForVerification(service, walletAddress, 12, 5000);
+          console.log("Final verification status:", isNowRegistered);
 
           if (!isNowRegistered) {
-            throw new Error("Registration verification failed - identity not found on blockchain");
+            throw new Error("Registration verification failed - identity not found on blockchain after waiting");
           }
 
           console.log("Identity registered in Blockchain successfully");
@@ -571,7 +621,7 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 3, "Get identity");
+          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get identity");
           console.log("Existing identity check:", identity);
 
           if (identity && identity !== "0x0000000000000000000000000000000000000000") {
@@ -601,7 +651,7 @@ function CreateDigitalId({ service }) {
           // Wait for transaction to be mined
           await awaitTimeout(2000);
 
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 5, "Get created identity");
+          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get created identity");
 
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;
@@ -644,8 +694,7 @@ function CreateDigitalId({ service }) {
       if (!identityRegisteredOrExists) {
         let needsRegistration = true;
         try {
-          const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 3, "Check registration");
-
+          const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
           if (isRegistered) {
             console.log("Identity already registered in Blockchain");
             needsRegistration = false;
@@ -682,10 +731,11 @@ function CreateDigitalId({ service }) {
             }
 
             // Verify registration succeeded
-            const isNowRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 5, "Verify registration");
+            const isNowRegistered = await waitForVerification(service, walletAddress, 12, 5000);
+            console.log("Final verification status:", isNowRegistered);
 
             if (!isNowRegistered) {
-              throw new Error("Registration verification failed - identity not found on blockchain");
+              throw new Error("Registration verification failed - identity not found on blockchain after waiting");
             }
 
             console.log("Identity registered in Blockchain successfully");
@@ -724,15 +774,15 @@ function CreateDigitalId({ service }) {
       }
 
       // ONLY proceed with metadata update if identity was successfully created AND registered
-      if (!identityCreatedOrExists || !identityRegisteredOrExists) {
-        toast.update(toastId, {
-          render: "Identity processing incomplete",
-          type: "error",
-          isLoading: false,
-          autoClose: 3000,
-        });
-        return;
-      }
+      // if (!identityCreatedOrExists || !identityRegisteredOrExists) {
+      //   toast.update(toastId, {
+      //     render: "Identity processing incomplete",
+      //     type: "error",
+      //     isLoading: false,
+      //     autoClose: 3000,
+      //   });
+      //   return;
+      // }
 
       // Step 5: Update identity metadata
       // toast.update(toastId, { render: "Updating identity metadata..." });
