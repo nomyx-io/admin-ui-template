@@ -554,7 +554,20 @@ class BlockchainService {
   }
 
   async isVerified(userAddress) {
-    return await this.identityRegistryService.isVerified(userAddress);
+    try {
+      if (!this.dedicatedProvider) {
+        throw new Error("No dedicated provider available for isVerified()");
+      }
+
+      const contract = new ethers.Contract(this.identityRegistryService.address, this.identityRegistryAbi, this.dedicatedProvider);
+
+      console.log("Using dedicated provider for isVerified:", contract.provider?.connection?.url || "unknown");
+
+      return await contract.isVerified(userAddress);
+    } catch (err) {
+      console.error("❌ Error in isVerified():", err);
+      throw err;
+    }
   }
 
   async identity(userAddress) {
