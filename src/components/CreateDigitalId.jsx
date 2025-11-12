@@ -321,41 +321,41 @@ function CreateDigitalId({ service }) {
           }
 
           // Wait for blockchain confirmation if the response includes a transaction hash
-          if (completeResponse?.transactionHash && service?.provider?.waitForTransaction) {
-            console.log("⏳ Waiting for createIdentity tx confirmation:", completeResponse.transactionHash);
-            toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
+          // if (completeResponse?.transactionHash && service?.provider?.waitForTransaction) {
+          //   console.log("⏳ Waiting for createIdentity tx confirmation:", completeResponse.transactionHash);
+          //   toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
 
-            const txHash = completeResponse.transactionHash;
-            const maxAttempts = 10; // roughly ~2 minutes total
-            const delayMs = 10000; // 10s between retries
+          //   const txHash = completeResponse.transactionHash;
+          //   const maxAttempts = 10; // roughly ~2 minutes total
+          //   const delayMs = 10000; // 10s between retries
 
-            let confirmed = false;
+          //   let confirmed = false;
 
-            for (let i = 0; i < maxAttempts; i++) {
-              try {
-                const receipt = await service.provider.waitForTransaction(txHash, 1, delayMs);
-                if (receipt && receipt.status === 1) {
-                  confirmed = true;
-                  console.log(`Transaction ${txHash} confirmed in block ${receipt.blockNumber}`);
-                  break;
-                } else {
-                  console.warn(`⚠️ Attempt ${i + 1}: tx not confirmed yet, retrying...`);
-                }
-              } catch (err) {
-                console.warn(`waitForTransaction failed (attempt ${i + 1}/${maxAttempts}):`, err.message);
-              }
+          //   for (let i = 0; i < maxAttempts; i++) {
+          //     try {
+          //       const receipt = await service.provider.waitForTransaction(txHash, 1, delayMs);
+          //       if (receipt && receipt.status === 1) {
+          //         confirmed = true;
+          //         console.log(`Transaction ${txHash} confirmed in block ${receipt.blockNumber}`);
+          //         break;
+          //       } else {
+          //         console.warn(`⚠️ Attempt ${i + 1}: tx not confirmed yet, retrying...`);
+          //       }
+          //     } catch (err) {
+          //       console.warn(`waitForTransaction failed (attempt ${i + 1}/${maxAttempts}):`, err.message);
+          //     }
 
-              // Wait before retrying
-              await awaitTimeout(delayMs);
-            }
+          //     // Wait before retrying
+          //     await awaitTimeout(delayMs);
+          //   }
 
-            if (!confirmed) {
-              throw new Error(`Transaction ${txHash} not confirmed after ${maxAttempts * (delayMs / 1000)} seconds`);
-            }
-          } else {
-            console.log("⚠️ No transaction hash from Dfns, waiting 10s before proceeding...");
-            await awaitTimeout(10000);
-          }
+          //   if (!confirmed) {
+          //     throw new Error(`Transaction ${txHash} not confirmed after ${maxAttempts * (delayMs / 1000)} seconds`);
+          //   }
+          // } else {
+          //   console.log("⚠️ No transaction hash from Dfns, waiting 10s before proceeding...");
+          //   await awaitTimeout(10000);
+          // }
 
           return completeResponse;
         };
