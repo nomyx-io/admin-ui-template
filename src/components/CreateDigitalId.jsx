@@ -774,15 +774,15 @@ function CreateDigitalId({ service }) {
       }
 
       // ONLY proceed with metadata update if identity was successfully created AND registered
-      if (!identityCreatedOrExists || !identityRegisteredOrExists) {
-        toast.update(toastId, {
-          render: "Identity processing incomplete",
-          type: "error",
-          isLoading: false,
-          autoClose: 3000,
-        });
-        return;
-      }
+      // if (!identityCreatedOrExists || !identityRegisteredOrExists) {
+      //   toast.update(toastId, {
+      //     render: "Identity processing incomplete",
+      //     type: "error",
+      //     isLoading: false,
+      //     autoClose: 3000,
+      //   });
+      //   return;
+      // }
 
       // Step 5: Update identity metadata
       // toast.update(toastId, { render: "Updating identity metadata..." });
