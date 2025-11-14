@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Parse from 'parse/node';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../auth/[...nextauth]";
 
 // Initialize Parse Server (server-side only)
 const initializeParseServer = () => {
@@ -36,15 +38,20 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // For development, check for session token in Authorization header
-  // In production, you would validate this token properly
-  const authHeader = req.headers.authorization;
-  const sessionToken = authHeader?.replace('Bearer ', '');
-  
-  // Basic authentication check - require session token for all cloud function calls
-  // The cloud functions themselves will handle role-based access control
+  // Try to get session token from Authorization header first (client-provided)
+  let sessionToken = req.headers.authorization?.replace('Bearer ', '');
+
+  // If not in header, get it from NextAuth server session
   if (!sessionToken) {
-    console.log('[Parse API Route] No session token provided - request may fail if cloud function requires authentication');
+    const session = await getServerSession(req, res, authOptions);
+    if (session?.user?.accessToken) {
+      sessionToken = session.user.accessToken as string;
+      console.log('[Parse API Route] Using session token from NextAuth session');
+    } else {
+      console.warn('[Parse API Route] No session token available in header or NextAuth session');
+    }
+  } else {
+    console.log('[Parse API Route] Using session token from Authorization header');
   }
 
   // Only allow POST requests
@@ -59,22 +66,23 @@ export default async function handler(
     return res.status(400).json({ error: 'Function name is required' });
   }
 
+  // Require authentication for all cloud function calls
+  if (!sessionToken) {
+    return res.status(401).json({
+      error: 'Authentication required. Please log in.',
+      code: 'UNAUTHORIZED'
+    });
+  }
+
   console.log(`[Parse API Route] Calling Cloud function: ${functionName} with params:`, params);
 
   try {
-    // If we have a session token, use it to authenticate the request
-    // Otherwise, let the cloud function handle authentication requirements
-    const options: any = {};
+    // Use the session token for authenticated Parse cloud function call
+    const options = {
+      sessionToken: sessionToken
+    };
 
-    if (sessionToken) {
-      // Use the session token for authentication
-      options.sessionToken = sessionToken;
-      console.log(`[Parse API Route] Using session token for Cloud function: ${functionName}`);
-    } else {
-      console.log(`[Parse API Route] No session token provided for Cloud function: ${functionName}`);
-    }
-
-    // Call the Cloud function without Master Key - let the cloud function handle its own authentication
+    // Call the Cloud function with session token authentication
     const result = await Parse.Cloud.run(functionName, params, options);
 
     console.log(`[Parse API Route] Cloud function ${functionName} executed successfully`);
