@@ -4,7 +4,7 @@ import { Breadcrumb, Button, Input } from "antd";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
-import { RoleContext } from "../context/RoleContext"; // Import RoleContext
+import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { isEthereumAddress } from "../utils";
 import { awaitTimeout } from "../utils";
@@ -15,7 +15,7 @@ function CreateDigitalId({ service }) {
   const searchParams = new URLSearchParams(location.search);
   const navigate = useNavigate();
 
-  const { walletPreference, user, dfnsToken } = useContext(RoleContext); // Access walletPreference and other necessary data from context
+  const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   const [displayName, setDisplayName] = useState(searchParams.get("displayName") || "");
   const [walletAddress, setWalletAddress] = useState(searchParams.get("walletAddress") || "");
@@ -102,6 +102,21 @@ function CreateDigitalId({ service }) {
         await awaitTimeout(delay);
       }
     }
+  }
+
+  // Helper: Poll for blockchain verification until true
+  async function waitForVerification(service, walletAddress, maxAttempts = 12, delayMs = 5000) {
+    for (let i = 0; i < maxAttempts; i++) {
+      const isRegistered = await service.isVerified(walletAddress);
+      console.log(`Verification check (${i + 1}/${maxAttempts}):`, isRegistered);
+
+      if (isRegistered) return true;
+
+      // Wait before next attempt
+      await awaitTimeout(delayMs);
+    }
+
+    return false; // After all attempts, still not verified
   }
 
   // Helper: Save operation state
@@ -227,7 +242,7 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 3, "Get identity");
+          identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get identity");
           console.log("Existing identity check:", identity);
 
           if (identity && identity !== "0x0000000000000000000000000000000000000000") {
@@ -305,16 +320,50 @@ function CreateDigitalId({ service }) {
             throw new Error(completeError);
           }
 
+          // Wait for blockchain confirmation if the response includes a transaction hash
+          // if (completeResponse?.transactionHash && service?.provider?.waitForTransaction) {
+          //   console.log("⏳ Waiting for createIdentity tx confirmation:", completeResponse.transactionHash);
+          //   toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
+
+          //   const txHash = completeResponse.transactionHash;
+          //   const maxAttempts = 10; // roughly ~2 minutes total
+          //   const delayMs = 10000; // 10s between retries
+
+          //   let confirmed = false;
+
+          //   for (let i = 0; i < maxAttempts; i++) {
+          //     try {
+          //       const receipt = await service.provider.waitForTransaction(txHash, 1, delayMs);
+          //       if (receipt && receipt.status === 1) {
+          //         confirmed = true;
+          //         console.log(`Transaction ${txHash} confirmed in block ${receipt.blockNumber}`);
+          //         break;
+          //       } else {
+          //         console.warn(`⚠️ Attempt ${i + 1}: tx not confirmed yet, retrying...`);
+          //       }
+          //     } catch (err) {
+          //       console.warn(`waitForTransaction failed (attempt ${i + 1}/${maxAttempts}):`, err.message);
+          //     }
+
+          //     // Wait before retrying
+          //     await awaitTimeout(delayMs);
+          //   }
+
+          //   if (!confirmed) {
+          //     throw new Error(`Transaction ${txHash} not confirmed after ${maxAttempts * (delayMs / 1000)} seconds`);
+          //   }
+          // } else {
+          //   console.log("⚠️ No transaction hash from Dfns, waiting 10s before proceeding...");
+          //   await awaitTimeout(10000);
+          // }
+
           return completeResponse;
         };
 
-        await retryWithBackoff(createIdentity, 3, "Create identity");
+        await retryWithBackoff(createIdentity, 8, "Create identity");
 
-        // Wait a bit for the identity to be available
-        await awaitTimeout(2000);
-
-        identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 5, "Get created identity");
-
+        // After confirmation, check for identity on-chain
+        identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get created identity");
         console.log("New identity created:", identity);
         identityCreatedOrExists = true;
 
@@ -333,137 +382,138 @@ function CreateDigitalId({ service }) {
 
       // Step 3: Check if identity is already registered in Blockchain
       if (!identityRegisteredOrExists) {
-        let needsRegistration = true;
-        try {
-          const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 3, "Check registration");
+        // let needsRegistration = true;
+        // try {
+        //   const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
 
-          if (isRegistered) {
-            console.log("Identity already registered in Blockchain");
-            needsRegistration = false;
-            identityRegisteredOrExists = true;
-            toast.update(toastId, { render: "Identity already registered, updating metadata..." });
+        //   if (isRegistered) {
+        //     console.log("Identity already registered in Blockchain");
+        //     needsRegistration = false;
+        //     identityRegisteredOrExists = true;
+        //     toast.update(toastId, { render: "Identity already registered, updating metadata..." });
 
-            saveOperationState(walletAddr, {
-              displayName: trimmedDisplayName,
-              accountNumber: trimmedAccountNumber,
-              identityCreated: identityCreatedOrExists,
-              identityRegistered: true,
-              identity,
-              completed: false,
-            });
-          }
-        } catch (error) {
-          console.log("Error checking registration, will attempt registration:", error);
-        }
+        //     saveOperationState(walletAddr, {
+        //       displayName: trimmedDisplayName,
+        //       accountNumber: trimmedAccountNumber,
+        //       identityCreated: identityCreatedOrExists,
+        //       identityRegistered: true,
+        //       identity,
+        //       completed: false,
+        //     });
+        //   }
+        // } catch (error) {
+        //   console.log("Error checking registration, will attempt registration:", error);
+        // }
 
         // Step 4: Register identity in Blockchain only if needed
-        if (needsRegistration) {
-          console.log("Registering identity in Blockchain...");
-          toast.update(toastId, { render: "Registering identity on blockchain..." });
+        //if (needsRegistration) {
+        console.log("Registering identity in Blockchain...");
+        toast.update(toastId, { render: "Registering identity on blockchain..." });
 
-          const registerIdentity = async () => {
-            const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
-              walletAddress,
-              identity,
-              user.walletId,
-              dfnsToken
-            );
-
-            if (addIdentityInitError) {
-              const errorInfo = classifyError({ message: addIdentityInitError });
-              if (errorInfo.type === "USER_CANCELLED") {
-                toast.update(toastId, {
-                  render: "Identity registration cancelled",
-                  type: "warning",
-                  isLoading: false,
-                  autoClose: 3000,
-                });
-                throw new Error("USER_CANCELLED");
-              } else if (errorInfo.type === "USER_REJECTED") {
-                toast.update(toastId, {
-                  render: "Identity registration rejected",
-                  type: "error",
-                  isLoading: false,
-                  autoClose: 3000,
-                });
-                throw new Error("USER_REJECTED");
-              }
-              throw new Error(addIdentityInitError);
-            }
-
-            const { addIdentityCompleteResponse, error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
-              user.walletId,
-              dfnsToken,
-              addIdentityInitResponse.challenge,
-              addIdentityInitResponse.requestBody
-            );
-
-            if (addIdentityCompleteError) {
-              const errorInfo = classifyError({ message: addIdentityCompleteError });
-              if (errorInfo.type === "USER_CANCELLED") {
-                toast.update(toastId, {
-                  render: "Identity registration cancelled",
-                  type: "warning",
-                  isLoading: false,
-                  autoClose: 3000,
-                });
-                throw new Error("USER_CANCELLED");
-              } else if (errorInfo.type === "USER_REJECTED") {
-                toast.update(toastId, {
-                  render: "Identity registration rejected",
-                  type: "error",
-                  isLoading: false,
-                  autoClose: 3000,
-                });
-                throw new Error("USER_REJECTED");
-              }
-              throw new Error(addIdentityCompleteError);
-            }
-
-            return addIdentityCompleteResponse;
-          };
-
-          const registrationResponse = await retryWithBackoff(registerIdentity, 3, "Register identity");
-
-          // Wait for transaction confirmation if we have a transaction hash
-          if (registrationResponse?.transactionHash) {
-            toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
-          } else {
-            // If no transaction hash, wait a bit for the blockchain to process
-            await awaitTimeout(3000);
-          }
-
-          // Verify registration succeeded
-          const isNowRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 5, "Verify registration");
-
-          if (!isNowRegistered) {
-            throw new Error("Registration verification failed - identity not found on blockchain");
-          }
-
-          console.log("Identity registered in Blockchain successfully");
-          identityRegisteredOrExists = true;
-
-          saveOperationState(walletAddr, {
-            displayName: trimmedDisplayName,
-            accountNumber: trimmedAccountNumber,
-            identityCreated: identityCreatedOrExists,
-            identityRegistered: true,
+        const registerIdentity = async () => {
+          const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
+            walletAddress,
             identity,
-            completed: false,
-          });
+            user.walletId,
+            dfnsToken
+          );
+
+          if (addIdentityInitError) {
+            const errorInfo = classifyError({ message: addIdentityInitError });
+            if (errorInfo.type === "USER_CANCELLED") {
+              toast.update(toastId, {
+                render: "Identity registration cancelled",
+                type: "warning",
+                isLoading: false,
+                autoClose: 3000,
+              });
+              throw new Error("USER_CANCELLED");
+            } else if (errorInfo.type === "USER_REJECTED") {
+              toast.update(toastId, {
+                render: "Identity registration rejected",
+                type: "error",
+                isLoading: false,
+                autoClose: 3000,
+              });
+              throw new Error("USER_REJECTED");
+            }
+            throw new Error(addIdentityInitError);
+          }
+
+          const { addIdentityCompleteResponse, error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
+            user.walletId,
+            dfnsToken,
+            addIdentityInitResponse.challenge,
+            addIdentityInitResponse.requestBody
+          );
+
+          if (addIdentityCompleteError) {
+            const errorInfo = classifyError({ message: addIdentityCompleteError });
+            if (errorInfo.type === "USER_CANCELLED") {
+              toast.update(toastId, {
+                render: "Identity registration cancelled",
+                type: "warning",
+                isLoading: false,
+                autoClose: 3000,
+              });
+              throw new Error("USER_CANCELLED");
+            } else if (errorInfo.type === "USER_REJECTED") {
+              toast.update(toastId, {
+                render: "Identity registration rejected",
+                type: "error",
+                isLoading: false,
+                autoClose: 3000,
+              });
+              throw new Error("USER_REJECTED");
+            }
+            throw new Error(addIdentityCompleteError);
+          }
+
+          return addIdentityCompleteResponse;
+        };
+
+        const registrationResponse = await retryWithBackoff(registerIdentity, 8, "Register identity");
+
+        // Wait for transaction confirmation if we have a transaction hash
+        if (registrationResponse?.transactionHash) {
+          toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
+        } else {
+          // If no transaction hash, wait a bit for the blockchain to process
+          await awaitTimeout(3000);
         }
+
+        // Verify registration succeeded
+        // const isNowRegistered = await waitForVerification(service, walletAddress, 12, 5000);
+        // console.log("Final verification status:", isNowRegistered);
+
+        // if (!isNowRegistered) {
+        //   throw new Error("Registration verification failed - identity not found on blockchain after waiting");
+        // }
+
+        console.log("Identity registered in Blockchain successfully");
+        identityRegisteredOrExists = true;
+
+        saveOperationState(walletAddr, {
+          displayName: trimmedDisplayName,
+          accountNumber: trimmedAccountNumber,
+          identityCreated: identityCreatedOrExists,
+          identityRegistered: true,
+          identity,
+          completed: false,
+        });
+        //}
       }
 
       // ONLY proceed with metadata update if identity was successfully created AND registered
-      if (!identityCreatedOrExists || !identityRegisteredOrExists) {
-        toast.update(toastId, {
-          render: "Identity processing incomplete",
-          type: "error",
-          isLoading: false,
-          autoClose: 3000,
-        });
-        return;
-      }
+      // if (!identityCreatedOrExists || !identityRegisteredOrExists) {
+      //   toast.update(toastId, {
+      //     render: "Identity processing incomplete",
+      //     type: "error",
+      //     isLoading: false,
+      //     autoClose: 3000,
+      //   });
+      //   return;
+      // }
 
       // Steps 5 and 6 are handled via server trigger for managed wallets
 
@@ -571,7 +621,7 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 3, "Get identity");
+          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get identity");
           console.log("Existing identity check:", identity);
 
           if (identity && identity !== "0x0000000000000000000000000000000000000000") {
@@ -601,7 +651,7 @@ function CreateDigitalId({ service }) {
           // Wait for transaction to be mined
           await awaitTimeout(2000);
 
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 5, "Get created identity");
+          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get created identity");
 
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;
@@ -642,97 +692,98 @@ function CreateDigitalId({ service }) {
 
       // Step 3: Check if identity is already registered in Blockchain
       if (!identityRegisteredOrExists) {
-        let needsRegistration = true;
-        try {
-          const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 3, "Check registration");
+        // let needsRegistration = true;
+        // try {
+        //   const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
 
-          if (isRegistered) {
-            console.log("Identity already registered in Blockchain");
-            needsRegistration = false;
-            identityRegisteredOrExists = true;
-            toast.update(toastId, { render: "Identity already registered, updating metadata..." });
+        //   if (isRegistered) {
+        //     console.log("Identity already registered in Blockchain");
+        //     needsRegistration = false;
+        //     identityRegisteredOrExists = true;
+        //     toast.update(toastId, { render: "Identity already registered, updating metadata..." });
 
-            saveOperationState(walletAddr, {
-              displayName: trimmedDisplayName,
-              accountNumber: trimmedAccountNumber,
-              identityCreated: identityCreatedOrExists,
-              identityRegistered: true,
-              identity,
-              completed: false,
-            });
-          }
-        } catch (error) {
-          console.log("Error checking registration, will attempt registration:", error);
-        }
+        //     saveOperationState(walletAddr, {
+        //       displayName: trimmedDisplayName,
+        //       accountNumber: trimmedAccountNumber,
+        //       identityCreated: identityCreatedOrExists,
+        //       identityRegistered: true,
+        //       identity,
+        //       completed: false,
+        //     });
+        //   }
+        // } catch (error) {
+        //   console.log("Error checking registration, will attempt registration:", error);
+        // }
 
         // Step 4: Register identity in Blockchain only if needed
-        if (needsRegistration) {
-          console.log("Registering identity in Blockchain...");
-          toast.update(toastId, { render: "Registering identity in Blockchain..." });
+        // if (needsRegistration) {
+        console.log("Registering identity in Blockchain...");
+        toast.update(toastId, { render: "Registering identity in Blockchain..." });
 
-          try {
-            const tx = await service.addIdentity(walletAddress, identity);
+        try {
+          const tx = await service.addIdentity(walletAddress, identity);
 
-            // Wait for transaction confirmation
-            if (tx?.hash) {
-              toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
-            } else {
-              // If no transaction hash, wait a bit for the blockchain to process
-              await awaitTimeout(3000);
-            }
-
-            // Verify registration succeeded
-            const isNowRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 5, "Verify registration");
-
-            if (!isNowRegistered) {
-              throw new Error("Registration verification failed - identity not found on blockchain");
-            }
-
-            console.log("Identity registered in Blockchain successfully");
-            identityRegisteredOrExists = true;
-
-            saveOperationState(walletAddr, {
-              displayName: trimmedDisplayName,
-              accountNumber: trimmedAccountNumber,
-              identityCreated: identityCreatedOrExists,
-              identityRegistered: true,
-              identity,
-              completed: false,
-            });
-          } catch (error) {
-            const errorInfo = classifyError(error);
-            if (errorInfo.type === "USER_CANCELLED") {
-              toast.update(toastId, {
-                render: "Identity registration cancelled",
-                type: "warning",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_CANCELLED");
-            } else if (errorInfo.type === "USER_REJECTED") {
-              toast.update(toastId, {
-                render: "Identity registration rejected",
-                type: "error",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_REJECTED");
-            }
-            throw error;
+          // Wait for transaction confirmation
+          if (tx?.hash) {
+            toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
+          } else {
+            // If no transaction hash, wait a bit for the blockchain to process
+            await awaitTimeout(3000);
           }
+
+          // Verify registration succeeded
+          // const isNowRegistered = await waitForVerification(service, walletAddress, 12, 5000);
+          // console.log("Final verification status:", isNowRegistered);
+
+          // if (!isNowRegistered) {
+          //   throw new Error("Registration verification failed - identity not found on blockchain after waiting");
+          // }
+
+          console.log("Identity registered in Blockchain successfully");
+          identityRegisteredOrExists = true;
+
+          saveOperationState(walletAddr, {
+            displayName: trimmedDisplayName,
+            accountNumber: trimmedAccountNumber,
+            identityCreated: identityCreatedOrExists,
+            identityRegistered: true,
+            identity,
+            completed: false,
+          });
+        } catch (error) {
+          const errorInfo = classifyError(error);
+          if (errorInfo.type === "USER_CANCELLED") {
+            toast.update(toastId, {
+              render: "Identity registration cancelled",
+              type: "warning",
+              isLoading: false,
+              autoClose: 3000,
+            });
+            throw new Error("USER_CANCELLED");
+          } else if (errorInfo.type === "USER_REJECTED") {
+            toast.update(toastId, {
+              render: "Identity registration rejected",
+              type: "error",
+              isLoading: false,
+              autoClose: 3000,
+            });
+            throw new Error("USER_REJECTED");
+          }
+          throw error;
         }
+        //}
       }
 
       // ONLY proceed with metadata update if identity was successfully created AND registered
-      if (!identityCreatedOrExists || !identityRegisteredOrExists) {
-        toast.update(toastId, {
-          render: "Identity processing incomplete",
-          type: "error",
-          isLoading: false,
-          autoClose: 3000,
-        });
-        return;
-      }
+      // if (!identityCreatedOrExists || !identityRegisteredOrExists) {
+      //   toast.update(toastId, {
+      //     render: "Identity processing incomplete",
+      //     type: "error",
+      //     isLoading: false,
+      //     autoClose: 3000,
+      //   });
+      //   return;
+      // }
 
       // Step 5: Update identity metadata
       // toast.update(toastId, { render: "Updating identity metadata..." });
@@ -851,10 +902,11 @@ function CreateDigitalId({ service }) {
               type="text"
               maxLength={32}
               onChange={(e) => setDisplayName(e.target.value)}
+              disabled={isProcessing}
             />
             <p className="absolute right-5 top-3">{displayName.length}/32</p>
           </div>
-          <p>User-friendly name that describes the trusted issuers.Shown to end-users</p>
+          <p>User-friendly name that describes the trusted issuers. Shown to end-users</p>
         </div>
         <div className="mt-10 mb-6 w-[100%] max-[600px]:w-full border p-6 rounded-lg">
           <div>
@@ -867,6 +919,7 @@ function CreateDigitalId({ service }) {
                 placeholder="Enter Wallet Address"
                 type="text"
                 onChange={(e) => setWalletAddress(e.target.value.trim())}
+                disabled={isProcessing}
               />
             </div>
           </div>
@@ -880,13 +933,18 @@ function CreateDigitalId({ service }) {
                 placeholder="Enter Account number"
                 type="text"
                 onChange={(e) => setAccountNumber(e.target.value)}
+                disabled={isProcessing}
               />
             </div>
           </div>
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
-          <Button onClick={handleCreateDigitalId} className="nomyx-id-button max-[600px]:w-[60%] min-w-max text-center font-semibold h-11">
-            Create Digital Id
+          <Button
+            onClick={handleCreateDigitalId}
+            className="nomyx-id-button max-[600px]:w-[60%] min-w-max text-center font-semibold h-11"
+            disabled={isProcessing}
+          >
+            {isProcessing ? "Processing..." : "Create Digital Id"}
           </Button>
         </div>
       </div>
