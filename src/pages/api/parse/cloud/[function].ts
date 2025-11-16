@@ -41,14 +41,26 @@ export default async function handler(
   // Try to get session token from Authorization header first (client-provided)
   let sessionToken = req.headers.authorization?.replace('Bearer ', '');
 
+  console.log('[Parse API Route] Authorization header:', req.headers.authorization ? 'present' : 'missing');
+  console.log('[Parse API Route] Cookies:', Object.keys(req.cookies || {}).join(', '));
+
   // If not in header, get it from NextAuth server session
   if (!sessionToken) {
+    console.log('[Parse API Route] No Authorization header, attempting to get session from NextAuth');
     const session = await getServerSession(req, res, authOptions);
+    console.log('[Parse API Route] NextAuth session:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      hasAccessToken: !!session?.user?.accessToken,
+      sessionExpires: session?.expires
+    });
+
     if (session?.user?.accessToken) {
       sessionToken = session.user.accessToken as string;
       console.log('[Parse API Route] Using session token from NextAuth session');
     } else {
       console.warn('[Parse API Route] No session token available in header or NextAuth session');
+      console.warn('[Parse API Route] Auth options cookie name:', authOptions.cookies?.sessionToken?.name);
     }
   } else {
     console.log('[Parse API Route] Using session token from Authorization header');

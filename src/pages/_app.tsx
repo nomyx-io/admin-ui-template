@@ -71,8 +71,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         if (typeof window !== 'undefined') {
           const savedAddress = PortalStorage.getItem('nomyx-wallet-address');
           const savedType = PortalStorage.getItem('nomyx-wallet-type');
+          const sessionToken = PortalStorage.getItem('sessionToken') ||
+                              PortalStorage.getItem('nomyx-session-token');
 
-          if (savedAddress && savedType) {
+          // Only reconnect if session is valid (defensive guard against logout race condition)
+          if (savedAddress && savedType && sessionToken) {
             console.log('[Admin Portal] Auto-reconnecting wallet:', savedType, savedAddress);
             try {
               // NEW WALLET-AGNOSTIC API

@@ -4,6 +4,7 @@
  */
 
 import { PortalStorage } from '@nomyx/shared';
+import { signOut } from 'next-auth/react';
 
 interface CloudFunctionOptions {
   params?: any;
@@ -13,11 +14,15 @@ interface CloudFunctionOptions {
 class ParseServerClient {
   private baseUrl: string;
   private sessionToken: string | null = null;
+  private lastRedirectTime: number = 0;
+  private redirectCount: number = 0;
+  private readonly REDIRECT_COOLDOWN = 5000; // 5 seconds between redirects
+  private readonly MAX_REDIRECTS = 3; // Max redirects before showing error
 
   constructor() {
     // Use relative URL for API routes
     this.baseUrl = '/api/parse';
-    
+
     // Try to get session token from PortalStorage if available
     if (typeof window !== 'undefined') {
       this.sessionToken = PortalStorage.getItem('sessionToken');
@@ -49,13 +54,21 @@ class ParseServerClient {
    */
   async run(functionName: string, params?: any): Promise<any> {
     const token = this.sessionToken || (typeof window !== 'undefined' ? PortalStorage.getItem('sessionToken') : null);
-    
+
+    console.log('[ParseServerClient] Token check:', {
+      hasCachedToken: !!this.sessionToken,
+      hasStorageToken: typeof window !== 'undefined' ? !!PortalStorage.getItem('sessionToken') : false,
+      finalToken: token ? `${token.substring(0, 10)}...` : 'null',
+      storageKeys: typeof window !== 'undefined' ? Object.keys(localStorage).filter(k => k.includes('token') || k.includes('session')) : []
+    });
+
     if (!token) {
       console.warn('[ParseServerClient] No session token available, request may fail');
+      console.warn('[ParseServerClient] All PortalStorage keys:', typeof window !== 'undefined' ? Object.keys(localStorage) : []);
     }
 
     const url = `${this.baseUrl}/cloud/${functionName}`;
-    
+
     console.log(`[ParseServerClient] Calling Cloud function: ${functionName}`, params);
     
     try {
@@ -77,13 +90,39 @@ class ParseServerClient {
             errorMessage.toLowerCase().includes('invalid session') ||
             errorMessage.toLowerCase().includes('session token')) {
           console.log('[ParseServerClient] Invalid session token detected, logging out user');
+          console.log('[ParseServerClient] Session token in storage:', typeof window !== 'undefined' && PortalStorage.getItem('sessionToken') ? 'present' : 'missing');
 
-          // Clear all session data
-          this.clearSessionToken();
+          // Prevent infinite redirect loop
+          const now = Date.now();
+          if (now - this.lastRedirectTime < this.REDIRECT_COOLDOWN) {
+            this.redirectCount++;
+            console.error(`[ParseServerClient] Rapid redirect detected (${this.redirectCount}/${this.MAX_REDIRECTS})`);
+
+            if (this.redirectCount >= this.MAX_REDIRECTS) {
+              console.error('[ParseServerClient] Max redirects reached, showing error instead of redirecting');
+              const errorMsg = 'Authentication error. Please clear your browser cache and try logging in again.';
+              if (typeof window !== 'undefined' && (window as any).antd?.message) {
+                (window as any).antd.message.error(errorMsg, 0); // 0 = don't auto-close
+              }
+              throw new Error(errorMsg);
+            }
+          } else {
+            // Reset count if enough time has passed
+            this.redirectCount = 1;
+          }
+
+          this.lastRedirectTime = now;
+
+          // Automatically sign out from NextAuth to clear the invalid session
           if (typeof window !== 'undefined') {
+            console.log('[ParseServerClient] Automatically signing out due to invalid Parse session');
+
+            // Clear all session data
+            this.clearSessionToken();
             PortalStorage.removeItem('currentUser');
             PortalStorage.removeItem('sessionToken');
             PortalStorage.removeItem('username');
+
             // Clear any other auth-related items
             const keysToRemove = [];
             for (let i = 0; i < PortalStorage.length; i++) {
@@ -96,13 +135,19 @@ class ParseServerClient {
 
             // Show a message if antd is available
             if ((window as any).antd?.message) {
-              (window as any).antd.message.warning('Your session has expired. Redirecting to login...', 2);
+              (window as any).antd.message.warning('Your session has expired. Logging out...', 2);
             }
 
-            // Redirect to login page after a short delay
-            setTimeout(() => {
+            // Sign out from NextAuth to clear the session completely
+            // This will remove the NextAuth cookie and create a fresh session on next login
+            signOut({ redirect: false }).then(() => {
+              console.log('[ParseServerClient] NextAuth sign out complete, redirecting to login');
               window.location.href = '/login';
-            }, 1000);
+            }).catch((err) => {
+              console.error('[ParseServerClient] Error during signOut:', err);
+              // Redirect anyway
+              window.location.href = '/login';
+            });
           }
 
           throw new Error('Session expired. Please login again.');
@@ -120,24 +165,45 @@ class ParseServerClient {
       // Also check for session errors in the catch block
       if (error.message && (
           error.message.toLowerCase().includes('invalid session') ||
-          error.message.toLowerCase().includes('session token'))) {
+          error.message.toLowerCase().includes('session token')) &&
+          !error.message.includes('Authentication error')) { // Don't re-process our own error
         console.log('[ParseServerClient] Invalid session token in catch block, logging out user');
+
+        // Use same rate limiting as above
+        const now = Date.now();
+        if (now - this.lastRedirectTime < this.REDIRECT_COOLDOWN) {
+          this.redirectCount++;
+          if (this.redirectCount >= this.MAX_REDIRECTS) {
+            console.error('[ParseServerClient] Max redirects reached in catch block');
+            throw error; // Re-throw without redirecting
+          }
+        } else {
+          this.redirectCount = 1;
+        }
+
+        this.lastRedirectTime = now;
 
         // Clear session and redirect
         this.clearSessionToken();
         if (typeof window !== 'undefined') {
+          console.log('[ParseServerClient] Automatically signing out in catch block due to invalid session');
+
           // Clear all PortalStorage items
           PortalStorage.clear();
 
           // Show a message if antd is available
           if ((window as any).antd?.message) {
-            (window as any).antd.message.warning('Your session has expired. Redirecting to login...', 2);
+            (window as any).antd.message.warning('Your session has expired. Logging out...', 2);
           }
 
-          // Redirect to login page after a short delay
-          setTimeout(() => {
+          // Sign out from NextAuth
+          signOut({ redirect: false }).then(() => {
+            console.log('[ParseServerClient] NextAuth sign out complete (catch block), redirecting to login');
             window.location.href = '/login';
-          }, 1000);
+          }).catch((err) => {
+            console.error('[ParseServerClient] Error during signOut (catch block):', err);
+            window.location.href = '/login';
+          });
         }
       }
 

@@ -16,6 +16,17 @@ export const authOptions = {
   jwt: {
     maxAge: 30 * 60,
   },
+  cookies: {
+    sessionToken: {
+      name: `admin-portal.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
+  },
   callbacks: {
     async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       console.log("[NextAuth Redirect] URL:", url, "BaseURL:", baseUrl);

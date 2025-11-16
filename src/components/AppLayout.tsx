@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Spin } from "antd";
 import dynamic from "next/dynamic";
+import { signOut } from "next-auth/react";
 import { PortalStorage } from "@nomyx/shared";
 
 const NextNavBar = dynamic(() => import("./NextNavBar"), { 
@@ -71,7 +72,10 @@ export default function AppLayout({ children, requireAuth = true }: AppLayoutPro
     PortalStorage.removeItem("user");
 
     console.log("[Admin Logout] Logout complete, redirecting to login");
-    router.push("/login");
+
+    // Clear NextAuth session and let it handle the redirect to login
+    // This ensures session cookies are fully cleared before redirect
+    await signOut({ callbackUrl: "/login" });
   };
 
   const handleChainChange = async (chainId: string) => {
