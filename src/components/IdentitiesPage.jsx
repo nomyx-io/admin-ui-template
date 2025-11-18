@@ -17,12 +17,22 @@ const { TabPane } = Tabs;
 const IdentitiesPage = ({ service }) => {
   const navigate = useNavigate();
   const [identities, setIdentities] = useState([]);
+  const [claimsIdentities, setClaimsIdentities] = useState([]);
   const [pendingIdentities, setPendingIdentities] = useState([]);
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [pagination, setPagination] = useState({
+    identities: { page: 1, limit: 10, totalCount: 0, hasMore: false },
+    claims: { page: 1, limit: 10, totalCount: 0, hasMore: false },
+    pending: { page: 1, limit: 10, totalCount: 0, hasMore: false },
+  });
+  const [loading, setLoading] = useState({
+    identities: false,
+    claims: false,
+    pending: false,
+  });
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
-  const location = useLocation();
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // New state for investment request modal
   const [investmentModalVisible, setInvestmentModalVisible] = useState(false);
@@ -79,67 +89,92 @@ const IdentitiesPage = ({ service }) => {
   }, [fetchTokenProjects]);
 
   const fetchData = useCallback(
-    async (tab) => {
+    async (tab, page = 1, search = "") => {
+      const loadingKey = tab === "Pending" ? "pending" : tab === "Claims" ? "claims" : "identities";
+      const paginationType = tab === "Pending" ? "pending" : tab === "Claims" ? "claims" : "identities";
+
+      // Set loading state for specific tab
+      setLoading((prev) => ({ ...prev, [loadingKey]: true }));
+
       try {
         let fetchedIdentities = [];
-        if (service) {
-          if (tab === "Identities" || tab === "Claims") {
-            // Fetch active identities for Identities and Claims tabs
-            fetchedIdentities = await service.getActiveIdentities();
-            fetchedIdentities = fetchedIdentities.map((identity) => {
-              let identidyObj = {};
-              if (identity && identity.attributes) {
-                // Map active identities fields
-                const claimsArray = identity.attributes.claims || [];
+        let paginationData = null;
 
-                // Sort claims numerically before joining
+        if (tab === "Identities" || tab === "Claims") {
+          // Call paginated cloud function for active identities
+          const result = await Parse.Cloud.run("getActiveIdentities", {
+            page,
+            limit: pagination[paginationType].limit,
+            withoutClaims: tab === "Claims", // Get only identities without claims for Claims tab
+            searchTerm: search,
+          });
+
+          if (result && result.data) {
+            fetchedIdentities = result.data.map((identity) => {
+              let identityObj = {
+                claims: identity.claims || "",
+                displayName: identity.displayName || "",
+                email: identity.email || "",
+                kyc_id: identity.kyc_id || "",
+                identityAddress: identity.identityAddress || "",
+                id: identity.id || "",
+                pepMatched: identity.pepMatched || false,
+                watchlistMatched: identity.watchlistMatched || false,
+                recommended_compliance_rules: identity.recommended_compliance_rules || "",
+              };
+
+              // Re-sort claims numerically on the client side
+              if (identityObj.claims) {
+                const claimsArray = identityObj.claims.split(", ");
                 const sortedClaims = claimsArray
-                  .map((claim) => parseInt(claim, 10)) // Convert to numbers
-                  .filter((claim) => !isNaN(claim)) // Remove any non-numeric values
-                  .sort((a, b) => a - b) // Sort numerically
-                  .map((claim) => claim.toString()); // Convert back to strings
+                  .map((claim) => parseInt(claim, 10))
+                  .filter((claim) => !isNaN(claim))
+                  .sort((a, b) => a - b)
+                  .map((claim) => claim.toString());
 
-                identidyObj.claims = sortedClaims.join(", "); // Convert sorted claims array to comma-separated string
-                identidyObj.displayName = identity.attributes.displayName || "";
-                identidyObj.kyc_id = identity.attributes.accountNumber || "";
-                identidyObj.identityAddress = identity.attributes.address || "";
-                identidyObj.id = identity.id;
-                identidyObj.pepMatched = identity?.pepMatched || false;
-                identidyObj.watchlistMatched = identity?.watchlistMatched || false;
-                // Parse the JSON string
-                const json = identity?.personaVerificationData ? JSON.parse(identity?.personaVerificationData) : {};
-                // Safely access the inquiry-template ID
-                const inquiryTemplateId =
-                  json?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
-                  json?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id;
-                if (inquiryTemplateId) {
-                  identidyObj.recommended_compliance_rules = getTemplateNameById(inquiryTemplateId);
-                } else {
-                  identidyObj.recommended_compliance_rules = "";
-                }
-              } else {
-                // Default empty values if attributes are missing
-                identidyObj.claims = "";
-                identidyObj.displayName = "";
-                identidyObj.kyc_id = "";
-                identidyObj.identityAddress = "";
-                identidyObj.id = "";
-                identidyObj.pepMatched = false;
-                identidyObj.watchlistMatched = false;
-                identidyObj.recommended_compliance_rules = "";
+                identityObj.claims = sortedClaims.join(", ");
               }
-              return identidyObj;
+
+              return identityObj;
             });
 
-            if (tab === "Claims") {
-              fetchedIdentities = fetchedIdentities.filter((identity) => !identity.claims || identity.claims.length === 0);
-            }
-          } else if (tab === "Pending") {
-            fetchedIdentities = await service.getPendingIdentities();
-            fetchedIdentities = fetchedIdentities.map((identity) => {
-              const firstName = identity.attributes.firstName || "";
-              const lastName = identity.attributes.lastName || "";
-              const personaData = identity.attributes.personaVerificationData ? JSON.parse(identity.attributes.personaVerificationData) : {};
+            paginationData = result.pagination;
+          }
+
+          if (tab === "Identities") {
+            setIdentities(fetchedIdentities);
+            setPagination((prev) => ({
+              ...prev,
+              identities: {
+                ...prev.identities,
+                ...paginationData,
+                page: page,
+              },
+            }));
+          } else {
+            setClaimsIdentities(fetchedIdentities);
+            setPagination((prev) => ({
+              ...prev,
+              claims: {
+                ...prev.claims,
+                ...paginationData,
+                page: page,
+              },
+            }));
+          }
+        } else if (tab === "Pending") {
+          // Call paginated cloud function for pending identities
+          const result = await Parse.Cloud.run("getPendingIdentities", {
+            page,
+            limit: pagination.pending.limit,
+            searchTerm: search,
+          });
+
+          if (result && result.data) {
+            fetchedIdentities = result.data.map((user) => {
+              const firstName = user.firstName || "";
+              const lastName = user.lastName || "";
+              const personaData = user.personaVerificationData ? JSON.parse(user.personaVerificationData) : {};
 
               const templateId =
                 personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
@@ -153,90 +188,107 @@ const IdentitiesPage = ({ service }) => {
                     : "";
 
               const name = personaData?.data?.attributes?.name || "";
-              const status = name.split(".")[1]?.toUpperCase() || "";
+              const status = name.split(".")[1]?.toUpperCase() || (user.kycId ? "KYC Complete" : "") || "";
 
               return {
-                displayName: `${firstName} ${lastName}`.trim(), // Concatenate first and last names
-                identityAddress: identity.attributes.walletAddress || "", // Wallet address remains the same
-                kyc_id: identity.attributes.personaReferenceId || "", // KYC ID set to personaReferenceId
-                pepMatched: identity.attributes.pepMatched,
-                watchlistMatched: identity.attributes.watchlistMatched,
-                type: identityType || "", // Type of identity
-                status: status || "", // Status of identity
+                id: user.objectId,
+                displayName: `${firstName} ${lastName}`.trim(),
+                email: user.username || user.email || "",
+                identityAddress: user.walletAddress || "",
+                kyc_id: user.personaReferenceId || "",
+                pepMatched: user.pepMatched || false,
+                watchlistMatched: user.watchlistMatched || false,
+                type: identityType || "",
+                status: status || "",
                 recommended_compliance_rules: templateId ? getTemplateNameById(templateId) : "",
-                ...identity, // Include other identity attributes as is
+                attributes: {
+                  firstName,
+                  lastName,
+                  email: user.email,
+                  username: user.username,
+                  walletAddress: user.walletAddress,
+                  personaReferenceId: user.personaReferenceId,
+                  personaVerificationData: user.personaVerificationData,
+                  pepMatched: user.pepMatched,
+                  watchlistMatched: user.watchlistMatched,
+                  kycId: user.kycId,
+                },
               };
             });
-          }
-        } else {
-          console.error("Service object is not available");
-        }
 
-        // Set the state for identities or pending identities
-        if (tab === "Identities" || tab === "Claims") {
-          setIdentities(fetchedIdentities);
-        } else if (tab === "Pending") {
+            paginationData = result.pagination;
+          }
+
           setPendingIdentities(fetchedIdentities);
+          setPagination((prev) => ({
+            ...prev,
+            pending: {
+              ...prev.pending,
+              ...paginationData,
+              page: page,
+            },
+          }));
         }
       } catch (error) {
         console.error("Error fetching data:", error);
         const errorMessage = getErrorMessage(error);
         toast.error(`Failed to fetch data: ${errorMessage}`);
+      } finally {
+        // Clear loading state for specific tab
+        setLoading((prev) => ({ ...prev, [loadingKey]: false }));
       }
     },
-    [service]
+    [pagination.identities.limit, pagination.claims.limit, pagination.pending.limit]
   );
 
   useEffect(() => {
-    fetchData(activeTab);
-  }, [activeTab, service, refreshTrigger, fetchData]);
+    // Reset pagination and search when tab changes or refresh is triggered
+    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
 
-  const handleDelayedRefresh = useCallback(
-    async (retryCount = 0, maxRetries = 3) => {
-      const delays = [2000, 4000, 6000]; // 2s, 4s, 6s delays
+    setPagination((prev) => ({
+      ...prev,
+      [paginationType]: {
+        ...prev[paginationType],
+        page: 1,
+      },
+    }));
 
-      if (retryCount < maxRetries) {
-        setIsRefreshing(true);
-
-        setTimeout(async () => {
-          try {
-            await fetchData(activeTab);
-
-            // Check if we got updated data, if not retry
-            // You might want to add additional logic here to verify the data is actually updated
-            if (retryCount < maxRetries - 1) {
-              handleDelayedRefresh(retryCount + 1, maxRetries);
-            } else {
-              setIsRefreshing(false);
-            }
-          } catch (error) {
-            console.error("Error during delayed refresh:", error);
-            setIsRefreshing(false);
-          }
-        }, delays[retryCount] || 6000);
-      } else {
-        setIsRefreshing(false);
-      }
-    },
-    [activeTab, fetchData]
-  );
-
-  // Add this useEffect to handle navigation-triggered refresh
-  useEffect(() => {
-    if (location.state?.refresh) {
-      // Immediate refresh
-      fetchData(activeTab);
-
-      // Then delayed refreshes to catch blockchain updates
-      handleDelayedRefresh();
-
-      // Clear the state to prevent repeated refreshes
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state, activeTab, fetchData, handleDelayedRefresh]);
+    setSearchTerm(""); // Clear search when switching tabs
+    fetchData(activeTab, 1, "");
+  }, [activeTab, refreshTrigger]);
 
   const handleTabChange = (key) => {
     setActiveTab(key);
+  };
+
+  const handlePageChange = (newPage) => {
+    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
+
+    setPagination((prev) => ({
+      ...prev,
+      [paginationType]: {
+        ...prev[paginationType],
+        page: newPage,
+      },
+    }));
+
+    fetchData(activeTab, newPage, searchTerm);
+  };
+
+  const handleSearch = (newSearchTerm) => {
+    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
+
+    // Reset to page 1 when searching
+    setPagination((prev) => ({
+      ...prev,
+      [paginationType]: {
+        ...prev[paginationType],
+        page: 1,
+      },
+    }));
+
+    setSearchTerm(newSearchTerm);
+    fetchData(activeTab, 1, newSearchTerm);
   };
 
   const handleRemoveUser = async (record) => {
@@ -245,8 +297,7 @@ const IdentitiesPage = ({ service }) => {
       .promise(
         async () => {
           const deleted = await service.softRemoveUser(identityAddress);
-          //console.log('deleted: ', deleted);
-          return deleted; // Return the deleted status
+          return deleted;
         },
         {
           pending: `Removing ${displayName}...`,
@@ -266,7 +317,7 @@ const IdentitiesPage = ({ service }) => {
         }
       )
       .then(() => {
-        fetchData(activeTab); // Trigger fetchData after removal is complete
+        setRefreshTrigger((prev) => !prev);
       })
       .catch((error) => {
         console.error("Error in handleRemoveUser:", error);
@@ -282,11 +333,9 @@ const IdentitiesPage = ({ service }) => {
           await toast.promise(
             (async () => {
               try {
-                // Step 1: Initiate Remove Identity
                 const { initiateResponse, error: removeInitError } = await DfnsService.initiateRemoveIdentity(identity, user.walletId, dfnsToken);
                 if (removeInitError) throw new Error(removeInitError);
 
-                // Step 2: Complete Remove Identity
                 const { completeResponse, error: removeCompleteError } = await DfnsService.completeRemoveIdentity(
                   user.walletId,
                   dfnsToken,
@@ -295,10 +344,8 @@ const IdentitiesPage = ({ service }) => {
                 );
                 if (removeCompleteError) throw new Error(removeCompleteError);
 
-                // Step 3: Delay before initiating Unregister Identity
                 await delay(2000);
 
-                // Step 4: Initiate Unregister Identity
                 const { initiateResponse: unregisterInitResponse, error: unregisterInitError } = await DfnsService.initiateUnregisterIdentity(
                   identity,
                   user.walletId,
@@ -306,7 +353,6 @@ const IdentitiesPage = ({ service }) => {
                 );
                 if (unregisterInitError) throw new Error(unregisterInitError);
 
-                // Step 5: Complete Unregister Identity
                 const { completeResponse: unregisterCompleteResponse, error: unregisterCompleteError } = await DfnsService.completeUnregisterIdentity(
                   user.walletId,
                   dfnsToken,
@@ -315,7 +361,6 @@ const IdentitiesPage = ({ service }) => {
                 );
                 if (unregisterCompleteError) throw new Error(unregisterCompleteError);
 
-                // Step 6: Delay before refreshing state
                 await delay(2500);
                 setRefreshTrigger((prev) => !prev);
               } catch (error) {
@@ -345,14 +390,11 @@ const IdentitiesPage = ({ service }) => {
             const identities = [record.identityAddress];
 
             for (const identity of identities) {
-              // Step 1: Call removeIdentity
               await service.removeIdentity(identity);
-              // Step 2: Call unregisterIdentity
               await service.unregisterIdentity(identity);
             }
 
-            // After successful removal, trigger a refresh of the component
-            setRefreshTrigger((prev) => !prev); // This needs to be tested upon updated removal event contract redeployment
+            setRefreshTrigger((prev) => !prev);
           } catch (error) {
             console.error("Error in private wallet remove identity:", error);
             throw error;
@@ -372,21 +414,63 @@ const IdentitiesPage = ({ service }) => {
     }
   };
 
+  const handleSendVerificationEmail = async (record) => {
+    const { email, displayName } = record;
+
+    if (!email) {
+      toast.error("Email address is missing for this user");
+      return;
+    }
+
+    toast.promise(
+      async () => {
+        try {
+          const result = await Parse.Cloud.run("sendVerificationEmail", { email });
+          return result;
+        } catch (error) {
+          console.error("Error sending verification email:", error);
+          throw error;
+        }
+      },
+      {
+        pending: `Sending verification email to ${displayName || email}...`,
+        success: `Verification email sent successfully to ${email}`,
+        error: {
+          render({ data }) {
+            const errorMessage = getErrorMessage(data);
+            return `Failed to send verification email: ${errorMessage}`;
+          },
+        },
+      }
+    );
+  };
+
   const columns = [
     { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
     { label: "Flagged?", name: "flagged_account" },
     { label: "Claims", name: "claims" },
   ];
+
   const pendingColumns = [
     { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
     { label: "Recommended Compliance Rules", name: "recommended_compliance_rules" },
     { label: "Flagged?", name: "flagged_account" },
     { label: "Type", name: "type" },
     { label: "Status", name: "status" },
+  ];
+
+  const claimsColumns = [
+    { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
+    { label: "Address", name: "identityAddress", width: "350px" },
+    { label: "KYC ID Account #", name: "kyc_id" },
+    { label: "Flagged?", name: "flagged_account" },
   ];
 
   const actions = [
@@ -399,15 +483,18 @@ const IdentitiesPage = ({ service }) => {
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
+
   const pendingActions = [
     { label: "Approve", name: NomyxAction.CreatePendingIdentity },
     { label: "View", name: NomyxAction.ViewPendingIdentity },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: "mail" },
     {
       label: "Deny",
       name: NomyxAction.RemoveUser,
       confirmation: "Are you sure you want to deny this pending Identity?",
     },
   ];
+
   const claimsActions = [
     { label: "Add Rules", name: NomyxAction.AddClaims },
     { label: "View", name: NomyxAction.ViewIdentity },
@@ -417,6 +504,7 @@ const IdentitiesPage = ({ service }) => {
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
+
   const globalActions = [{ label: "Create identity", name: NomyxAction.CreateIdentity }];
 
   const search = true;
@@ -450,6 +538,9 @@ const IdentitiesPage = ({ service }) => {
           const { displayName, kyc_id, identityAddress } = record;
           navigate(`/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}`);
           break;
+        case NomyxAction.SendVerificationEmail:
+          await handleSendVerificationEmail(record);
+          break;
         case NomyxAction.RemoveUser:
           await handleRemoveUser(record);
           break;
@@ -464,6 +555,62 @@ const IdentitiesPage = ({ service }) => {
     }
   };
 
+  // Get current data based on active tab
+  const getCurrentData = () => {
+    if (activeTab === "Identities") {
+      return identities;
+    } else if (activeTab === "Claims") {
+      return claimsIdentities;
+    } else if (activeTab === "Pending") {
+      return pendingIdentities;
+    }
+    return [];
+  };
+
+  const getCurrentPagination = () => {
+    if (activeTab === "Identities") {
+      return pagination.identities;
+    } else if (activeTab === "Claims") {
+      return pagination.claims;
+    } else if (activeTab === "Pending") {
+      return pagination.pending;
+    }
+    return { page: 1, limit: 10, totalCount: 0, hasMore: false };
+  };
+
+  const getCurrentLoading = () => {
+    if (activeTab === "Identities") {
+      return loading.identities;
+    } else if (activeTab === "Claims") {
+      return loading.claims;
+    } else if (activeTab === "Pending") {
+      return loading.pending;
+    }
+    return false;
+  };
+
+  const getCurrentColumns = () => {
+    if (activeTab === "Identities") {
+      return columns;
+    } else if (activeTab === "Claims") {
+      return claimsColumns;
+    } else if (activeTab === "Pending") {
+      return pendingColumns;
+    }
+    return columns;
+  };
+
+  const getCurrentActions = () => {
+    if (activeTab === "Identities") {
+      return actions;
+    } else if (activeTab === "Claims") {
+      return claimsActions;
+    } else if (activeTab === "Pending") {
+      return pendingActions;
+    }
+    return actions;
+  };
+
   return (
     <>
       <Tabs activeKey={activeTab} onChange={handleTabChange}>
@@ -471,42 +618,66 @@ const IdentitiesPage = ({ service }) => {
           <ObjectList
             title="Identities"
             description="Identities represent individuals that can be related to Compliance Rules"
-            columns={columns}
-            actions={actions}
+            columns={getCurrentColumns()}
+            actions={getCurrentActions()}
             globalActions={globalActions}
             search={search}
-            data={identities}
+            data={getCurrentData()}
             pageSize={10}
             onAction={handleAction}
             onGlobalAction={handleAction}
+            loading={getCurrentLoading()}
+            hasMore={getCurrentPagination().hasMore}
+            totalCount={getCurrentPagination().totalCount}
+            useServerPagination={true}
+            currentPage={getCurrentPagination().page}
+            onPageChange={handlePageChange}
+            searchTerm={searchTerm}
+            onSearch={handleSearch}
           />
         </TabPane>
         <TabPane tab="Pending" key="Pending">
           <ObjectList
             title="Pending"
             description="Identities that have yet to be approved or denied"
-            columns={pendingColumns}
-            actions={pendingActions}
+            columns={getCurrentColumns()}
+            actions={getCurrentActions()}
             globalActions={globalActions}
             search={search}
-            data={pendingIdentities}
+            data={getCurrentData()}
             pageSize={10}
             onAction={handleAction}
             onGlobalAction={handleAction}
+            loading={getCurrentLoading()}
+            hasMore={getCurrentPagination().hasMore}
+            totalCount={getCurrentPagination().totalCount}
+            useServerPagination={true}
+            currentPage={getCurrentPagination().page}
+            onPageChange={handlePageChange}
+            searchTerm={searchTerm}
+            onSearch={handleSearch}
           />
         </TabPane>
         <TabPane tab="Add Rules" key="Claims">
           <ObjectList
             title="Add Rules"
             description="Identies that have yet to be related to Compliance Rules"
-            columns={columns}
-            actions={claimsActions}
+            columns={getCurrentColumns()}
+            actions={getCurrentActions()}
             globalActions={globalActions}
             search={search}
-            data={identities}
+            data={getCurrentData()}
             pageSize={10}
             onAction={handleAction}
             onGlobalAction={handleAction}
+            loading={getCurrentLoading()}
+            hasMore={getCurrentPagination().hasMore}
+            totalCount={getCurrentPagination().totalCount}
+            useServerPagination={true}
+            currentPage={getCurrentPagination().page}
+            onPageChange={handlePageChange}
+            searchTerm={searchTerm}
+            onSearch={handleSearch}
           />
         </TabPane>
       </Tabs>
