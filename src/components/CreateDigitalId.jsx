@@ -181,7 +181,7 @@ function CreateDigitalId({ service }) {
           throw new Error(completeError);
         }
 
-        identity = await DfnsService.getIdentity(walletAddress);
+        identity = await DfnsService.getIdentity(walletAddress, true);
         console.log("New identity created:", identity);
         if (completeResponse) identityCreatedOrExists = true;
       } else {
@@ -362,7 +362,7 @@ function CreateDigitalId({ service }) {
 
         try {
           await service.createIdentity(walletAddress);
-          identity = await service.getIdentity(walletAddress);
+          identity = await service.getIdentity(walletAddress, true);
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;
         } catch (error) {
