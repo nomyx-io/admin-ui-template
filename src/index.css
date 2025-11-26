@@ -278,3 +278,13 @@ select {
 .password-card .ant-input-affix-wrapper >input.ant-input {
   color: #FFF !important;
 }
+
+.project-img {
+  width: 60px; 
+  height: 60px; 
+  object-fit: contain; 
+  border-radius: 8px; 
+  background: white; 
+  padding: 5px; 
+  border: 1px solid #d9d9d9;
+}

@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import Parse from "parse";
 import PubSub from "pubsub-js";
 
 import * as ClaimTopicsRegistry from "../abi/IClaimTopicsRegistry.json";
@@ -89,6 +90,9 @@ class BlockchainService {
     this.isTrustedIssuer = this.isTrustedIssuer.bind(this);
     this.getTrustedIssuerClaimTopics = this.getTrustedIssuerClaimTopics.bind(this);
     this.hasClaimTopic = this.hasClaimTopic.bind(this);
+
+    // Token Project
+    this.getTokenProjects = this.getTokenProjects.bind(this);
 
     this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicAdded, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicAdded, claimTopic));
     this.claimTopicRegistryService.on(NomyxEvent.ClaimTopicRemoved, (claimTopic) => PubSub.publish(NomyxEvent.ClaimTopicRemoved, claimTopic));
@@ -698,6 +702,42 @@ class BlockchainService {
 
   async hasClaimTopic(issuer, claimTopic) {
     return await this.trustedIssuersRegistryService.hasClaimTopic(issuer, claimTopic);
+  }
+
+  async getTokenProjects() {
+    try {
+      const TokenProject = Parse.Object.extend("TokenProject");
+      const query = new Parse.Query(TokenProject);
+
+      // Add any filters you need
+      // query.equalTo("status", "active");
+
+      // Sort by creation date (newest first)
+      query.descending("createdAt");
+
+      // Limit results if needed
+      query.limit(100);
+
+      const results = await query.find();
+
+      return results.map((project) => ({
+        id: project.id,
+        title: project.get("title"),
+        description: project.get("description"),
+        // Add other fields
+        tradeDeadId: project.get("tradeDeadId"),
+        interestRate: project.get("interestRate"),
+        industryTemplate: project.get("industryTemplate"),
+        logo: project.get("logo"),
+        updatedAt: project.get("updatedAt"),
+        createdAt: project.get("createdAt"),
+        fields: project.get("fields"),
+        projectInfo: project.get("projectInfo"),
+      }));
+    } catch (error) {
+      console.error("Error fetching token projects:", error);
+      throw error;
+    }
   }
 }
 
