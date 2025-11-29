@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
-import { Tabs } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
+import { Tabs, Tooltip } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -352,7 +353,25 @@ const IdentitiesPage = ({ service }) => {
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
     { label: "Flagged?", name: "flagged_account" },
-    { label: "Claims", name: "claims" },
+    {
+      label: (
+        <div className="flex items-center gap-2">
+          Claims
+          <Tooltip
+            title={
+              <div>
+                <p>1 = Base KYC</p>
+                <p>2 = Accredited Investor</p>
+                <p>3 = Qualified Purchaser</p>
+              </div>
+            }
+          >
+            <InfoCircleOutlined className="text-[var(--color-accent)] cursor-help" />
+          </Tooltip>
+        </div>
+      ),
+      name: "claims",
+    },
   ];
   const pendingColumns = [
     { label: "Identity", name: "displayName" },

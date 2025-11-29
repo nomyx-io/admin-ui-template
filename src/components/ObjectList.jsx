@@ -221,17 +221,19 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
                     })}
                     {actions && actions.length > 0 && (
                       <td key={"actions" + record.id} className="text-right">
-                        {actions.map((action) => {
-                          return (
-                            <button
-                              key={record.id + "-action-" + action.name}
-                              onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
-                              className="action-btn opacity-0 group-hover:opacity-100 transition-opacity duration-200 translate-x-2 group-hover:translate-x-0"
-                            >
-                              {action.label}
-                            </button>
-                          );
-                        })}
+                        <div className="flex items-center justify-end gap-2">
+                          {actions.map((action) => {
+                            return (
+                              <button
+                                key={record.id + "-action-" + action.name}
+                                onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
+                                className="px-3 py-1.5 rounded text-sm font-medium bg-white hover:bg-[var(--color-accent)] hover:text-white transition-all border border-[var(--border-color)] hover:border-[var(--color-accent)]"
+                              >
+                                {action.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </td>
                     )}
                   </tr>
