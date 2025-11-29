@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Button, Input } from "antd";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { ClaimCard } from "./ClaimCard";
 
@@ -15,6 +15,7 @@ function DigitalIdentityDetailView({ service }) {
   const { identityId, userId } = useParams();
   const [displayName, setDisplayName] = useState("");
   const [identity, setIdentity] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
   const personaData = identity?.personaData;
 
   // Determine identity type based on the templateId
@@ -24,31 +25,22 @@ function DigitalIdentityDetailView({ service }) {
     templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
 
   // Process verifications
-  // Process verifications with specific labels
   const verifications = personaData?.payload?.included
-    ?.filter((item) => item.type?.startsWith("verification")) // Safeguard: Ensure item.type exists
+    ?.filter((item) => item.type?.startsWith("verification"))
     .map((item, index) => {
-      // Define labels for KYC and KYB
-      const kycLabels = [
-        null, // First entry remains as-is
-        "Proof of Address Verification", // Second entry gets this label
-        "Selfie Verification", // Third entry gets this label
-        "Identity Verification", // Fourth entry gets this label
-      ];
+      const kycLabels = [null, "Proof of Address Verification", "Selfie Verification", "Identity Verification"];
 
       const kybLabels = [
-        "Business Address Verification", // First entry for KYB
-        "Bank Verification", // Second entry
-        "EIN Verification", // Third entry
-        "Incorporation Verification", // Fourth entry
-        "Optional Verification 1", // Fifth entry
-        "Optional Verification 2", // Sixth entry
+        "Business Address Verification",
+        "Bank Verification",
+        "EIN Verification",
+        "Incorporation Verification",
+        "Optional Verification 1",
+        "Optional Verification 2",
       ];
 
-      // Safeguard: Default label if item.type is undefined
       const defaultLabel = "Unknown Verification";
 
-      // Select labels based on identityType and index
       let label;
       if (identityType === "KYC") {
         label = kycLabels[index] || (item.type ? toTitleCase(item.type.split("/")[1].replace("-", " ")) : defaultLabel);
@@ -61,7 +53,7 @@ function DigitalIdentityDetailView({ service }) {
       return {
         id: item.id,
         kind: label,
-        status: item.attributes?.status?.toUpperCase() || "UNKNOWN", // Handle undefined status
+        status: item.attributes?.status?.toUpperCase() || "UNKNOWN",
       };
     });
 
@@ -81,7 +73,6 @@ function DigitalIdentityDetailView({ service }) {
         "Optional Document 2",
       ];
 
-      // Assign labels based on identity type
       let label;
       if (identityType === "KYC") {
         label = kycLabels[index] || toTitleCase(item.type.split("/")[1].replace("-", " "));
@@ -101,28 +92,33 @@ function DigitalIdentityDetailView({ service }) {
   const navigate = useNavigate();
 
   const getIdentity = useCallback(async () => {
-    let result;
-    if (identityId === "pending" && userId) {
-      if (!service.getPendingIdentities) return;
-      const user = (await service.getPendingIdentities()).filter((item) => item.id === userId)[0];
-      if (!user) {
-        navigate("/identities");
-        return;
+    setIsLoading(true);
+    try {
+      let result;
+      if (identityId === "pending" && userId) {
+        if (!service.getPendingIdentities) return;
+        const user = (await service.getPendingIdentities()).filter((item) => item.id === userId)[0];
+        if (!user) {
+          navigate("/identities");
+          return;
+        }
+        result = {
+          displayName: `${user.attributes.firstName} ${user.attributes.lastName}`.trim(),
+          address: user.attributes.walletAddress,
+          accountNumber: user.attributes.personaReferenceId,
+          personaData: user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
+          watchlistMatched: user.attributes.watchlistMatched,
+          pepMatched: user.attributes.pepMatched,
+        };
+      } else {
+        if (!service.getDigitalIdentity) return;
+        result = await service.getDigitalIdentity(identityId);
       }
-      result = {
-        displayName: `${user.attributes.firstName} ${user.attributes.lastName}`.trim(),
-        address: user.attributes.walletAddress,
-        accountNumber: user.attributes.personaReferenceId,
-        personaData: user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
-        watchlistMatched: user.attributes.watchlistMatched,
-        pepMatched: user.attributes.pepMatched,
-      };
-    } else {
-      if (!service.getDigitalIdentity) return;
-      result = await service.getDigitalIdentity(identityId);
+      setIdentity(result);
+    } finally {
+      setIsLoading(false);
     }
-    setIdentity(result);
-  }, [service, identityId]);
+  }, [service, identityId, userId, navigate]);
 
   const backBtn = () => {
     navigate("/identities");
@@ -132,127 +128,150 @@ function DigitalIdentityDetailView({ service }) {
     getIdentity();
   }, [getIdentity]);
 
-  return (
-    <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link to={"/"}>Home</Link>,
-          },
-          {
-            title: <Link to={"/identities"}>Identities</Link>,
-          },
-          {
-            title: identityId === "pending" ? "Pending" : identity?.displayName,
-          },
-        ]}
-      />
-      <p className="text-xl p-6">Identity Details</p>
-      <hr></hr>
-      <div className="p-6 max-[500px]:px-4 flex flex-col gap-4">
-        <div>
-          <label htmlFor="identityName">Identity display name *</label>
-          <div className="mt-3 relative w-full flex">
-            <Input
-              id="identityName"
-              value={identity?.displayName || ""}
-              className="w-full p-2 text-xl"
-              placeholder="Enter Display Name"
-              type="text"
-              maxLength={32}
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
-            <p className="absolute right-5 top-3">{displayName.length}/32</p>
-          </div>
-        </div>
-        <div className="border rounded-xl p-6 bg-white flex flex-col gap-3 ">
-          <label htmlFor="investorWalletAddress">Investor Wallet Address</label>
-          <input
-            id="investorWalletAddress"
-            value={identity?.address || " "}
-            readOnly
-            className="font-light text-4xl max-[500px]:text-base text-gray-300"
-          ></input>
-          <label htmlFor="investorIdAccountNumber">Investor KYC ID Provider Account Number</label>
-          <input
-            id="investorIdAccountNumber"
-            value={identity?.accountNumber || " "}
-            readOnly
-            className="font-light text-4xl max-[500px]:text-base text-gray-300"
-          ></input>
-        </div>
-        {personaData && (
-          <div className="flex flex-col gap-2 rounded-lg bg-gray-200 p-6">
-            <div className="flex">
-              <div className="flex mb-2 mr-5">
-                <p className="mr-5">Verification Data</p>
-                <span
-                  className={`rounded-full border px-4 py-1 text-xs font-bold ${
-                    personaData?.name?.split(".")[1]?.toUpperCase() === "APPROVED" || personaData?.name?.split(".")[1]?.toUpperCase() === "COMPLETED"
-                      ? "border-green-500 text-green-500"
-                      : "border-red-500 text-red-500"
-                  }`}
-                >
-                  {personaData?.name?.split(".")[1]?.toUpperCase() || ""}
-                </span>
-              </div>
-              {identity?.watchlistMatched && (
-                <div className="flex mb-2 mr-5">
-                  <span className="mr-5">Matched</span>
-                  <p className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">Watchlist</p>
-                </div>
-              )}
-              {identity?.pepMatched && (
-                <div className="flex mb-2">
-                  <span className="mr-5">Matched</span>
-                  <p className="rounded-full border px-4 py-1 text-xs font-bold border-red-500 text-red-500">Politically Exposed Person</p>
-                </div>
-              )}
-            </div>
-            {verifications && (
-              <div className="rounded-lg bg-white p-2">
-                <p className="font-bold">Verifications</p>
-                <div className="border rounded-xl p-6 bg-white flex flex-col gap-3">
-                  {verifications.map((item) => {
-                    // Safeguard: Handle undefined type or status
-                    const kind = item.kind || "Unknown Verification";
-                    const status = item.status || "UNKNOWN";
-
-                    return (
-                      <div key={item.id} className="flex flex-col gap-2">
-                        <label htmlFor={item.id}>{kind}</label>
-                        <input id={item.id} value={status} readOnly className="font-light text-2xl max-[500px]:text-base text-gray-300" />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {documents && (
-              <div className="rounded-lg bg-white p-2">
-                <p className="font-bold">Documents</p>
-                <div className="border rounded-xl p-6 bg-white flex flex-col gap-3">
-                  {documents.map((item) => (
-                    <div key={item.id} className="flex flex-col gap-2">
-                      <label htmlFor={item.id}>{item.kind}</label>
-                      <input id={item.id} value={item.status || ""} readOnly className="font-light text-2xl max-[500px]:text-base text-gray-300" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        {identityId !== "pending" && <p>Active Claims</p>}
-        {identity?.claims?.map((item) => {
-          return <ClaimCard key={item.id} data={item} />;
-        })}
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64 animate-fade-in-up">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]"></div>
       </div>
-      <div className="flex justify-end max-[500px]:justify-center">
-        <Button className="max-[500px]:w-[50%] rounded-none my-6 mr-6 h-11 px-10 bg-[#9952b3] text-white" onClick={backBtn}>
-          Back
-        </Button>
+    );
+  }
+
+  return (
+    <div className="animate-fade-in-up">
+      <div className="modern-card bg-white">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">Identity Details</h2>
+          <p className="text-[var(--text-secondary)] mt-1 text-sm">View and manage identity information</p>
+        </div>
+
+        <div className="p-8 space-y-8">
+          {/* Identity Display Name */}
+          <div className="space-y-2">
+            <label htmlFor="identityName" className="block text-sm font-medium text-slate-700">
+              Identity Display Name <span className="text-red-500">*</span>
+            </label>
+            <div className="relative w-full">
+              <Input
+                id="identityName"
+                value={identity?.displayName || ""}
+                className="w-full p-3 rounded-lg border border-gray-200 input-glow text-lg"
+                placeholder="Enter Display Name"
+                type="text"
+                maxLength={32}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+              <span className="absolute right-3 top-3 text-xs text-gray-400">{displayName.length}/32</span>
+            </div>
+          </div>
+
+          {/* Wallet & Account Info */}
+          <div className="bg-slate-50 border border-gray-200 rounded-xl p-6 space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="investorWalletAddress" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Investor Wallet Address
+              </label>
+              <div className="font-mono text-lg text-[var(--text-primary)] bg-white p-3 rounded border border-gray-100 truncate">
+                {identity?.address || "N/A"}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="investorIdAccountNumber" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Investor KYC ID Provider Account Number
+              </label>
+              <div className="font-mono text-lg text-[var(--text-primary)] bg-white p-3 rounded border border-gray-100 truncate">
+                {identity?.accountNumber || "N/A"}
+              </div>
+            </div>
+          </div>
+
+          {/* Persona Data */}
+          {personaData && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-700">Verification Status:</span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-bold border ${
+                      personaData?.name?.split(".")[1]?.toUpperCase() === "APPROVED" ||
+                      personaData?.name?.split(".")[1]?.toUpperCase() === "COMPLETED"
+                        ? "bg-green-50 border-green-200 text-green-700"
+                        : "bg-red-50 border-red-200 text-red-700"
+                    }`}
+                  >
+                    {personaData?.name?.split(".")[1]?.toUpperCase() || "UNKNOWN"}
+                  </span>
+                </div>
+                {identity?.watchlistMatched && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-700">Watchlist:</span>
+                    <span className="rounded-full px-3 py-1 text-xs font-bold bg-red-50 border border-red-200 text-red-700">Matched</span>
+                  </div>
+                )}
+                {identity?.pepMatched && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-700">PEP Status:</span>
+                    <span className="rounded-full px-3 py-1 text-xs font-bold bg-red-50 border border-red-200 text-red-700">Exposed</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {verifications && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-[var(--text-primary)] border-b pb-2">Verifications</h3>
+                    <div className="space-y-3">
+                      {verifications.map((item) => (
+                        <div key={item.id} className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                          <p className="text-xs text-slate-500 uppercase mb-1">{item.kind}</p>
+                          <p className={`text-sm font-medium ${item.status === "PASSED" ? "text-green-600" : "text-slate-900"}`}>{item.status}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {documents && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-[var(--text-primary)] border-b pb-2">Documents</h3>
+                    <div className="space-y-3">
+                      {documents.map((item) => (
+                        <div key={item.id} className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                          <p className="text-xs text-slate-500 uppercase mb-1">{item.kind}</p>
+                          <p className={`text-sm font-medium ${item.status === "PASSED" ? "text-green-600" : "text-slate-900"}`}>
+                            {item.status || "N/A"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Active Claims */}
+          {identityId !== "pending" && (
+            <div className="space-y-4 pt-6 border-t border-gray-100">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Active Claims</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {identity?.claims?.map((item) => <ClaimCard key={item.id} data={item} />)}
+                {(!identity?.claims || identity.claims.length === 0) && (
+                  <p className="text-slate-500 text-sm italic col-span-full">No active claims found.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Footer Actions */}
+          <div className="flex justify-end pt-6">
+            <Button
+              onClick={backBtn}
+              className="h-11 px-8 font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-sm transition-all"
+            >
+              Back to Identities
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

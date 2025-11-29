@@ -1,5 +1,4 @@
 import "./ObjectList.css";
-
 import { useState, useEffect } from "react";
 
 import ReactPaginate from "react-paginate";
@@ -8,29 +7,38 @@ import { WarningIcon } from "../assets/icons";
 import { getValue, recursiveSearch } from "../utils";
 
 export const ConfirmationDialog = ({ message, onConfirm, onCancel }) => {
-  const handleConfirm = (event) => {
-    onConfirm({ event });
-  };
-
-  const handleCancel = (event) => {
-    onCancel(event);
-  };
-
   return (
-    <>
-      <h1>Are you sure?</h1>
-      <p>{message}</p>
-      <div className="dialog-buttons">
-        <button className="btn cancel" onClick={(event) => handleCancel(event)}>
+    <div className="p-4 dialog-content bg-white rounded-lg">
+      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Are you sure?</h3>
+      <p className="text-[var(--text-secondary)] mb-6">{message}</p>
+      <div className="flex justify-end gap-3">
+        <button className="px-4 py-2 rounded-md text-gray-600 hover:bg-gray-100 font-medium transition-colors" onClick={onCancel}>
           Cancel
         </button>
-        <button className="btn" onClick={(event) => handleConfirm(event)}>
+        <button
+          className="px-4 py-2 rounded-md bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-light)] font-medium transition-colors shadow-sm"
+          onClick={onConfirm}
+        >
           Continue
         </button>
       </div>
-    </>
+    </div>
   );
 };
+
+const TableSkeleton = ({ columns }) => (
+  <div className="animate-pulse w-full">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="flex border-b border-gray-100 py-4 px-6">
+        {columns.map((_, j) => (
+          <div key={j} className="flex-1 mr-4">
+            <div className="h-4 bg-slate-100 rounded w-3/4"></div>
+          </div>
+        ))}
+      </div>
+    ))}
+  </div>
+);
 
 const ObjectList = ({ title, description, tabs, columns, actions, globalActions, search, data, pageSize = 10, onAction }) => {
   const [pageData, setPageData] = useState([]);
@@ -54,9 +62,7 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
       };
 
       setShowDialog(true);
-      setDialogContent(
-        <ConfirmationDialog title={title} message={confirm} onConfirm={(event) => handleConfirm(event)} onCancel={(event) => handleCancel(event)} />
-      );
+      setDialogContent(<ConfirmationDialog message={confirm} onConfirm={(event) => handleConfirm(event)} onCancel={() => setShowDialog(false)} />);
     } else if (onAction) {
       onAction(event, action, object);
     }
@@ -67,16 +73,10 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
   };
 
   const handleSearch = (text) => {
-    //todo: implement tab filtering
     setSearchText(text);
     let filteredData = data.filter((item) => recursiveSearch(item, text));
     setItemOffset(0);
     setFilteredData(filteredData);
-  };
-
-  const handleCancel = () => {
-    setShowDialog(false);
-    setDialogContent(null);
   };
 
   const handlePageClick = (event) => {
@@ -93,52 +93,67 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
   }, [itemOffset, pageSize, showDialog, data, filteredData, searchText]);
 
   useEffect(() => {
+    // Simulate loading delay for skeleton demo (remove in prod if data is instant)
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000); // 2 second timeout
+    }, 1500);
 
-    return () => clearTimeout(timer); // Clear timeout if the component is unmounted
+    return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="container">
+    <div className="modern-card object-list-container p-6 bg-white animate-fade-in-up">
       {tabs && (
-        <div className="tabs">
+        <div className="flex border-b border-gray-100 mb-6">
           {tabs.map((tab) => {
+            const isActive = tab.id === activeTab;
             return (
               <button
                 key={tab.id}
-                className={tab.id === activeTab ? "active" : ""}
+                className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                  isActive ? "text-[var(--color-primary)]" : "text-[var(--text-secondary)] hover:text-[var(--color-primary)]"
+                }`}
                 onClick={() => handleTabClick(tab)}
-                style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}
               >
                 {tab.name}
+                {isActive && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[var(--color-accent)] rounded-t-full"></div>}
               </button>
             );
           })}
         </div>
       )}
 
-      <header className="table-header">
-        <h1>{title}</h1>
-        <h2>{description ? description : "A list of your " + title}</h2>
-        <section className="controls">
+      <header className="object-list-header">
+        <div className="object-list-title">
+          <h1>{title}</h1>
+          <h2>{description ? description : "A list of your " + title}</h2>
+        </div>
+
+        <section className="object-list-controls">
           {search && (
-            <div className="search">
-              <input type="text" placeholder="Search..." onKeyUp={(e) => handleSearch(e.target.value)} />
+            <div className="search-input-wrapper input-glow rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="search-icon">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                />
+              </svg>
+              <input type="text" placeholder="Search..." className="search-input border-none" onKeyUp={(e) => handleSearch(e.target.value)} />
             </div>
           )}
 
           {globalActions && (
-            <div className="global-actions">
+            <div className="flex gap-3">
               {globalActions.map((globalAction) => {
                 return (
                   <button
                     key={globalAction.name}
-                    className={"btn global-action-" + globalAction.name}
+                    className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-light)] transition-all hover:shadow-lg hover:-translate-y-0.5 text-sm font-medium flex items-center gap-2 shadow-sm"
                     onClick={(event) => handleAction(event, globalAction.name, globalAction.confirmation)}
                     {...globalAction.props}
                   >
+                    {globalAction.icon && <span>{globalAction.icon}</span>}
                     {globalAction.label}
                   </button>
                 );
@@ -148,101 +163,125 @@ const ObjectList = ({ title, description, tabs, columns, actions, globalActions,
         </section>
       </header>
 
-      <table>
-        <thead>
-          <tr>
-            {columns.map((column) => {
-              let fieldName = column;
-              let label = column;
-              let style = {};
-
-              if (typeof column === "object") {
-                fieldName = column.name;
-                label = column.label;
-                style = column.width ? { width: column.width } : {};
-              }
-
-              return (
-                <th key={fieldName} style={style}>
-                  {label}
-                </th>
-              );
-            })}
-            {actions && actions.length > 0 && <th key={title + "-actions"}>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {pageData.map((record) => {
-            return (
-              <tr key={record.id}>
+      <div className="table-wrapper min-h-[300px]">
+        {isLoading ? (
+          <TableSkeleton columns={columns} />
+        ) : (
+          <table className="modern-table">
+            <thead>
+              <tr>
                 {columns.map((column) => {
-                  let fieldName = typeof column === "object" ? column.name : column;
-                  let key = fieldName + "-" + record.id;
-                  if (column.name != "flagged_account")
-                    return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{getValue(fieldName, record)}</>}</td>;
-                  else
-                    return (
-                      <td key={key}>
-                        {record.watchlistMatched && (
-                          <div className="w-7 text-red-700">
-                            <WarningIcon />
-                          </div>
-                        )}
-                        {record.pepMatched && (
-                          <div className="w-7 text-red-700">
-                            <WarningIcon />
-                          </div>
-                        )}
-                      </td>
-                    );
+                  let fieldName = column;
+                  let label = column;
+                  let style = {};
+
+                  if (typeof column === "object") {
+                    fieldName = column.name;
+                    label = column.label;
+                    style = column.width ? { width: column.width } : {};
+                  }
+
+                  return (
+                    <th key={fieldName} style={style}>
+                      {label}
+                    </th>
+                  );
                 })}
                 {actions && actions.length > 0 && (
-                  <td key={"actions" + record.id}>
-                    {actions.map((action) => {
-                      return (
-                        <button
-                          key={record.id + "-action-" + action.name}
-                          onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
-                          style={{
-                            marginRight: "1rem",
-                            color: "var(--link-color)",
-                            transition: "0.5s all",
-                            lineHeight: "0.2",
-                          }}
-                        >
-                          {action.label}
-                        </button>
-                      );
-                    })}
-                  </td>
+                  <th key={title + "-actions"} className="text-right pr-6">
+                    Actions
+                  </th>
                 )}
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {pageData.map((record) => {
+                return (
+                  <tr key={record.id} className="group">
+                    {columns.map((column) => {
+                      let fieldName = typeof column === "object" ? column.name : column;
+                      let key = fieldName + "-" + record.id;
+                      if (column.name !== "flagged_account")
+                        return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{getValue(fieldName, record)}</>}</td>;
+                      else
+                        return (
+                          <td key={key}>
+                            {record.watchlistMatched && (
+                              <div className="w-5 text-red-600">
+                                <WarningIcon />
+                              </div>
+                            )}
+                            {record.pepMatched && (
+                              <div className="w-5 text-red-600">
+                                <WarningIcon />
+                              </div>
+                            )}
+                          </td>
+                        );
+                    })}
+                    {actions && actions.length > 0 && (
+                      <td key={"actions" + record.id} className="text-right">
+                        {actions.map((action) => {
+                          return (
+                            <button
+                              key={record.id + "-action-" + action.name}
+                              onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
+                              className="action-btn opacity-0 group-hover:opacity-100 transition-opacity duration-200 translate-x-2 group-hover:translate-x-0"
+                            >
+                              {action.label}
+                            </button>
+                          );
+                        })}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
 
-      {pageData.length === 0 && isLoading && (
-        <div className="empty">
-          {/* A simple loading timout to be replaced by more robust Loading notifications*/}
-          <p>Loading {title}...</p>
+      {!isLoading && pageData.length === 0 && (
+        <div className="empty-state">
+          <p className="text-gray-400 mb-2 text-lg">No records found</p>
+          <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
         </div>
       )}
 
-      <div className="pagination">
-        <ReactPaginate
-          breakLabel="&#8230;"
-          previousLabel="&#9664;"
-          nextLabel="&#9658;"
-          onPageChange={handlePageClick}
-          pageRangeDisplayed={5}
-          pageCount={pageCount}
-          renderOnZeroPageCount={null}
-        />
-      </div>
+      {!isLoading && pageCount > 1 && (
+        <div className="pagination-container">
+          <ReactPaginate
+            breakLabel="..."
+            nextLabel={
+              <span className="flex items-center gap-1">
+                Next
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                </svg>
+              </span>
+            }
+            previousLabel={
+              <span className="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                </svg>
+                Prev
+              </span>
+            }
+            onPageChange={handlePageClick}
+            pageRangeDisplayed={3}
+            pageCount={pageCount}
+            renderOnZeroPageCount={null}
+            containerClassName="pagination-list"
+            activeClassName="selected"
+            disabledClassName="disabled"
+          />
+        </div>
+      )}
 
       {showDialog && (
-        <div className="dialog">
+        <div className="dialog backdrop-blur-sm bg-black/30">
           <div className="dialog-content">{dialogContent}</div>
         </div>
       )}

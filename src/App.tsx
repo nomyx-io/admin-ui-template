@@ -17,7 +17,6 @@ import CreateClaimTopic from "./components/CreateClaimTopic.jsx";
 import CreateDigitalId from "./components/CreateDigitalId.jsx";
 import CreatePassword from "./components/CreatePasswordPage.jsx";
 import CreateTrustedIssuer from "./components/CreateTrustedIssuer.jsx";
-import CSPMeta from "./components/CSPMeta.jsx";
 import DigitalIdentityDetailView from "./components/DigitalIdentityDetailPage.jsx";
 import EditClaims from "./components/EditClaims.jsx";
 import EditClaimsSummaryView from "./components/EditClaimsSummaryView.jsx";
@@ -26,8 +25,8 @@ import IdentitiesPage from "./components/IdentitiesPage.jsx";
 import Layout from "./components/Layout";
 import Login from "./components/LoginPage.jsx";
 import MintPage from "./components/MintPage.jsx";
-import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
+import Sidebar from "./components/Sidebar.jsx";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import Tutorial from "./components/Tutorial";
 import ViewClaimTopic from "./components/ViewClaimTopic";
@@ -453,13 +452,11 @@ function App() {
             <Tutorial role={role} />
             <AutoLogout />
             {/* Navigation Bar (Only visible when logged in) */}
-            {role.length > 0 && (
-              <div className={`topnav p-0`}>
-                <NavBar onConnect={onConnect} onDisconnect={onDisconnect} onLogout={onLogoutEmailPassword} role={role} />
-              </div>
-            )}
-
-            <Layout>
+            <Layout
+              sidebar={
+                role.length > 0 ? <Sidebar onConnect={onConnect} onDisconnect={onDisconnect} onLogout={onLogoutEmailPassword} role={role} /> : null
+              }
+            >
               <div className={`${role.length === 0 ? "p-0 -ml-4 overflow-hidden" : "content"}`}>
                 <ToastContainer
                   position="top-right"
@@ -475,7 +472,7 @@ function App() {
                     path="/"
                     element={
                       <Protected role={"CentralAuthority"} roles={role}>
-                        <Home />
+                        <Home service={blockchainService} />
                       </Protected>
                     }
                   />
