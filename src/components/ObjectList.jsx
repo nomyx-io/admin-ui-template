@@ -2,6 +2,7 @@ import "./ObjectList.css";
 
 import { useState, useEffect } from "react";
 
+import { Tooltip } from "antd";
 import ReactPaginate from "react-paginate";
 
 import { WarningIcon } from "../assets/icons";
@@ -187,7 +188,14 @@ const ObjectList = ({
                     className={"btn global-action-" + globalAction.name}
                     onClick={(event) => handleAction(event, globalAction.name, globalAction.confirmation)}
                   >
-                    {globalAction.label}
+                    {globalAction.icon ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        {globalAction.icon}
+                        {globalAction.label}
+                      </span>
+                    ) : (
+                      globalAction.label
+                    )}
                   </button>
                 );
               })}
@@ -253,22 +261,38 @@ const ObjectList = ({
                 })}
                 {actions && actions.length > 0 && (
                   <td key={"actions" + record.id}>
-                    {actions.map((action) => {
-                      return (
-                        <button
-                          key={record.id + "-action-" + action.name}
-                          onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
-                          style={{
-                            marginRight: "1rem",
-                            color: "var(--link-color)",
-                            transition: "0.5s all",
-                            lineHeight: "0.2",
-                          }}
-                        >
-                          {action.label}
-                        </button>
-                      );
-                    })}
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                      {actions.map((action) => {
+                        const buttonContent = (
+                          <button
+                            key={record.id + "-action-" + action.name}
+                            onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
+                            style={{
+                              color: "var(--link-color)",
+                              transition: "0.5s all",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "0.25rem",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              fontSize: "1.1rem",
+                            }}
+                            aria-label={action.label}
+                          >
+                            {action.icon || action.label}
+                          </button>
+                        );
+
+                        return action.icon ? (
+                          <Tooltip key={record.id + "-action-" + action.name} title={action.label} placement="top">
+                            {buttonContent}
+                          </Tooltip>
+                        ) : (
+                          buttonContent
+                        );
+                      })}
+                    </div>
                   </td>
                 )}
               </tr>

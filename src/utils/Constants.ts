@@ -12,6 +12,7 @@ enum NomyxEvent {
   IdentityCountryUpdated = "IdentityCountryUpdated",
   WalletLinked = "WalletLinked",
   WalletUnlinked = "WalletUnlinked",
+  AssociateInquiry = "AssociateInquiry",
 }
 
 enum NomyxAction {
@@ -28,6 +29,8 @@ enum NomyxAction {
   RemoveUser,
   EditClaims,
   AddClaims,
+  AssociateInquiry,
+  SendVerificationEmail,
 }
 
 enum WalletPreference {
