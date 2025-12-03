@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
-import { Tabs } from "antd";
+import { EditOutlined, EyeOutlined, DeleteOutlined, CheckOutlined, MailOutlined, CloseOutlined, PlusOutlined, LinkOutlined } from "@ant-design/icons";
+import { Tabs, Modal, Form, Input } from "antd";
 import Parse from "parse";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -31,6 +32,9 @@ const IdentitiesPage = ({ service }) => {
     claims: false,
     pending: false,
   });
+  const [isAssociateModalVisible, setIsAssociateModalVisible] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [associateForm] = Form.useForm();
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
   // Helper function to extract error message
@@ -420,6 +424,49 @@ const IdentitiesPage = ({ service }) => {
     }
   };
 
+  const handleAssociateInquiry = (record) => {
+    setSelectedRecord(record);
+    setIsAssociateModalVisible(true);
+  };
+
+  const handleAssociateModalCancel = () => {
+    setIsAssociateModalVisible(false);
+    setSelectedRecord(null);
+    associateForm.resetFields();
+  };
+
+  const handleAssociateModalOk = async () => {
+    try {
+      const values = await associateForm.validateFields();
+      const { personaInquiryId } = values;
+
+      await toast.promise(
+        async () => {
+          const result = await Parse.Cloud.run("associatePersonaInquiry", {
+            userId: selectedRecord.id,
+            personaInquiryId: personaInquiryId,
+          });
+          return result;
+        },
+        {
+          pending: `Associating Persona Inquiry ID for ${selectedRecord.displayName}...`,
+          success: `Successfully associated Persona Inquiry ID for ${selectedRecord.displayName}`,
+          error: {
+            render({ data }) {
+              const errorMessage = getErrorMessage(data);
+              return `Failed to associate Persona Inquiry ID: ${errorMessage}`;
+            },
+          },
+        }
+      );
+
+      handleAssociateModalCancel();
+      setRefreshTrigger((prev) => !prev);
+    } catch (error) {
+      console.error("Error in handleAssociateModalOk:", error);
+    }
+  };
+
   const columns = [
     { label: "Identity", name: "displayName" },
     { label: "Email", name: "email" },
@@ -447,34 +494,38 @@ const IdentitiesPage = ({ service }) => {
   ];
 
   const actions = [
-    { label: "Edit Rules", name: NomyxAction.EditClaims },
-    { label: "View", name: NomyxAction.ViewIdentity },
+    { label: "Edit Rules", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
+    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
+      icon: <DeleteOutlined />,
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
   const pendingActions = [
-    { label: "Approve", name: NomyxAction.CreatePendingIdentity },
-    { label: "View", name: NomyxAction.ViewPendingIdentity },
-    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: "mail" },
+    { label: "Approve", name: NomyxAction.CreatePendingIdentity, icon: <CheckOutlined /> },
+    { label: "View", name: NomyxAction.ViewPendingIdentity, icon: <EyeOutlined /> },
+    { label: "Associate", name: NomyxAction.AssociateInquiry, icon: <LinkOutlined /> },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: <MailOutlined /> },
     {
       label: "Deny",
       name: NomyxAction.RemoveUser,
+      icon: <CloseOutlined />,
       confirmation: "Are you sure you want to deny this pending Identity?",
     },
   ];
   const claimsActions = [
-    { label: "Add Rules", name: NomyxAction.AddClaims },
-    { label: "View", name: NomyxAction.ViewIdentity },
+    { label: "Add Rules", name: NomyxAction.AddClaims, icon: <PlusOutlined /> },
+    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
+      icon: <DeleteOutlined />,
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
-  const globalActions = [{ label: "Create identity", name: NomyxAction.CreateIdentity }];
+  const globalActions = [{ label: "Create identity", name: NomyxAction.CreateIdentity, icon: <PlusOutlined /> }];
 
   const search = true;
 
@@ -502,6 +553,9 @@ const IdentitiesPage = ({ service }) => {
         case NomyxAction.CreatePendingIdentity:
           const { displayName, kyc_id, identityAddress } = record;
           navigate(`/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}`);
+          break;
+        case NomyxAction.AssociateInquiry:
+          handleAssociateInquiry(record);
           break;
         case NomyxAction.SendVerificationEmail:
           await handleSendVerificationEmail(record);
@@ -613,6 +667,30 @@ const IdentitiesPage = ({ service }) => {
           />
         </TabPane>
       </Tabs>
+
+      <Modal
+        title="Associate Persona Inquiry ID"
+        open={isAssociateModalVisible}
+        onOk={handleAssociateModalOk}
+        onCancel={handleAssociateModalCancel}
+        okText="Associate"
+        cancelText="Cancel"
+      >
+        <Form form={associateForm} layout="vertical" name="associateInquiryForm">
+          <Form.Item
+            name="personaInquiryId"
+            label="Persona Inquiry ID"
+            rules={[
+              {
+                required: true,
+                message: "Please enter the Persona Inquiry ID",
+              },
+            ]}
+          >
+            <Input placeholder="Enter Persona Inquiry ID" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   );
 };
