@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAccount, useDisconnect } from "wagmi";
 
-import logoDark from "../assets/molokai_logo_dark.png";
+import logoDark from "../assets/nomyx_logo_dark.png";
 import logoLight from "../assets/nomyx_logo_light.png";
 import { RoleContext } from "../context/RoleContext";
 import bg from "../images/BlackPaintBackground.webp";
@@ -84,7 +84,7 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
     <div
       className="relative w-full min-h-screen overflow-hidden flex flex-col"
       style={{
-        backgroundImage: "url('/images/molokai_marble_bg.jpg')",
+        backgroundImage: "url('/images/nomyx_banner.svg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -99,8 +99,8 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
           <div className="flex flex-1 flex-col lg:flex-row">
             {/* Left Side */}
             <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-4 md:px-6 my-10">
-              <div className="w-full max-w-5xl">
-                <img src={logoDark} alt="Logo" width={830} height={440} priority />
+              <div className="w-full max-w-2xl">
+                <img src={logoDark} alt="Logo" width={630} height={240} priority />
               </div>
             </div>
 
