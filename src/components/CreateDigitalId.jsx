@@ -185,7 +185,7 @@ function CreateDigitalId({ service }) {
         console.log("New identity created:", identity);
         if (completeResponse) identityCreatedOrExists = true;
       } else {
-        console.log("Identity already exists:", identity);
+        toast.error("Identity already exists:" + identity + "");
         toast.update(toastId, { render: "Identity found, proceeding..." });
         identityCreatedOrExists = true;
       }
@@ -325,13 +325,13 @@ function CreateDigitalId({ service }) {
       console.error("Error in managed wallet flow:", error);
       if (toastId) {
         toast.update(toastId, {
-          render: error?.reason || error?.message || "An error occurred while processing Digital Identity",
+          render: error?.error || error?.reason || error?.message || "An error occurred while processing Digital Identity",
           type: "error",
           isLoading: false,
           autoClose: 5000,
         });
       } else {
-        toast.error(error?.reason || error?.message || "An error occurred while processing Digital Identity");
+        toast.error(error?.error || error?.reason || error?.message || "An error occurred while processing Digital Identity");
       }
       throw error;
     }
@@ -386,7 +386,7 @@ function CreateDigitalId({ service }) {
           throw error;
         }
       } else {
-        console.log("Identity already exists:", identity);
+        toast.error("Identity already exists: " + identity + "");
         toast.update(toastId, { render: "Identity found, proceeding..." });
         identityCreatedOrExists = true;
       }
