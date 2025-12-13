@@ -130,8 +130,20 @@ function CreateDigitalId({ service }) {
                 );
                 if (completeError) throw new Error(completeError);
 
-                // Get the newly created identity
-                identity = await DfnsService.getIdentity(walletAddress);
+                // Use the identity address from the response instead of querying
+                identity = completeResponse.identityAddress;
+
+                if (!identity) {
+                  // Fallback to querying if extraction failed
+                  console.log("Identity not found in response, querying contract...");
+                  await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
+                  identity = await DfnsService.getIdentity(walletAddress);
+                }
+
+                if (!identity) {
+                  throw new Error("Failed to retrieve identity after creation");
+                }
+
                 console.log("New identity created:", identity);
               } else {
                 console.log("Identity already exists, skipping creation:", identity);
