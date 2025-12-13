@@ -181,7 +181,20 @@ function CreateDigitalId({ service }) {
           throw new Error(completeError);
         }
 
-        identity = await DfnsService.getIdentity(walletAddress);
+        // NEW: Use the identity address from the response instead of querying
+        identity = completeResponse.identityAddress;
+
+        if (!identity) {
+          // Fallback to querying if extraction failed
+          console.log("Identity not found in response, querying contract...");
+          toast.update(toastId, { render: "Verifying identity creation..." });
+          await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
+          identity = await DfnsService.getIdentity(walletAddress);
+        }
+
+        if (!identity) {
+          throw new Error("Failed to retrieve identity after creation");
+        }
         console.log("New identity created:", identity);
         if (completeResponse) identityCreatedOrExists = true;
       } else {
