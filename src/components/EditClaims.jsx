@@ -150,8 +150,11 @@ const EditClaims = ({ service }) => {
                       },
                     ],
                   };
-                  await delay(4000);
                   //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
+                  await delay(4000);
+                  toast.info("Your updated claims will be reflected in the Identities list within a minute.", {
+                    autoClose: 5000,
+                  });
                   navigate("/identities");
                 } catch (error) {
                   console.error("Error in set claims operation:", error);
@@ -205,6 +208,10 @@ const EditClaims = ({ service }) => {
           toast.info("No changes to save.");
         } else {
           toast.success("Claims updated successfully.");
+          toast.info("Your updated claims will be reflected in the Identities list within a minute.", {
+            autoClose: 5000,
+          });
+          navigate("/identities");
         }
       }
     } catch (error) {

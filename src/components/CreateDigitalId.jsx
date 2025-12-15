@@ -328,6 +328,9 @@ function CreateDigitalId({ service }) {
         autoClose: 3000,
       });
 
+      toast.info("Your newly created or approved identity will be displayed within a minute.", {
+        autoClose: 5000,
+      });
       navigate("/identities");
     } catch (error) {
       if (error.message === "USER_CANCELLED" || error.message === "USER_REJECTED") {
@@ -498,6 +501,9 @@ function CreateDigitalId({ service }) {
         autoClose: 3000,
       });
 
+      toast.info("Your newly created or approved identity will be displayed within a minute.", {
+        autoClose: 5000,
+      });
       navigate("/identities");
     } catch (error) {
       if (error.message === "USER_CANCELLED" || error.message === "USER_REJECTED") {
