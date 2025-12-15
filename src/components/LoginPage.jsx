@@ -163,10 +163,9 @@ export default function Login({ forceLogout, onConnect, onDisconnect, onLogin, s
                               },
                             ]}
                           >
-                            <Input
-                              type="password"
+                            <Input.Password
                               placeholder="Enter your password"
-                              className="signup-input placeholder-nomyxGray1 !border-nomyxGray1"
+                              className="signup-input !border-nomyxGray1 [&_input::placeholder]:text-gray-400"
                             />
                           </Form.Item>
 
