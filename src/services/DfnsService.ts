@@ -265,27 +265,31 @@ class DfnsService {
     }
   }
 
-  public async getIdentity(walletAddress: string) {
-    const maxRetries = 3,
-      delay = 1000;
+  public async getIdentity(walletAddress: string, isAfterCreation: boolean = false) {
+    // Use longer retry for newly created identities
+    const maxRetries = isAfterCreation ? 10 : 3;
+    const delay = isAfterCreation ? 2000 : 1000;
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const response = await Parse.Cloud.run("dfnsGetIdentity", {
           identityOwner: walletAddress,
         });
-        if (response?.identity) {
-          return response.identity; // Return identity if found
+        if (response?.identity && response.identity !== "0x0000000000000000000000000000000000000000") {
+          return response.identity;
         }
       } catch (error: any) {
         console.error(`Attempt ${attempt} failed: ${error.message}`);
       }
-      // Wait for 1 second before retrying (if not the last attempt)
-      if (attempt < maxRetries) await new Promise((res) => setTimeout(res, delay));
-    }
-    console.error("Max retry attempts reached. Failed to fetch identity.");
-    return null; // Return null if all retries fail
-  }
 
+      if (attempt < maxRetries) {
+        await new Promise((res) => setTimeout(res, delay));
+      }
+    }
+
+    console.error("Max retry attempts reached. Failed to fetch identity.");
+    return null;
+  }
   public async initiateAddIdentity(ownerAddress: string, identity: any, walletId: string, dfnsToken: string) {
     if (!ownerAddress || !identity || !walletId || !dfnsToken) {
       throw new Error("Missing required parameters for AddIdentity.");
