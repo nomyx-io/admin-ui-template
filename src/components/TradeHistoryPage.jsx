@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 
+import { DownloadOutlined } from "@ant-design/icons";
 import { Tabs, DatePicker, Input, Button } from "antd";
 import Parse from "parse";
 import { toast } from "react-toastify";
 
-import ObjectList from "./ObjectList"; // Replace with your actual component
+import ObjectList from "./ObjectList";
 
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
@@ -53,7 +54,6 @@ const TradeHistoryPage = (service) => {
   const [trades, setTrades] = useState([]);
   const [activeTab, setActiveTab] = useState("TradeHistory");
 
-  // Separate state for filters (bound to inputs)
   const [localFilters, setLocalFilters] = useState({
     dateRange: null,
     searchTerm: "",
@@ -71,7 +71,6 @@ const TradeHistoryPage = (service) => {
         return;
       }
 
-      // No need to format again, already done in the cloud function
       setRawTrades(tradeRecords);
       setTrades(tradeRecords);
     } catch (error) {
@@ -88,16 +87,12 @@ const TradeHistoryPage = (service) => {
     const { dateRange, searchTerm, minAmount, maxAmount } = localFilters;
     let filtered = [...rawTrades];
 
-    console.log("Applying filters:", { dateRange, searchTerm, minAmount, maxAmount });
-    console.log("Raw trades count:", rawTrades.length);
-
     if (dateRange?.length === 2) {
       const [start, end] = dateRange;
       filtered = filtered.filter((trade) => {
         const tradeDate = new Date(trade.createdAt);
         return tradeDate >= start && tradeDate <= end;
       });
-      console.log("After date filter:", filtered.length);
     }
 
     if (searchTerm.trim()) {
@@ -111,14 +106,12 @@ const TradeHistoryPage = (service) => {
           (trade.destination?.address || "").toLowerCase().includes(term) ||
           (trade.onrampId || "").toLowerCase().includes(term)
       );
-      console.log("After search filter:", filtered.length, "Search term:", term);
     }
 
     if (minAmount.trim()) {
       const min = parseFloat(minAmount);
       if (!isNaN(min)) {
         filtered = filtered.filter((trade) => trade.amount >= min);
-        console.log("After minimum amount filter:", filtered.length);
       }
     }
 
@@ -126,15 +119,12 @@ const TradeHistoryPage = (service) => {
       const max = parseFloat(maxAmount);
       if (!isNaN(max)) {
         filtered = filtered.filter((trade) => trade.amount <= max);
-        console.log("After maximum amount filter:", filtered.length);
       }
     }
 
-    console.log("Final filtered count:", filtered.length);
-    setTrades([...filtered]); // Force new array reference
+    setTrades([...filtered]);
   }, [rawTrades, localFilters]);
 
-  // Auto-apply filters when localFilters or rawTrades change
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
@@ -153,7 +143,87 @@ const TradeHistoryPage = (service) => {
     setTrades(rawTrades);
   }, [rawTrades]);
 
-  // Memoize the FilterSection to prevent unnecessary re-renders
+  // CSV Export Function
+  const exportToCSV = useCallback(() => {
+    if (!trades || trades.length === 0) {
+      toast.warning("No data to export");
+      return;
+    }
+
+    try {
+      // Define CSV headers
+      const headers = [
+        "Name",
+        "Email",
+        "Wallet Address",
+        "Transaction ID",
+        "Time",
+        "Status",
+        "Referred By Name",
+        "Referred By Email",
+        "Amount",
+        "Source Currency",
+        "Destination Currency",
+      ];
+
+      // Convert data to CSV rows
+      const csvRows = trades.map((trade) => {
+        const walletAddress = trade.destination?.walletAddress || trade?.transferDetails?.source?.walletAddress || "-";
+        const transactionId = trade?.hifiTransferId || trade?.requestId || "-";
+        const timestamp = trade.createdAt ? new Date(trade.createdAt).toLocaleString() : "-";
+        const amount = `$${(trade.amount || 0).toFixed(2)}`;
+        const sourceCurrency = trade.source?.currency?.toUpperCase() || "-";
+        const destinationCurrency = trade.destination?.currency?.toUpperCase() || "-";
+
+        return [
+          trade.userName || "",
+          trade.userEmail || "",
+          walletAddress,
+          transactionId,
+          timestamp,
+          trade.status || "Unknown",
+          trade.referredByName || "",
+          trade.referredByEmail || "",
+          amount,
+          sourceCurrency,
+          destinationCurrency,
+        ]
+          .map((field) => {
+            // Escape fields containing commas, quotes, or newlines
+            const fieldStr = String(field);
+            if (fieldStr.includes(",") || fieldStr.includes('"') || fieldStr.includes("\n")) {
+              return `"${fieldStr.replace(/"/g, '""')}"`;
+            }
+            return fieldStr;
+          })
+          .join(",");
+      });
+
+      // Combine headers and rows
+      const csvContent = [headers.join(","), ...csvRows].join("\n");
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", `trade_history_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${trades.length} trade${trades.length !== 1 ? "s" : ""} to CSV`);
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      toast.error("Failed to export data to CSV");
+    }
+  }, [trades]);
+
   const FilterSection = useMemo(
     () => (
       <div className="mb-4 p-4 bg-gray-50 rounded-lg">
@@ -181,17 +251,24 @@ const TradeHistoryPage = (service) => {
           </div>
         </div>
 
-        <div className="mt-4 flex justify-end gap-2">
-          <Button onClick={clearFilters} className="leading-[10px]">
-            Clear Filters
-          </Button>
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Showing {trades.length} of {rawTrades.length} trade{rawTrades.length !== 1 ? "s" : ""}
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={clearFilters} className="leading-[10px]">
+              Clear Filters
+            </Button>
+            <Button type="primary" icon={<DownloadOutlined />} onClick={exportToCSV} disabled={trades.length === 0} className="leading-[10px]">
+              Export to CSV
+            </Button>
+          </div>
         </div>
       </div>
     ),
-    [localFilters, handleInputChange, clearFilters]
+    [localFilters, handleInputChange, clearFilters, exportToCSV, trades.length, rawTrades.length]
   );
 
-  // Memoize columns to prevent re-creation on every render
   const columns = useMemo(
     () => [
       { label: "Name", name: "userName", width: 150 },
@@ -258,7 +335,6 @@ const TradeHistoryPage = (service) => {
     <Tabs activeKey={activeTab} onChange={setActiveTab}>
       <TabPane tab="Trade History" key="TradeHistory">
         {FilterSection}
-        {/* Add horizontal scrolling wrapper */}
         <div className="overflow-x-auto">
           <ObjectList
             key={`trades-${trades.length}`}

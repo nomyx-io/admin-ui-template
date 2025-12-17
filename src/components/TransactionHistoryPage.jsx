@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 
+import { DownloadOutlined } from "@ant-design/icons";
 import { Tabs, DatePicker, Input, Button, Tag } from "antd";
 import Parse from "parse";
 import { toast } from "react-toastify";
 
-import ObjectList from "./ObjectList"; // Replace with your actual component
+import ObjectList from "./ObjectList";
 
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
@@ -14,7 +15,6 @@ const TransactionHistoryPage = (service) => {
   const [transactions, setTransactions] = useState([]);
   const [activeTab, setActiveTab] = useState("Transactions");
 
-  // Separate state for filters (bound to inputs)
   const [localFilters, setLocalFilters] = useState({
     dateRange: null,
     searchTerm: "",
@@ -32,7 +32,6 @@ const TransactionHistoryPage = (service) => {
         return;
       }
 
-      // No need to format again, already done in the cloud function
       setRawTransactions(transactionRecords);
       setTransactions(transactionRecords);
     } catch (error) {
@@ -49,16 +48,12 @@ const TransactionHistoryPage = (service) => {
     const { dateRange, searchTerm, minAmount, maxAmount } = localFilters;
     let filtered = [...rawTransactions];
 
-    console.log("Applying filters:", { dateRange, searchTerm, minAmount, maxAmount });
-    console.log("Raw transactions count:", rawTransactions.length);
-
     if (dateRange?.length === 2) {
       const [start, end] = dateRange;
       filtered = filtered.filter((tx) => {
         const txDate = new Date(tx.timestamp);
         return txDate >= start && txDate <= end;
       });
-      console.log("After date filter:", filtered.length);
     }
 
     if (searchTerm.trim()) {
@@ -73,14 +68,12 @@ const TransactionHistoryPage = (service) => {
           (tx.bridgeTransactionId || "").toLowerCase().includes(term) ||
           (tx.kycInquiryId || "").toLowerCase().includes(term)
       );
-      console.log("After search filter:", filtered.length, "Search term:", term);
     }
 
     if (minAmount.trim()) {
       const min = parseFloat(minAmount);
       if (!isNaN(min)) {
         filtered = filtered.filter((tx) => tx.amount / 1_000_000 >= min);
-        console.log("After minimum amount filter:", filtered.length);
       }
     }
 
@@ -88,15 +81,12 @@ const TransactionHistoryPage = (service) => {
       const max = parseFloat(maxAmount);
       if (!isNaN(max)) {
         filtered = filtered.filter((tx) => tx.amount / 1_000_000 <= max);
-        console.log("After maximum amount filter:", filtered.length);
       }
     }
 
-    console.log("Final filtered count:", filtered.length);
-    setTransactions([...filtered]); // Force new array reference
+    setTransactions([...filtered]);
   }, [rawTransactions, localFilters]);
 
-  // Auto-apply filters when localFilters or rawTransactions change
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
@@ -116,11 +106,10 @@ const TransactionHistoryPage = (service) => {
   }, [rawTransactions]);
 
   const getTokenName = (tokenAddress) => {
-    if (!tokenAddress) return "ETH"; // Default to ETH if no token address
+    if (!tokenAddress) return "ETH";
 
     const address = tokenAddress.toLowerCase();
 
-    // Map your environment addresses to token names
     if (address === process.env.REACT_APP_HARDHAT_USDC_ADDRESS?.toLowerCase()) {
       return "USDC";
     }
@@ -128,32 +117,8 @@ const TransactionHistoryPage = (service) => {
       return "USDT";
     }
 
-    // For unknown tokens, show first 6 characters
     return `${tokenAddress.slice(0, 6)}...`;
   };
-
-  // const handleAction = async (event, action, record) => {
-  //   switch (action) {
-  //     case NomyxAction.ViewTransaction:
-  //       toast.info(`Viewing transaction ${record.transactionHash} - To be implemented`);
-  //       break;
-  //     case NomyxAction.ExportTransaction:
-  //       toast.info(`Exporting transaction ${record.transactionHash} - To be implemented`);
-  //       break;
-  //     case NomyxAction.ExportAllTransactions:
-  //       toast.info("Exporting all transactions - To be implemented");
-  //       break;
-  //     case NomyxAction.ClearFilters:
-  //       clearFilters();
-  //       toast.success("Filters cleared");
-  //       break;
-  //     default:
-  //       console.log("Action not handled: ", action);
-  //       break;
-  //   }
-  // };
-
-  // Memoize the FilterSection to prevent unnecessary re-renders
 
   const getTokenColor = (tokenName) => {
     switch (tokenName) {
@@ -167,6 +132,82 @@ const TransactionHistoryPage = (service) => {
         return "default";
     }
   };
+
+  // CSV Export Function
+  const exportToCSV = useCallback(() => {
+    if (!transactions || transactions.length === 0) {
+      toast.warning("No data to export");
+      return;
+    }
+
+    try {
+      // Define CSV headers
+      const headers = [
+        "User",
+        "Email",
+        "Amount",
+        "Token",
+        "From Address",
+        "To Address",
+        "Transaction Hash",
+        "Timestamp",
+        "Bridge Transaction ID",
+        "KYC Inquiry ID",
+      ];
+
+      // Convert data to CSV rows
+      const csvRows = transactions.map((tx) => {
+        const tokenName = getTokenName(tx.token);
+        const amount = (tx.amount / 1_000_000).toFixed(2);
+        const timestamp = tx.timestamp ? new Date(tx.timestamp).toLocaleString() : "-";
+
+        return [
+          tx.userName || "",
+          tx.userEmail || "",
+          amount,
+          tokenName,
+          tx.fromAddress || "",
+          tx.toAddress || "",
+          tx.transactionHash || "",
+          timestamp,
+          tx.bridgeTransactionId || "",
+          tx.kycInquiryId || "",
+        ]
+          .map((field) => {
+            // Escape fields containing commas, quotes, or newlines
+            const fieldStr = String(field);
+            if (fieldStr.includes(",") || fieldStr.includes('"') || fieldStr.includes("\n")) {
+              return `"${fieldStr.replace(/"/g, '""')}"`;
+            }
+            return fieldStr;
+          })
+          .join(",");
+      });
+
+      // Combine headers and rows
+      const csvContent = [headers.join(","), ...csvRows].join("\n");
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", `transactions_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${transactions.length} transaction${transactions.length !== 1 ? "s" : ""} to CSV`);
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      toast.error("Failed to export data to CSV");
+    }
+  }, [transactions, getTokenName]);
 
   const FilterSection = useMemo(
     () => (
@@ -195,17 +236,24 @@ const TransactionHistoryPage = (service) => {
           </div>
         </div>
 
-        <div className="mt-4 flex justify-end gap-2">
-          <Button onClick={clearFilters} className="leading-[10px]">
-            Clear Filters
-          </Button>
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Showing {transactions.length} of {rawTransactions.length} transaction{rawTransactions.length !== 1 ? "s" : ""}
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={clearFilters} className="leading-[10px]">
+              Clear Filters
+            </Button>
+            <Button type="primary" icon={<DownloadOutlined />} onClick={exportToCSV} disabled={transactions.length === 0} className="leading-[10px]">
+              Export to CSV
+            </Button>
+          </div>
         </div>
       </div>
     ),
-    [localFilters, handleInputChange, clearFilters]
+    [localFilters, handleInputChange, clearFilters, exportToCSV, transactions.length, rawTransactions.length]
   );
 
-  // Memoize columns to prevent re-creation on every render
   const columns = useMemo(
     () => [
       { label: "User", name: "userName" },
@@ -217,7 +265,6 @@ const TransactionHistoryPage = (service) => {
       },
       { label: "From", name: "fromAddress" },
       { label: "To", name: "toAddress" },
-      //{ label: "Recipient", name: "toUserName" },
       {
         label: "Token",
         name: "token",
