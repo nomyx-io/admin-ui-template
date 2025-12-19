@@ -80,6 +80,11 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
             </Link>
           </li>
         )}
+        <li>
+          <Link to="/gas-sponsorship" className="hover:underline">
+            Gas Sponsorship
+          </Link>
+        </li>
 
         {walletPreference === WalletPreference.PRIVATE && (
           <li style={{ marginLeft: "auto" }}>

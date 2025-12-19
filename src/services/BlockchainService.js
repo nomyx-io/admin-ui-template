@@ -768,6 +768,30 @@ class BlockchainService {
     await tx.wait();
     return tx;
   }
+
+  /**
+   * Get native currency balance of a wallet address (ETH / MATIC / BNB etc.)
+   * @param {string} walletAddress
+   * @returns {string} balance formatted in ether units
+   */
+  async getNativeBalance(walletAddress) {
+    if (!walletAddress) {
+      throw new Error("walletAddress is required");
+    }
+
+    try {
+      // Use dedicated provider for safe read-only calls
+      const provider = this.dedicatedProvider || this.provider;
+
+      const balanceWei = await provider.getBalance(walletAddress);
+      const balanceFormatted = ethers.utils.formatEther(balanceWei);
+
+      return balanceFormatted; // string (e.g. "1.2345")
+    } catch (error) {
+      console.error("Error fetching native balance:", error);
+      throw error;
+    }
+  }
 }
 
 export default BlockchainService;
