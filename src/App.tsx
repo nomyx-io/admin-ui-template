@@ -23,6 +23,7 @@ import DigitalIdentityDetailView from "./components/DigitalIdentityDetailPage.js
 import EditClaims from "./components/EditClaims.jsx";
 import EditClaimsSummaryView from "./components/EditClaimsSummaryView.jsx";
 import FunctionClaimsPage from "./components/FunctionClaimsPage.jsx";
+import FeeSponsorshipBalance from "./components/GasSponsorship.jsx";
 import Home from "./components/Home.jsx";
 import IdentitiesPage from "./components/IdentitiesPage.jsx";
 import Layout from "./components/Layout";
@@ -789,6 +790,20 @@ function App() {
                       <Protected role={"CentralAuthority"} roles={role}>
                         {blockchainService ? (
                           <SetFunctionClaims service={blockchainService} />
+                        ) : (
+                          <div className="flex justify-center items-center h-full">
+                            <Spin tip="Initializing service..." />
+                          </div>
+                        )}
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="/gas-sponsorship"
+                    element={
+                      <Protected role={"CentralAuthority"} roles={role}>
+                        {blockchainService ? (
+                          <FeeSponsorshipBalance blockchainService={blockchainService} />
                         ) : (
                           <div className="flex justify-center items-center h-full">
                             <Spin tip="Initializing service..." />
