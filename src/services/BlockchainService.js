@@ -23,7 +23,6 @@ class BlockchainService {
     this.dedicatedProvider = new ethers.providers.JsonRpcProvider(process.env.REACT_APP_RPC_URL);
 
     if (provider instanceof ethers.providers.Web3Provider) {
-      console.log("🔹 Web3 Wallet Detected, setting signer...");
       this.signer = provider.getSigner();
     } else {
       if (provider instanceof ethers.providers.StaticJsonRpcProvider) {
@@ -32,9 +31,6 @@ class BlockchainService {
         provider._pollingInterval = Infinity;
       }
     }
-
-    console.log("blockchain service provider: ", this.provider);
-    console.log("blockchain service signer: ", this.signer);
 
     // ✅ Use the best available provider for contracts (signer for transactions, provider for reads)
     const contractProvider = this.signer || this.provider;
@@ -179,8 +175,6 @@ class BlockchainService {
         if (existingRecord?.length > 0) {
           // Attempt to update the record
           await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
-
-          console.log("Record updated successfully!");
           return; // Exit after successful update
         }
       } catch (error) {
@@ -370,13 +364,12 @@ class BlockchainService {
 
   async createIdentity(identity) {
     try {
-      console.log("this.signer", this.signer);
       const contract = this.identityFactoryService.connect(this.signer);
       const tx = await contract.createIdentity(identity);
       await tx.wait();
       return tx;
     } catch (error) {
-      console.log("createIdentity error", error);
+      console.error("createIdentity error", error);
     }
   }
 
@@ -388,15 +381,10 @@ class BlockchainService {
 
       if (tx && tx !== "0x0000000000000000000000000000000000000000") {
         // Ensure valid identity
-        console.log(`✅ Identity found: ${tx}`);
         return tx;
       }
-
-      console.warn(`🔄 Identity not found yet, retrying... Attempt ${attempt + 1}/${retries}`);
       await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
     }
-
-    console.error("❌ Identity retrieval failed after multiple attempts.");
     throw new Error("Identity not found");
   }
 
@@ -405,7 +393,6 @@ class BlockchainService {
       baseDelay = 4000;
 
     if (!identityData) {
-      console.warn("No identity data provided, skipping update.");
       return null;
     }
 
@@ -421,7 +408,7 @@ class BlockchainService {
 
         if (attempt < retries) {
           const waitTime = delay * attempt; // Exponential backoff
-          console.log(`Retrying in ${waitTime / 1000} seconds...`);
+          // `Retrying in ${waitTime / 1000} seconds...`
           await new Promise((resolve) => setTimeout(resolve, waitTime));
         }
       }
@@ -531,7 +518,6 @@ class BlockchainService {
 
   async removeClaim(identity, claimTopicObject) {
     try {
-      console.log("claimTopicObject", claimTopicObject);
       // Extract the 'topic' field if claimTopicObject is an object
       const claimTopic = claimTopicObject.topic;
 
@@ -590,58 +576,57 @@ class BlockchainService {
 
   async updateTrustedIssuer(data) {
     if (!data || !data.issuer) {
-      console.warn("🚨 Invalid data provided, skipping update.");
+      //Invalid data provided, skipping update.;
       return null;
     }
 
-    // ✅ Normalize issuer address to lowercase
+    // Normalize issuer address to lowercase
     const normalizedIssuer = data.issuer.toLowerCase();
 
-    console.log(`🔄 Starting updateTrustedIssuer for issuer: ${normalizedIssuer}`, data);
+    // 🔄 Starting updateTrustedIssuer for issuer: ${normalizedIssuer}`, data;
 
     for (let attempt = 1; attempt <= 10; attempt++) {
-      console.log(`🔍 Attempt ${attempt}: Checking if TrustedIssuer exists via ParseClient...`);
+      // 🔍 Attempt ${attempt}: Checking if TrustedIssuer exists via ParseClient...;
 
       try {
-        // ✅ Query using the lowercase version
+        // Query using the lowercase version
         const existingIssuer = await ParseClient.getRecord("TrustedIssuer", ["issuer"], [normalizedIssuer]);
 
         if (!existingIssuer) {
-          console.warn(`⚠️ Attempt ${attempt}: TrustedIssuer '${normalizedIssuer}' not found yet.`);
+          //Attempt ${attempt}: TrustedIssuer '${normalizedIssuer}' not found yet.;
 
           if (attempt < 10) {
             const waitTime = attempt * 2000; // Exponential backoff: 2s, 4s, 6s...
-            console.log(`⏳ Waiting ${waitTime / 1000}s before retrying...`);
+            //⏳ Waiting ${waitTime / 1000}s before retrying...`;
             await new Promise((resolve) => setTimeout(resolve, waitTime));
             continue; // Retry
           } else {
-            console.error(`❌ Giving up after ${attempt} attempts: TrustedIssuer '${normalizedIssuer}' never appeared.`);
+            //Giving up after ${attempt} attempts: TrustedIssuer '${normalizedIssuer}' never appeared.;
             return null;
           }
         }
 
-        console.log(`✅ TrustedIssuer found on attempt ${attempt}, proceeding with update...`);
-        console.log("🔹 Existing TrustedIssuer Data:", existingIssuer);
+        // TrustedIssuer found on attempt ${attempt}, proceeding with update...;
+        // Existing TrustedIssuer Data:", existingIssuer;
 
-        // ✅ Ensure the stored issuer address is also in lowercase
+        // Ensure the stored issuer address is also in lowercase
         const updateData = { ...data, issuer: normalizedIssuer };
 
-        // ✅ Update using ParseClient
-        console.log(`🚀 Attempting update with data:`, updateData);
+        //Update using ParseClient
+        // `Attempting update with data:`, updateData);
         const result = await ParseClient.updateExistingRecord("TrustedIssuer", ["issuer"], [normalizedIssuer], updateData);
 
-        console.log(`🎉 Update successful for issuer '${normalizedIssuer}':`, result);
+        // `Update successful for issuer '${normalizedIssuer}':`, result);
         return result; // Return success
       } catch (error) {
-        console.error(`❌ Error on attempt ${attempt}:`, error);
-
+        // `Error on attempt ${attempt}:`, error);
         const waitTime = Math.min(attempt * 2000, 10000); // Cap wait time at 10s
-        console.log(`⏳ Retrying in ${waitTime / 1000}s...`);
+        // `Retrying in ${waitTime / 1000}s...`);
         await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
     }
 
-    console.error(`❌ Update failed after 10 attempts for issuer '${normalizedIssuer}'.`);
+    // `Update failed after 10 attempts for issuer '${normalizedIssuer}'.`);
     return null; // Return null if all attempts fail
   }
 

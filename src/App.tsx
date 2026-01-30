@@ -196,7 +196,6 @@ function App() {
 
   // Abstracted function to initialize BlockchainService
   const initializeBlockchainService = (provider: ethers.providers.Provider) => {
-    console.log("Initializing BlockchainService...");
     const _blockchainService = new BlockchainService(
       provider,
       process.env.REACT_APP_HARDHAT_CONTRACT_ADDRESS || "",
@@ -310,12 +309,9 @@ function App() {
       setIsConnected(true);
       //const provider = await setupProvider();
       if (!provider) {
-        console.error("❌ Failed to initialize provider.");
         toast.error("Could not initialize provider. Please try again.");
         return;
       }
-
-      console.log("✅ Provider initialized:", provider);
       initializeBlockchainService(provider);
 
       // Initialize Parse

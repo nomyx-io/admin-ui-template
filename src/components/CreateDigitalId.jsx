@@ -186,7 +186,6 @@ function CreateDigitalId({ service }) {
               } catch (error) {
                 console.log("No existing identity found, will create new one");
               }
-
               // Step 2: Create identity only if it doesn't exist
               if (!identity || identity === "0x0000000000000000000000000000000000000000") {
                 console.log("Creating new identity...");

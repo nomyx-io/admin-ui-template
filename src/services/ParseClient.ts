@@ -4,7 +4,7 @@ class ParseClient {
   private static instance: ParseClient;
 
   constuctor() {
-    console.log("ParseClient constructor");
+    // "ParseClient constructor";
   }
 
   // Singleton getInstance method
@@ -83,7 +83,7 @@ class ParseClient {
       idFields.forEach((idField: any, i: number) => query.equalTo(idField, idValueFields[i]));
       return await query.first({ useMasterKey: true });
     } catch (e) {
-      console.log(
+      console.error(
         `getRecordWithBlockchain: Error getting record with collection ${collection} and networkId ${networkId} and idFields ${idFields} and idValueFields ${idValueFields}`
       );
     }
@@ -96,7 +96,7 @@ class ParseClient {
       collectionIdFields.forEach((cif: any, i: number) => query.equalTo(cif, collectionIds[i]));
       return query.count({ useMasterKey: true });
     } catch (e) {
-      console.log(
+      console.error(
         `countRecords: Error counting records with collectionName ${collectionName} and collectionIdFields ${collectionIdFields} and collectionIds ${collectionIds}`
       );
     }
@@ -154,7 +154,7 @@ class ParseClient {
       const records = await query.find();
       return records;
     } catch (e) {
-      console.log(`getRecords: Error getting records with className ${className} and whereFields ${whereFields} and whereValues ${whereValues}`);
+      console.error(`getRecords: Error getting records with className ${className} and whereFields ${whereFields} and whereValues ${whereValues}`);
     }
   }
 
@@ -179,7 +179,7 @@ class ParseClient {
       const record = await query.first();
       return record;
     } catch (e) {
-      console.log(`getFirstRecord: Error getting record with className ${className} and whereFields ${whereFields} and whereValues ${whereValues}`);
+      console.error(`getFirstRecord: Error getting record with className ${className} and whereFields ${whereFields} and whereValues ${whereValues}`);
     }
   }
 
@@ -196,7 +196,9 @@ class ParseClient {
       const record = await query.first();
       return record;
     } catch (e) {
-      console.log(`getLatestRecord: Error getting record with className ${className} and whereFields ${whereFields} and whereValues ${whereValues}`);
+      console.error(
+        `getLatestRecord: Error getting record with className ${className} and whereFields ${whereFields} and whereValues ${whereValues}`
+      );
     }
   }
 
@@ -225,7 +227,7 @@ class ParseClient {
         return record.save();
       }
     } catch (e) {
-      console.log("cannot create record", (e as any).message);
+      console.error("cannot create record", (e as any).message);
     }
 
     if (!record) {
@@ -257,7 +259,7 @@ class ParseClient {
         }
       });
     } catch (e) {
-      console.log(
+      console.error(
         `updateExistingRecord: Error updating existing record with collectionName ${collectionName} and collectionIdFields ${collectionIdFields} and collectionIds ${collectionIds} and data ${data}`
       );
     }
@@ -294,7 +296,7 @@ class ParseClient {
         return newRecord.save(data);
       }
     } catch (e: any) {
-      console.log(
+      console.error(
         `createRecord: Error creating record with collectionName ${collectionName} and collectionIdFields ${collectionIdFields} and collectionIdsValues ${collectionIdsValues}  ${e.message}`
       );
     }
@@ -323,7 +325,7 @@ class ParseClient {
         return newRecord.save(data);
       }
     } catch (e: any) {
-      console.log(
+      console.error(
         `createRecord: Error creating record with collectionName ${collectionName} and collectionIdFields ${collectionIdFields} and collectionIdsValues ${collectionIdsValues}  ${e.message}`
       );
     }
@@ -345,7 +347,7 @@ class ParseClient {
         return await record.destroy({ useMasterKey: true });
       }
     } catch (e) {
-      console.log(`deleteRecord: Error deleting record with collectionName ${collectionName} and collectionId ${collectionId}: ${e}`);
+      console.error(`deleteRecord: Error deleting record with collectionName ${collectionName} and collectionId ${collectionId}: ${e}`);
     }
   }
 
@@ -368,7 +370,7 @@ class ParseClient {
         //saveAll: Saved record ${allRecords[i].attributes}
       }
     } catch (e) {
-      console.log(`saveAll: Error saving records ${records}`);
+      console.error(`saveAll: Error saving records ${records}`);
     }
   }
 
@@ -392,7 +394,7 @@ class ParseClient {
         //saveAllFor: Saved record ${allRecords[i]}
       }
     } catch (e) {
-      console.log(`saveAllFoe: Error saving records ${records}`);
+      console.error(`saveAllFoe: Error saving records ${records}`);
     }
   }
 
@@ -407,7 +409,7 @@ class ParseClient {
       query.equalTo("className", className);
       return await query.first();
     } catch (e) {
-      console.log(`getSchema: Error getting schema for ${className}`);
+      console.error(`getSchema: Error getting schema for ${className}`);
     }
   }
 
@@ -420,7 +422,7 @@ class ParseClient {
     try {
       return await schema.save();
     } catch (e) {
-      console.log(`saveSchema: Error saving schema ${schema}`);
+      console.error(`saveSchema: Error saving schema ${schema}`);
     }
   }
 
@@ -486,7 +488,7 @@ class ParseClient {
       // delete the object
       await collection.destroy();
     } catch (e) {
-      console.log((e as any).message);
+      console.error((e as any).message);
     }
   }
 
@@ -518,7 +520,7 @@ class ParseClient {
       const records = await query.find();
       return await Parse.Object.destroyAll(records);
     } catch (e) {
-      console.log(`deleteCollection: Error deleting collection ${collectionName}`);
+      console.error(`deleteCollection: Error deleting collection ${collectionName}`);
     }
   }
 
@@ -532,7 +534,7 @@ class ParseClient {
       const schema = await this.getSchema(className);
       return schema ? await schema.destroy() : undefined;
     } catch (e) {
-      console.log(`deleteSchema: Error deleting schema for ${className}`);
+      console.error(`deleteSchema: Error deleting schema for ${className}`);
     }
   }
 
@@ -632,7 +634,7 @@ class ParseClient {
   public async logout(): Promise<void> {
     try {
       await Parse.User.logOut();
-      console.log("User logged out successfully.");
+      // User logged out successfully;
     } catch (error: any) {
       console.error("Error logging out user:", error.message);
     }
@@ -646,7 +648,7 @@ class ParseClient {
     try {
       // Use Parse.Cloud.run to call registerInit
       const challenge = await Parse.Cloud.run("registerInit", { username });
-      console.log("Received registration challenge:", challenge);
+      // Received registration challenge:", challenge;
 
       return { challenge, error: null };
     } catch (error: any) {
