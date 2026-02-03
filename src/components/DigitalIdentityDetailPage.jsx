@@ -191,10 +191,12 @@ function DigitalIdentityDetailView({ service }) {
                   className={`rounded-full border px-4 py-1 text-xs font-bold ${
                     personaData?.name?.split(".")[1]?.toUpperCase() === "APPROVED" || personaData?.name?.split(".")[1]?.toUpperCase() === "COMPLETED"
                       ? "border-green-500 text-green-500"
-                      : "border-red-500 text-red-500"
+                      : personaData?.name?.split(".")[1]?.toUpperCase() === "MARKED-FOR-REVIEW"
+                        ? "border-yellow-500 text-yellow-500"
+                        : "border-red-500 text-red-500"
                   }`}
                 >
-                  {personaData?.name?.split(".")[1]?.toUpperCase() || ""}
+                  {personaData?.name?.split(".")[1]?.toUpperCase()?.replace(/-/g, " ") || ""}
                 </span>
               </div>
               {identity?.watchlistMatched && (
