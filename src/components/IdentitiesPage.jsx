@@ -4,12 +4,12 @@ import { Tabs } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
+import InvestmentRequestModal from "./InvestmentRequestModal";
 import ObjectList from "./ObjectList";
 import { RoleContext } from "../context/RoleContext"; // Import RoleContext
 import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
 import { WalletPreference } from "../utils/Constants";
-
 const { TabPane } = Tabs;
 
 const IdentitiesPage = ({ service }) => {
@@ -20,6 +20,10 @@ const IdentitiesPage = ({ service }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [claimTopicsLookup, setClaimTopicsLookup] = useState({});
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
+  const [investmentModalVisible, setInvestmentModalVisible] = useState(false);
+  const [selectedIdentityForInvestment, setSelectedIdentityForInvestment] = useState(null);
+  const [tokenProjects, setTokenProjects] = useState([]);
+
   const location = useLocation();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -53,6 +57,23 @@ const IdentitiesPage = ({ service }) => {
 
     return templateMap[inquiryTemplateId] || null;
   }
+
+  const fetchTokenProjects = useCallback(async () => {
+    try {
+      if (service && service.getTokenProjects) {
+        const projects = await service.getTokenProjects();
+        setTokenProjects(projects || []);
+      }
+    } catch (error) {
+      console.error("Error fetching token projects:", error);
+      toast.error("Failed to fetch token projects");
+    }
+  }, [service]);
+
+  // Fetch token projects on component mount
+  useEffect(() => {
+    fetchTokenProjects();
+  }, [fetchTokenProjects]);
 
   const fetchData = useCallback(
     async (tab) => {
@@ -433,6 +454,7 @@ const IdentitiesPage = ({ service }) => {
   const actions = [
     { label: "Edit Rules", name: NomyxAction.EditClaims },
     { label: "View", name: NomyxAction.ViewIdentity },
+    { label: "Request for Investment", name: NomyxAction.RequestInvestment },
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
@@ -481,6 +503,10 @@ const IdentitiesPage = ({ service }) => {
           break;
         case NomyxAction.RemoveIdentity:
           handleRemoveIdentity(event, action, record);
+          break;
+        case NomyxAction.RequestInvestment: // Handle new action
+          setSelectedIdentityForInvestment(record);
+          setInvestmentModalVisible(true);
           break;
         case NomyxAction.CreatePendingIdentity:
           const { displayName, kyc_id, identityAddress } = record;
@@ -546,6 +572,17 @@ const IdentitiesPage = ({ service }) => {
           />
         </TabPane>
       </Tabs>
+
+      {/* Investment Request Modal */}
+      <InvestmentRequestModal
+        visible={investmentModalVisible}
+        onClose={() => {
+          setInvestmentModalVisible(false);
+          setSelectedIdentityForInvestment(null);
+        }}
+        selectedIdentity={selectedIdentityForInvestment}
+        tokenProjects={tokenProjects}
+      />
     </>
   );
 };
