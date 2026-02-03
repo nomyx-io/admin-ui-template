@@ -1,11 +1,22 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
-import { EditOutlined, EyeOutlined, DeleteOutlined, CheckOutlined, MailOutlined, CloseOutlined, PlusOutlined, LinkOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  EyeOutlined,
+  DeleteOutlined,
+  CheckOutlined,
+  MailOutlined,
+  CloseOutlined,
+  PlusOutlined,
+  LinkOutlined,
+  DollarOutlined,
+} from "@ant-design/icons";
 import { Tabs, Modal, Form, Input } from "antd";
 import Parse from "parse";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
+import InvestmentRequestModal from "./InvestmentRequestModal";
 import ObjectList from "./ObjectList";
 import PendingIdentitiesObjectList from "./PendingIdentitiesObjectList";
 import { RoleContext } from "../context/RoleContext";
@@ -39,6 +50,10 @@ const IdentitiesPage = ({ service }) => {
   const [associateForm] = Form.useForm();
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
+  const [investmentModalVisible, setInvestmentModalVisible] = useState(false);
+  const [selectedIdentityForInvestment, setSelectedIdentityForInvestment] = useState(null);
+  const [tokenProjects, setTokenProjects] = useState([]);
+
   // Helper function to extract error message
   const getErrorMessage = (error) => {
     if (typeof error === "string") return error;
@@ -47,6 +62,24 @@ const IdentitiesPage = ({ service }) => {
     if (error?.toString) return error.toString();
     return "An unknown error occurred";
   };
+
+  // Fetch token projects
+  const fetchTokenProjects = useCallback(async () => {
+    try {
+      if (service && service.getTokenProjects) {
+        const projects = await service.getTokenProjects();
+        setTokenProjects(projects || []);
+      }
+    } catch (error) {
+      console.error("Error fetching token projects:", error);
+      toast.error("Failed to fetch token projects");
+    }
+  }, [service]);
+
+  // Fetch token projects on component mount
+  useEffect(() => {
+    fetchTokenProjects();
+  }, [fetchTokenProjects]);
 
   const fetchData = useCallback(
     async (tab, page = 1, search = "", filter = "all") => {
@@ -519,6 +552,7 @@ const IdentitiesPage = ({ service }) => {
   const actions = [
     { label: "Edit Rules", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
     { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
+    { label: "Request for Investment", name: NomyxAction.RequestInvestment, icon: <DollarOutlined /> },
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
@@ -572,6 +606,10 @@ const IdentitiesPage = ({ service }) => {
           break;
         case NomyxAction.RemoveIdentity:
           handleRemoveIdentity(event, action, record);
+          break;
+        case NomyxAction.RequestInvestment: // Handle new action
+          setSelectedIdentityForInvestment(record);
+          setInvestmentModalVisible(true);
           break;
         case NomyxAction.CreatePendingIdentity:
           const { displayName, kyc_id, identityAddress } = record;
@@ -711,6 +749,16 @@ const IdentitiesPage = ({ service }) => {
           </Form.Item>
         </Form>
       </Modal>
+      {/* Investment Request Modal */}
+      <InvestmentRequestModal
+        visible={investmentModalVisible}
+        onClose={() => {
+          setInvestmentModalVisible(false);
+          setSelectedIdentityForInvestment(null);
+        }}
+        selectedIdentity={selectedIdentityForInvestment}
+        tokenProjects={tokenProjects}
+      />
     </>
   );
 };
