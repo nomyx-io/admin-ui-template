@@ -29,6 +29,7 @@ enum NomyxAction {
   EditClaims,
   AddClaims,
   SendVerificationEmail,
+  RequestInvestment,
 }
 
 enum WalletPreference {
