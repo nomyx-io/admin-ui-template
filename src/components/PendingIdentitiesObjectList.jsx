@@ -157,6 +157,7 @@ const PendingIdentitiesObjectList = ({
               <Option value="all">All Pending Users</Option>
               <Option value="kyc_wallet">KYC + Wallet Completed</Option>
               <Option value="kyc_only">KYC Only (Wallet Incomplete)</Option>
+              <Option value="marked_for_review">Marked for Review</Option>
               <Option value="email_only">Email Verified Only</Option>
             </Select>
 
