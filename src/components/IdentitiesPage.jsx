@@ -612,8 +612,8 @@ const IdentitiesPage = ({ service }) => {
           setInvestmentModalVisible(true);
           break;
         case NomyxAction.CreatePendingIdentity:
-          const { displayName, kyc_id, identityAddress } = record;
-          navigate(`/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}`);
+          const { displayName, kyc_id, identityAddress, id } = record;
+          navigate(`/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}&userId=${id}`);
           break;
         case NomyxAction.AssociateInquiry:
           handleAssociateInquiry(record);
