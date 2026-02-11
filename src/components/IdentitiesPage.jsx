@@ -550,7 +550,7 @@ const IdentitiesPage = ({ service }) => {
   ];
 
   const actions = [
-    { label: "Edit Rules", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
+    { label: "Edit", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
     { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
     { label: "Request for Investment", name: NomyxAction.RequestInvestment, icon: <DollarOutlined /> },
     {
