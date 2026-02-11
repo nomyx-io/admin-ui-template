@@ -244,7 +244,7 @@ const IdentitiesPage = ({ service }) => {
       },
     }));
 
-    fetchData(activeTab, newPage, searchTerm);
+    fetchData(activeTab, newPage, searchTerm, pendingFilter);
   };
 
   const handleSearch = (newSearchTerm) => {
