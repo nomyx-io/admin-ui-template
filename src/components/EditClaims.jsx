@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 
-import { Breadcrumb, Button, Input, Transfer } from "antd";
-import { Link, useParams } from "react-router-dom";
+import { Button, Input, Transfer } from "antd";
+import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -247,23 +247,6 @@ const EditClaims = ({ service }) => {
 
   return (
     <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link to={"/"}>Home</Link>,
-          },
-          {
-            title: <Link to={"/identities"}>Identities</Link>,
-          },
-          {
-            title: <Link to={`/identities/${identityId}`}>{identityId}</Link>,
-          },
-          {
-            title: "Edit",
-          },
-        ]}
-      />
       <div className="text-2xl py-2">Edit Rules for Selected ID</div>
       <div className="flex flex-col items-center">
         <div className="w-full">

@@ -505,7 +505,7 @@ const IdentitiesPage = ({ service }) => {
     },
   ];
 
-  const globalActions = [{ label: "Create identity", name: NomyxAction.CreateIdentity }];
+  const globalActions = [{ label: "Create Identity", name: NomyxAction.CreateIdentity }];
 
   const search = true;
 
@@ -636,7 +636,7 @@ const IdentitiesPage = ({ service }) => {
             onSearch={handleSearch}
           />
         </TabPane>
-        <TabPane tab="Pending" key="Pending">
+        <TabPane tab={<span data-tour="identities-pending-tab">Pending</span>} key="Pending">
           <ObjectList
             title="Pending"
             description="Identities that have yet to be approved or denied"
@@ -658,7 +658,7 @@ const IdentitiesPage = ({ service }) => {
             onSearch={handleSearch}
           />
         </TabPane>
-        <TabPane tab="Add Rules" key="Claims">
+        <TabPane tab={<span data-tour="identities-add-rules-tab">Add Rules</span>} key="Claims">
           <ObjectList
             title="Add Rules"
             description="Identies that have yet to be related to Compliance Rules"

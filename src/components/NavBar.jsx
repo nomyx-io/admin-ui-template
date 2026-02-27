@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAccount, useDisconnect } from "wagmi";
 
 import NomyxLogo from "../assets/nomyx_logo_black.svg";
@@ -9,14 +9,30 @@ import { RoleContext } from "../context/RoleContext";
 import { WalletPreference } from "../utils/Constants";
 import "@rainbow-me/rainbowkit/styles.css";
 
+const NavItem = ({ to, label, dataTour }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  return (
+    <li>
+      <Link
+        to={to}
+        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+          isActive ? "bg-gray-100 text-[var(--color-accent)]" : "text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-gray-50"
+        }`}
+        data-tour={dataTour}
+      >
+        {label}
+      </Link>
+    </li>
+  );
+};
+
 const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
   const { walletPreference } = useContext(RoleContext);
   const { disconnect } = useDisconnect();
 
-  // Handle logout based on wallet preference
   const handleLogout = () => {
     if (walletPreference === WalletPreference.MANAGED) {
-      // Logout for wallet-based login
       onLogout();
     }
   };
@@ -36,43 +52,18 @@ const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
             <li style={{ padding: "20px 20px", minWidth: "100px" }}>
               <img src={NomyxLogo} alt="Nomyx Logo" className="h-8 w-auto" />
             </li>
+            <NavItem to="/" label="Home" />
             <li>
-              <Link to="/" className="hover:underline">
-                Home
-              </Link>
+              <a href={process.env.REACT_APP_MINTIFY_UI_URL} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center">
+                Mint
+                <span className="text-[#7F56D9]">↗</span>
+              </a>
             </li>
-            <li>
-              <span>
-                <a
-                  href={process.env.REACT_APP_MINTIFY_UI_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline flex items-center"
-                >
-                  Mint
-                  <span className="text-[#7F56D9]">↗</span>
-                </a>
-              </span>
-            </li>
-            <li>
-              <Link to="/topics" className="hover:underline">
-                Compliance Rules
-              </Link>
-            </li>
-            <li>
-              <Link to="/issuers" className="hover:underline">
-                Trusted Issuers
-              </Link>
-            </li>
+            <NavItem to="/topics" label="Compliance Rules" dataTour="nav-compliance-rules" />
+            <NavItem to="/issuers" label="Trusted Issuers" dataTour="nav-trusted-issuers" />
           </>
         )}
-        {role.includes("TrustedIssuer") && (
-          <li>
-            <Link to="/identities" className="hover:underline">
-              Identities
-            </Link>
-          </li>
-        )}
+        {role.includes("TrustedIssuer") && <NavItem to="/identities" label="Identities" dataTour="nav-identities" />}
 
         {walletPreference === WalletPreference.PRIVATE && (
           <li style={{ marginLeft: "auto" }}>

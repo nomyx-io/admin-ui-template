@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Button, Input } from "antd";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
@@ -874,20 +874,6 @@ function CreateDigitalId({ service }) {
 
   return (
     <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link to={"/"}>Home</Link>,
-          },
-          {
-            title: <Link to={"/identities"}>Identities</Link>,
-          },
-          {
-            title: "Add",
-          },
-        ]}
-      />
       <p className="text-xl p-6">Create Digital Id</p>
       <hr></hr>
       <div className="p-6 mt-2">
@@ -903,6 +889,7 @@ function CreateDigitalId({ service }) {
               maxLength={32}
               onChange={(e) => setDisplayName(e.target.value)}
               disabled={isProcessing}
+              data-tour="identity-display-name"
             />
             <p className="absolute right-5 top-3">{displayName.length}/32</p>
           </div>
@@ -920,6 +907,7 @@ function CreateDigitalId({ service }) {
                 type="text"
                 onChange={(e) => setWalletAddress(e.target.value.trim())}
                 disabled={isProcessing}
+                data-tour="identity-wallet-address"
               />
             </div>
           </div>
@@ -934,6 +922,7 @@ function CreateDigitalId({ service }) {
                 type="text"
                 onChange={(e) => setAccountNumber(e.target.value)}
                 disabled={isProcessing}
+                data-tour="identity-kyc-account-number"
               />
             </div>
           </div>
@@ -943,6 +932,7 @@ function CreateDigitalId({ service }) {
             onClick={handleCreateDigitalId}
             className="nomyx-id-button max-[600px]:w-[60%] min-w-max text-center font-semibold h-11"
             disabled={isProcessing}
+            data-tour="create-identity-submit"
           >
             {isProcessing ? "Processing..." : "Create Digital Id"}
           </Button>

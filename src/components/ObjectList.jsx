@@ -6,6 +6,7 @@ import ReactPaginate from "react-paginate";
 
 import { WarningIcon } from "../assets/icons";
 import { getValue, recursiveSearch } from "../utils";
+import { NomyxAction } from "../utils/Constants";
 
 export const ConfirmationDialog = ({ message, onConfirm, onCancel }) => {
   const handleConfirm = (event) => {
@@ -185,6 +186,19 @@ const ObjectList = ({
                   <button
                     key={globalAction.name}
                     className={"btn global-action-" + globalAction.name}
+                    data-tour={
+                      globalAction.name === NomyxAction.CreateClaimTopic
+                        ? "create-compliance-rule-btn"
+                        : globalAction.name === NomyxAction.CreateTrustedIssuer
+                          ? "create-trusted-issuer-btn"
+                          : globalAction.name === NomyxAction.CreatePendingIdentity
+                            ? "identities-approve-btn"
+                            : globalAction.name === NomyxAction.AddClaims
+                              ? "identities-add-rules-btn"
+                              : globalAction.name === NomyxAction.CreateIdentity
+                                ? "create-identity-btn"
+                                : undefined
+                    }
                     onClick={(event) => handleAction(event, globalAction.name, globalAction.confirmation)}
                   >
                     {globalAction.label}

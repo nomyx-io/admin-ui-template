@@ -1,9 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 
-import { Breadcrumb } from "antd";
 import { Tabs } from "antd";
 import moment from "moment";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import ObjectList from "./ObjectList";
 
@@ -119,20 +118,6 @@ function ViewClaimTopic({ service }) {
   ];
   return (
     <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link to={"/"}>Home</Link>,
-          },
-          {
-            title: <Link to={"/topics"}>Compliance Rule</Link>,
-          },
-          {
-            title: topicId,
-          },
-        ]}
-      />
       <br />
       <br />
       <Tabs

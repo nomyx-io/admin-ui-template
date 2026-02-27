@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 
-import { Breadcrumb, Button, Input, Select } from "antd";
+import { Button, Input, Select } from "antd";
 import { Transfer } from "antd";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
@@ -396,24 +396,10 @@ function CreateTrustedIssuer({ service }) {
 
   return (
     <div>
-      <Breadcrumb
-        className="bg-transparent"
-        items={[
-          {
-            title: <Link to={"/"}>Home</Link>,
-          },
-          {
-            title: <Link to={"/issuers"}>Trusted Issuer</Link>,
-          },
-          {
-            title: isCreateMode ? "Add" : "Update",
-          },
-        ]}
-      />
       <p className="text-xl p-6">{isCreateMode ? "Create" : "Update"} Trusted Issuer</p>
       <hr></hr>
       <div className="p-6 mt-2">
-        <div>
+        <div data-tour="trusted-issuer-display-name">
           <label htmlFor="trustedIssuerName">Trusted Issuer display name *</label>
           {isCreateMode ? (
             <div className="mt-3 mb-3">
@@ -445,7 +431,7 @@ function CreateTrustedIssuer({ service }) {
             </div>
           )}
         </div>
-        <div className="mt-10 mb-6">
+        <div data-tour="trusted-issuer-wallet" className="mt-10 mb-6">
           <label htmlFor="trustedIssuerWallet">Trusted Issuer Wallet *</label>
           <div className="mt-3 relative w-full flex border rounded-lg">
             <Input
@@ -462,25 +448,27 @@ function CreateTrustedIssuer({ service }) {
               disabled={!isCreateMode || verifierName !== ""}
             />
           </div>
-          <p className="my-4">Manage Compliance Rule IDs</p>
         </div>
-        <div className="my-5">
-          <Transfer
-            className="w-full"
-            showSelectAll={false}
-            dataSource={claimTopics}
-            titles={["Available Claims", "Selected Claims"]}
-            targetKeys={targetKeys}
-            selectedKeys={selectedKeys}
-            onChange={onChange}
-            onSelectChange={onSelectChange}
-            render={(item) => (
-              <div>
-                {item?.displayName}({item.topic})
-              </div>
-            )}
-            listStyle={{ width: "50%", minWidth: "120px" }}
-          />
+        <div data-tour="trusted-issuer-compliance-rules">
+          <p className="my-4">Manage Compliance Rule IDs</p>
+          <div className="my-5">
+            <Transfer
+              className="w-full"
+              showSelectAll={false}
+              dataSource={claimTopics}
+              titles={["Available Claims", "Selected Claims"]}
+              targetKeys={targetKeys}
+              selectedKeys={selectedKeys}
+              onChange={onChange}
+              onSelectChange={onSelectChange}
+              render={(item) => (
+                <div>
+                  {item?.displayName}({item.topic})
+                </div>
+              )}
+              listStyle={{ width: "50%", minWidth: "120px" }}
+            />
+          </div>
         </div>
         <div className="flex justify-end max-[600px]:justify-center">
           {isCreateMode ? (
@@ -488,6 +476,7 @@ function CreateTrustedIssuer({ service }) {
               className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
               onClick={saveTrustedIssuer}
               disabled={!dataLoaded}
+              data-tour="create-trusted-issuer-submit"
             >
               Create Trusted Issuer
             </Button>
@@ -496,6 +485,7 @@ function CreateTrustedIssuer({ service }) {
               className="max-[600px]:w-[60%] min-w-max text-center font-semibold rounded h-11 bg-[#7F56D9] text-white"
               onClick={updateTrustedIssuer}
               disabled={!dataLoaded}
+              data-tour="create-trusted-issuer-submit"
             >
               Update Trusted Issuer
             </Button>

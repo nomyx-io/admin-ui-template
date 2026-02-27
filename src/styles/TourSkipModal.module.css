@@ -1,0 +1,195 @@
+/* components/TourSkipModal.module.css */
+
+/* ── CSS custom properties — light mode defaults ─────────────────────────── */
+.overlay {
+  --tsm-bg:               #ffffff;
+  --tsm-border:           #e2e8f0;
+  --tsm-shadow:           0 4px 24px rgba(0, 0, 0, 0.12);
+  --tsm-arrow-bg:         #ffffff;
+  --tsm-arrow-border:     #e2e8f0;
+  --tsm-title:            #1e293b;
+  --tsm-body:             #808080;
+  --tsm-body-strong:      #1e293b;
+  --tsm-close:            #94a3b8;
+  --tsm-close-hover:      #1e293b;
+  --tsm-primary:          #0fd795;
+  --tsm-primary-text:     #0a1628;
+  --tsm-primary-hover:    #0bc484;
+  --tsm-secondary:        #f1f5f9;
+  --tsm-secondary-text:   #475569;
+  --tsm-secondary-border: #cbd5e1;
+  --tsm-secondary-hover:  #cbd5e1;
+  --tsm-ghost-text:       #94a3b8;
+  --tsm-ghost-hover:      #475569;
+
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  .overlay {
+    --tsm-bg:               #0a0a0a;
+    --tsm-border:           #1e1e1e;
+    --tsm-shadow:           0 4px 24px rgba(0, 0, 0, 0.75);
+    --tsm-arrow-bg:         #0a0a0a;
+    --tsm-arrow-border:     #1e1e1e;
+    --tsm-title:            #d1d5db;
+    --tsm-body:             #6b7280;
+    --tsm-body-strong:      #9ca3af;
+    --tsm-close:            #4b5563;
+    --tsm-close-hover:      #d1d5db;
+    --tsm-secondary:        #1a1a1a;
+    --tsm-secondary-text:   #6b7280;
+    --tsm-secondary-border: #2d2d2d;
+    --tsm-secondary-hover:  #2d2d2d;
+    --tsm-ghost-text:       #4b5563;
+    --tsm-ghost-hover:      #6b7280;
+  }
+}
+
+/* ── Tooltip card ────────────────────────────────────────────────────────── */
+.tooltip {
+  position: relative;
+  background: var(--tsm-bg);
+  border: 1px solid var(--tsm-border);
+  border-radius: 8px;
+  padding: 20px 20px 16px;
+  max-width: 380px;
+  width: calc(100% - 40px);
+  color: var(--tsm-title);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  box-shadow: var(--tsm-shadow);
+  box-sizing: border-box;
+}
+
+/* ── Arrow notch ─────────────────────────────────────────────────────────── */
+.arrow {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 9px;
+  overflow: visible;
+}
+
+.arrowBorder {
+  fill: var(--tsm-arrow-border);
+}
+
+.arrowFill {
+  fill: var(--tsm-arrow-bg);
+}
+
+/* ── Close button ────────────────────────────────────────────────────────── */
+.closeBtn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--tsm-close);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.closeBtnHover,
+.closeBtn:hover {
+  color: var(--tsm-close-hover);
+}
+
+/* ── Text ────────────────────────────────────────────────────────────────── */
+.title {
+  margin: 0 24px 8px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--tsm-title);
+  line-height: 1.4;
+}
+
+.body {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--tsm-body);
+  line-height: 1.65;
+}
+
+.bodyStrong {
+  color: var(--tsm-body-strong);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Ghost button ("Keep tour") ──────────────────────────────────────────── */
+.ghostBtn {
+  background: transparent;
+  border: none;
+  color: var(--tsm-ghost-text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  margin-right: auto;
+  text-decoration: none;
+}
+
+.ghostBtnHover,
+.ghostBtn:hover {
+  color: var(--tsm-ghost-hover);
+}
+
+/* ── Secondary button ("Skip for now") ──────────────────────────────────── */
+.secBtn {
+  background: var(--tsm-secondary);
+  border: 1px solid var(--tsm-secondary-border);
+  color: var(--tsm-secondary-text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.secBtnHover,
+.secBtn:hover {
+  background: var(--tsm-secondary-hover);
+}
+
+/* ── Primary button ("Disable tour") ────────────────────────────────────── */
+.primBtn {
+  background: var(--tsm-primary);
+  border: none;
+  color: var(--tsm-primary-text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.primBtnHover,
+.primBtn:hover {
+  background: var(--tsm-primary-hover);
+}

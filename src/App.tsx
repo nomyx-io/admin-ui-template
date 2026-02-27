@@ -29,6 +29,7 @@ import MintPage from "./components/MintPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
+import Tutorial from "./components/Tutorial/Tutorial";
 import ViewClaimTopic from "./components/ViewClaimTopic";
 import { RoleContext } from "./context/RoleContext";
 import BlockchainService from "./services/BlockchainService.js";
@@ -467,6 +468,7 @@ function App() {
             </div>
           )}
           <Router>
+            <Tutorial role={role} />
             <AutoLogout />
             {/* Navigation Bar (Only visible when logged in) */}
             {role.length > 0 && (
