@@ -2,6 +2,7 @@ import "./ObjectList.css";
 
 import { useState, useEffect } from "react";
 
+import { Tooltip } from "antd";
 import ReactPaginate from "react-paginate";
 
 import { WarningIcon } from "../assets/icons";
@@ -253,22 +254,38 @@ const ObjectList = ({
                 })}
                 {actions && actions.length > 0 && (
                   <td key={"actions" + record.id}>
-                    {actions.map((action) => {
-                      return (
-                        <button
-                          key={record.id + "-action-" + action.name}
-                          onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
-                          style={{
-                            marginRight: "1rem",
-                            color: "var(--link-color)",
-                            transition: "0.5s all",
-                            lineHeight: "0.2",
-                          }}
-                        >
-                          {action.label}
-                        </button>
-                      );
-                    })}
+                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                      {actions.map((action) => {
+                        const btn = (
+                          <button
+                            key={record.id + "-action-" + action.name}
+                            onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "0.25rem",
+                              fontSize: "16px",
+                              color: "var(--link-color)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              transition: "opacity 0.2s",
+                            }}
+                            aria-label={action.label}
+                          >
+                            {action.icon ?? action.label}
+                          </button>
+                        );
+
+                        return action.icon ? (
+                          <Tooltip key={record.id + "-tooltip-" + action.name} title={action.label} placement="top">
+                            {btn}
+                          </Tooltip>
+                        ) : (
+                          btn
+                        );
+                      })}
+                    </div>
                   </td>
                 )}
               </tr>

@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
+import { EditOutlined, EyeOutlined, DeleteOutlined, CheckCircleOutlined, MailOutlined, PlusOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import { Tabs } from "antd";
+import { Tooltip } from "antd";
 import Parse from "parse";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
+import EditableReferrerId from "./EditableReferrerId.jsx";
 import ObjectList from "./ObjectList";
 import PendingIdentitiesObjectList from "./PendingIdentitiesObjectList";
 import { RoleContext } from "../context/RoleContext";
@@ -99,6 +103,9 @@ const IdentitiesPage = ({ service }) => {
                 id: identity.id || "",
                 pepMatched: identity.pepMatched || false,
                 watchlistMatched: identity.watchlistMatched || false,
+                referralId: identity.referralId || "",
+                referrerId: identity.referrerId || "",
+                referrer: identity.referrer || null,
               };
 
               // Re-sort claims numerically on the client side
@@ -431,6 +438,23 @@ const IdentitiesPage = ({ service }) => {
     );
   };
 
+  const handleUpdateReferrerId = async (record, newReferrerId) => {
+    const result = await Parse.Cloud.run("updateReferrerId", {
+      userId: record.referralId, // The identity being updated
+      newReferrerId: newReferrerId, // The referrerId value to set
+    });
+
+    if (!result?.success) {
+      throw new Error(result?.message || "Update failed");
+    }
+
+    toast.success(`Referrer ID updated successfully for ${record.displayName}`);
+
+    const updater = (prev) => prev.map((item) => (item.id === record.id ? { ...item, referrerId: newReferrerId } : item));
+    setIdentities(updater);
+    setClaimsIdentities(updater);
+  };
+
   const columns = [
     { label: "Identity", name: "displayName" },
     { label: "Email", name: "email" },
@@ -438,6 +462,30 @@ const IdentitiesPage = ({ service }) => {
     { label: "KYC ID Account #", name: "kyc_id" },
     { label: "Flagged?", name: "flagged_account" },
     { label: "Claims", name: "claims" },
+    {
+      name: "referralId",
+      label: (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+          Referral ID
+          <Tooltip title="A unique identifier assigned to this user that can be shared with others for referral purposes.">
+            <InfoCircleOutlined style={{ fontSize: "13px", color: "#8c8c8c", cursor: "pointer" }} />
+          </Tooltip>
+        </span>
+      ),
+      render: (record) => <span style={{ fontFamily: "monospace", fontSize: "12px" }}>{record.referralId || "—"}</span>,
+    },
+    {
+      name: "referrerId",
+      label: (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+          Referrer ID
+          <Tooltip title="The unique identifier of the user who referred this user to the platform.">
+            <InfoCircleOutlined style={{ fontSize: "13px", color: "#8c8c8c", cursor: "pointer" }} />
+          </Tooltip>
+        </span>
+      ),
+      render: (record) => <EditableReferrerId record={record} onSave={handleUpdateReferrerId} />,
+    },
   ];
 
   const pendingColumns = [
@@ -459,32 +507,35 @@ const IdentitiesPage = ({ service }) => {
   ];
 
   const actions = [
-    { label: "Edit Rules", name: NomyxAction.EditClaims },
-    { label: "View", name: NomyxAction.ViewIdentity },
+    { label: "Edit Rules", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
+    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
+      icon: <DeleteOutlined style={{ color: "#ff4d4f" }} />,
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
 
   const pendingActions = [
-    { label: "Approve", name: NomyxAction.CreatePendingIdentity },
-    { label: "View", name: NomyxAction.ViewPendingIdentity },
-    { label: "Send Verification", name: NomyxAction.SendVerificationEmail },
+    { label: "Approve", name: NomyxAction.CreatePendingIdentity, icon: <CheckCircleOutlined style={{ color: "#52c41a" }} /> },
+    { label: "View", name: NomyxAction.ViewPendingIdentity, icon: <EyeOutlined /> },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: <MailOutlined /> },
     {
       label: "Deny",
       name: NomyxAction.RemoveUser,
+      icon: <CloseCircleOutlined style={{ color: "#ff4d4f" }} />,
       confirmation: "Are you sure you want to deny this pending Identity?",
     },
   ];
 
   const claimsActions = [
-    { label: "Add Rules", name: NomyxAction.AddClaims },
-    { label: "View", name: NomyxAction.ViewIdentity },
+    { label: "Add Rules", name: NomyxAction.AddClaims, icon: <PlusOutlined /> },
+    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
+      icon: <DeleteOutlined style={{ color: "#ff4d4f" }} />,
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
