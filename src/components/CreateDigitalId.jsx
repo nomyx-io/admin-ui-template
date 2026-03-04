@@ -1,11 +1,13 @@
 import { useState, useContext, useEffect } from "react";
 
-import { Breadcrumb, Button, Input } from "antd";
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import { Breadcrumb, Button, Input, Select, Modal, message } from "antd";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
+import UserService from "../services/UserService";
 import { isEthereumAddress } from "../utils";
 import { awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
@@ -22,21 +24,82 @@ function CreateDigitalId({ service }) {
   const [accountNumber, setAccountNumber] = useState(searchParams.get("accountNumber") || "");
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Secondary Wallets State
+  const [secondaryWallets, setSecondaryWallets] = useState([]);
+  const [loadingWallets, setLoadingWallets] = useState(false);
+  const [refreshingWallet, setRefreshingWallet] = useState(false);
+  const [isWalletModalVisible, setIsWalletModalVisible] = useState(false);
+  const [editingWallet, setEditingWallet] = useState(null);
+  const [walletForm, setWalletForm] = useState({
+    walletAddress: "",
+  });
+  const userEmail = searchParams.get("email") || null;
+
   // Check for incomplete operations on mount
   useEffect(() => {
     checkForIncompleteOperation();
   }, []);
+
+  useEffect(() => {
+    if (userEmail) {
+      fetchUserWallets();
+    }
+  }, [userEmail]);
+
+  const fetchUserWallets = async () => {
+    if (!userEmail) return;
+
+    setLoadingWallets(true);
+    try {
+      const wallets = await UserService.getUserWallets(userEmail);
+      setSecondaryWallets(wallets || []);
+    } catch (error) {
+      console.error("Error fetching wallets:", error);
+      // Don't show error message on initial load, wallets might not exist yet
+    } finally {
+      setLoadingWallets(false);
+    }
+  };
+
+  const handleRefreshWallet = async () => {
+    if (!userEmail) {
+      message.warning("User email not available. Please save the identity first.");
+      return;
+    }
+
+    setRefreshingWallet(true);
+    try {
+      const result = await UserService.fetchAndStoreSecondaryWallet(userEmail);
+
+      if (result.noDataFound) {
+        message.warning("Secondary wallet record does not exist. Please contact T7X support.");
+        // Show instruction to create manually
+        Modal.info({
+          title: "No Wallet Found",
+          content: (
+            <div>
+              <p>No secondary wallet was found in the system for this user.</p>
+              <p className="mt-2">You can manually create secondary wallet information using the "Add Wallet" button below.</p>
+            </div>
+          ),
+        });
+      } else if (result.success) {
+        message.success(result.message);
+        await fetchUserWallets();
+      }
+    } catch (error) {
+      console.error("Error refreshing wallet:", error);
+      message.error("Failed to refresh wallet. Please try again.");
+    } finally {
+      setRefreshingWallet(false);
+    }
+  };
 
   function validateDigitalID(displayName, walletAddress, accountNumber) {
     if (displayName.trim() === "") {
       toast.error("Identity display Name is required");
       return false;
     }
-
-    //if (!isAlphanumericAndSpace(displayName)) {
-    //    toast.error('Identity display Name must contain only alphanumeric characters');
-    //    return false;
-    //}
 
     if (walletAddress?.trim() === "") {
       toast.error("Investor Wallet Address is required");
@@ -53,13 +116,113 @@ function CreateDigitalId({ service }) {
       return false;
     }
 
-    //if (!isAlphanumericAndSpace(accountNumber)) {
-    //    toast.error('Investor KYC ID must contain only alphanumeric characters');
-    //    return false;
-    //}
-
     return true;
   }
+
+  // Secondary Wallet Management Functions
+  const handleAddWallet = () => {
+    setEditingWallet(null);
+    setWalletForm({
+      walletAddress: "",
+    });
+    setIsWalletModalVisible(true);
+  };
+
+  const handleEditWallet = (wallet) => {
+    setEditingWallet(wallet);
+    setWalletForm({
+      walletAddress: wallet.walletAddress,
+    });
+    setIsWalletModalVisible(true);
+  };
+
+  const handleDeleteWallet = async (wallet) => {
+    Modal.confirm({
+      title: "Unlink Wallet",
+      content: "Are you sure you want to unlink this wallet?",
+      okText: "Unlink",
+      okType: "danger",
+      onOk: async () => {
+        try {
+          if (!wallet.id) {
+            setSecondaryWallets(secondaryWallets.filter((w) => w.walletAddress !== wallet.walletAddress));
+            message.success("Wallet removed");
+            return;
+          }
+
+          setIsProcessing(true);
+          const identityAddress = await UserService.getIdentityByEmail(userEmail);
+
+          const { initiateResponse, error: initError } = await DfnsService.initiateUnlinkWallet(
+            identityAddress,
+            wallet.walletAddress,
+            user.walletId,
+            dfnsToken
+          );
+
+          if (initError) throw new Error(initError);
+
+          const { completeResponse, error: completeError } = await DfnsService.completeUnlinkWallet(
+            user.walletId,
+            dfnsToken,
+            initiateResponse.challenge,
+            initiateResponse.requestBody
+          );
+
+          if (completeError) throw new Error(completeError);
+
+          message.success("Wallet unlinked successfully");
+          await fetchUserWallets();
+        } catch (error) {
+          console.error("Error unlinking wallet:", error);
+          message.error("Failed to unlink wallet");
+        } finally {
+          setIsProcessing(false);
+        }
+      },
+    });
+  };
+
+  const handleSaveWallet = async () => {
+    if (!walletForm.walletAddress) {
+      message.error("Wallet Address is required");
+      return;
+    }
+
+    if (!isEthereumAddress(walletForm.walletAddress)) {
+      message.error("Invalid Ethereum Wallet Address");
+      return;
+    }
+
+    const isDuplicate = secondaryWallets.some((wallet) => {
+      if (editingWallet && wallet.walletAddress === editingWallet.walletAddress) {
+        return false;
+      }
+      return wallet.walletAddress.toLowerCase() === walletForm.walletAddress.toLowerCase();
+    });
+
+    if (isDuplicate) {
+      message.error("This wallet address already exists");
+      return;
+    }
+
+    try {
+      if (editingWallet) {
+        const updatedWallets = secondaryWallets.map((w) => (w === editingWallet ? { ...walletForm } : w));
+        setSecondaryWallets(updatedWallets);
+        message.success("Wallet updated locally");
+      } else {
+        setSecondaryWallets([...secondaryWallets, { ...walletForm }]);
+        message.success("Wallet added locally");
+      }
+
+      setIsWalletModalVisible(false);
+      setEditingWallet(null);
+    } catch (error) {
+      console.error("Error saving wallet:", error);
+      message.error("Failed to save wallet");
+    }
+  };
 
   // Helper: Classify errors for better handling
   function classifyError(error) {
@@ -92,7 +255,6 @@ function CreateDigitalId({ service }) {
       } catch (error) {
         const errorInfo = classifyError(error);
 
-        // Don't retry user cancellations or non-retryable errors
         if (!errorInfo.retryable || i === maxRetries - 1) {
           throw error;
         }
@@ -103,7 +265,6 @@ function CreateDigitalId({ service }) {
       }
     }
   }
-
   // Helper: Poll for blockchain verification until true
   async function waitForVerification(service, walletAddress, maxAttempts = 12, delayMs = 5000) {
     for (let i = 0; i < maxAttempts; i++) {
@@ -143,7 +304,6 @@ function CreateDigitalId({ service }) {
       if (!saved) return null;
 
       const state = JSON.parse(saved);
-      // Ignore states older than 1 hour
       if (Date.now() - state.timestamp > 3600000) {
         localStorage.removeItem(stateKey);
         return null;
@@ -177,13 +337,40 @@ function CreateDigitalId({ service }) {
       if (shouldResume) {
         setDisplayName(savedState.displayName || displayName);
         setAccountNumber(savedState.accountNumber || accountNumber);
-        // The user can click the button again to resume
         toast.info('Ready to resume identity creation. Click "Create Digital Id" to continue.');
       } else {
         clearOperationState(walletAddress);
       }
     }
   }
+
+  // Save secondary wallets to database after identity creation
+  const saveSecondaryWallets = async (email) => {
+    if (secondaryWallets.length === 0) return;
+
+    const toastId = toast.loading("Saving secondary wallets...");
+
+    try {
+      for (const wallet of secondaryWallets) {
+        await UserService.saveUserWallet(email, wallet);
+      }
+
+      toast.update(toastId, {
+        render: `${secondaryWallets.length} secondary wallet(s) saved successfully`,
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error("Error saving secondary wallets:", error);
+      toast.update(toastId, {
+        render: "Warning: Some secondary wallets may not have been saved",
+        type: "warning",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
 
   const handleCreateDigitalId = async () => {
     const trimmedDisplayName = displayName.trim();
@@ -223,13 +410,11 @@ function CreateDigitalId({ service }) {
     try {
       toastId = toast.loading("Processing Digital Identity...");
 
-      // Load any saved state
       const savedState = loadOperationState(walletAddr);
       let identityCreatedOrExists = savedState?.identityCreated || false;
       let identityRegisteredOrExists = savedState?.identityRegistered || false;
       let identity = savedState?.identity || null;
 
-      // Save initial state
       saveOperationState(walletAddr, {
         displayName: trimmedDisplayName,
         accountNumber: trimmedAccountNumber,
@@ -242,10 +427,10 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get identity");
+          identity = await UserService.getIdentityByEmail(userEmail);
           console.log("Existing identity check:", identity);
 
-          if (identity && identity !== "0x0000000000000000000000000000000000000000") {
+          if (identity) {
             identityCreatedOrExists = true;
             saveOperationState(walletAddr, {
               displayName: trimmedDisplayName,
@@ -265,9 +450,17 @@ function CreateDigitalId({ service }) {
       if (!identityCreatedOrExists) {
         console.log("Creating new identity...");
         toast.update(toastId, { render: "Creating identity..." });
-
+        // This creates an array of lowercased wallet addresses (strings)
+        // .map() on an array returns an array, so .toArray() is unnecessary and would cause an error.
+        // Use just .map(...), which is correct for building a string array in JS.
+        const secondaryWalletAddresses = secondaryWallets.map((wallet) => wallet.walletAddress.toLowerCase());
         const createIdentity = async () => {
-          const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
+          const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(
+            walletAddress,
+            user.walletId,
+            dfnsToken,
+            secondaryWalletAddresses
+          );
 
           if (initError) {
             const errorInfo = classifyError({ message: initError });
@@ -362,8 +555,7 @@ function CreateDigitalId({ service }) {
 
         await retryWithBackoff(createIdentity, 8, "Create identity");
 
-        // After confirmation, check for identity on-chain
-        identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get created identity");
+        identity = await UserService.getIdentityByEmail(userEmail);
         console.log("New identity created:", identity);
         identityCreatedOrExists = true;
 
@@ -380,7 +572,7 @@ function CreateDigitalId({ service }) {
         toast.update(toastId, { render: "Identity found, proceeding..." });
       }
 
-      // Step 3: Check if identity is already registered in Blockchain
+      // Step 3 & 4: Register identity
       if (!identityRegisteredOrExists) {
         // let needsRegistration = true;
         // try {
@@ -474,11 +666,9 @@ function CreateDigitalId({ service }) {
 
         const registrationResponse = await retryWithBackoff(registerIdentity, 8, "Register identity");
 
-        // Wait for transaction confirmation if we have a transaction hash
         if (registrationResponse?.transactionHash) {
           toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
         } else {
-          // If no transaction hash, wait a bit for the blockchain to process
           await awaitTimeout(3000);
         }
 
@@ -501,7 +691,6 @@ function CreateDigitalId({ service }) {
           identity,
           completed: false,
         });
-        //}
       }
 
       // ONLY proceed with metadata update if identity was successfully created AND registered
@@ -553,7 +742,10 @@ function CreateDigitalId({ service }) {
         completed: true,
       });
 
-      // All steps completed successfully
+      if (secondaryWallets.length > 0 && userEmail) {
+        await saveSecondaryWallets(userEmail);
+      }
+
       toast.update(toastId, {
         render: "Digital Identity processed successfully",
         type: "success",
@@ -561,14 +753,12 @@ function CreateDigitalId({ service }) {
         autoClose: 3000,
       });
 
-      // Clear the saved state after success
       clearOperationState(walletAddr);
       navigate("/identities");
     } catch (error) {
       const errorInfo = classifyError(error);
 
       if (errorInfo.type === "USER_CANCELLED" || errorInfo.type === "USER_REJECTED") {
-        // User cancelled, keep the saved state for potential resume
         return;
       }
 
@@ -602,13 +792,11 @@ function CreateDigitalId({ service }) {
     try {
       toastId = toast.loading("Processing Digital Identity...");
 
-      // Load any saved state
       const savedState = loadOperationState(walletAddr);
       let identityCreatedOrExists = savedState?.identityCreated || false;
       let identityRegisteredOrExists = savedState?.identityRegistered || false;
       let identity = savedState?.identity || null;
 
-      // Save initial state
       saveOperationState(walletAddr, {
         displayName: trimmedDisplayName,
         accountNumber: trimmedAccountNumber,
@@ -621,10 +809,10 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get identity");
+          identity = await UserService.getIdentityByEmail(userEmail);
           console.log("Existing identity check:", identity);
 
-          if (identity && identity !== "0x0000000000000000000000000000000000000000") {
+          if (identity) {
             identityCreatedOrExists = true;
             saveOperationState(walletAddr, {
               displayName: trimmedDisplayName,
@@ -647,11 +835,9 @@ function CreateDigitalId({ service }) {
 
         try {
           await service.createIdentity(walletAddress);
-
-          // Wait for transaction to be mined
           await awaitTimeout(2000);
 
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get created identity");
+          identity = await UserService.getIdentityByEmail(userEmail);
 
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;
@@ -690,54 +876,19 @@ function CreateDigitalId({ service }) {
         toast.update(toastId, { render: "Identity found, proceeding..." });
       }
 
-      // Step 3: Check if identity is already registered in Blockchain
+      // Step 3 & 4: Register identity
       if (!identityRegisteredOrExists) {
-        // let needsRegistration = true;
-        // try {
-        //   const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
-
-        //   if (isRegistered) {
-        //     console.log("Identity already registered in Blockchain");
-        //     needsRegistration = false;
-        //     identityRegisteredOrExists = true;
-        //     toast.update(toastId, { render: "Identity already registered, updating metadata..." });
-
-        //     saveOperationState(walletAddr, {
-        //       displayName: trimmedDisplayName,
-        //       accountNumber: trimmedAccountNumber,
-        //       identityCreated: identityCreatedOrExists,
-        //       identityRegistered: true,
-        //       identity,
-        //       completed: false,
-        //     });
-        //   }
-        // } catch (error) {
-        //   console.log("Error checking registration, will attempt registration:", error);
-        // }
-
-        // Step 4: Register identity in Blockchain only if needed
-        // if (needsRegistration) {
         console.log("Registering identity in Blockchain...");
         toast.update(toastId, { render: "Registering identity in Blockchain..." });
 
         try {
           const tx = await service.addIdentity(walletAddress, identity);
 
-          // Wait for transaction confirmation
           if (tx?.hash) {
             toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
           } else {
-            // If no transaction hash, wait a bit for the blockchain to process
             await awaitTimeout(3000);
           }
-
-          // Verify registration succeeded
-          // const isNowRegistered = await waitForVerification(service, walletAddress, 12, 5000);
-          // console.log("Final verification status:", isNowRegistered);
-
-          // if (!isNowRegistered) {
-          //   throw new Error("Registration verification failed - identity not found on blockchain after waiting");
-          // }
 
           console.log("Identity registered in Blockchain successfully");
           identityRegisteredOrExists = true;
@@ -771,7 +922,6 @@ function CreateDigitalId({ service }) {
           }
           throw error;
         }
-        //}
       }
 
       // ONLY proceed with metadata update if identity was successfully created AND registered
@@ -830,7 +980,11 @@ function CreateDigitalId({ service }) {
         completed: true,
       });
 
-      // All steps completed successfully
+      // Save secondary wallets if any
+      if (secondaryWallets.length > 0) {
+        toast.info("Note: Secondary wallets will be saved after user approval");
+      }
+
       toast.update(toastId, {
         render: "Digital Identity processed successfully",
         type: "success",
@@ -838,14 +992,12 @@ function CreateDigitalId({ service }) {
         autoClose: 3000,
       });
 
-      // Clear the saved state after success
       clearOperationState(walletAddr);
       navigate("/identities");
     } catch (error) {
       const errorInfo = classifyError(error);
 
       if (errorInfo.type === "USER_CANCELLED" || errorInfo.type === "USER_REJECTED") {
-        // User cancelled, keep the saved state for potential resume
         return;
       }
 
@@ -938,6 +1090,62 @@ function CreateDigitalId({ service }) {
             </div>
           </div>
         </div>
+
+        {/* Secondary Wallets Section */}
+        <div className="mt-6 mb-6 w-[100%] max-[600px]:w-full border p-6 rounded-lg">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <p className="text-lg font-semibold">Secondary Wallets (Optional)</p>
+              <p className="text-sm text-gray-500">
+                {userEmail ? "Manage additional wallets for this identity" : "Add wallets locally. They will be saved after identity creation."}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {userEmail && secondaryWallets.length === 0 && !loadingWallets && (
+                <Button type="default" icon={<ReloadOutlined />} loading={refreshingWallet} onClick={handleRefreshWallet} disabled={isProcessing}>
+                  Refresh from API
+                </Button>
+              )}
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAddWallet} className="bg-[#9952b3]" disabled={isProcessing}>
+                Add Wallet
+              </Button>
+            </div>
+          </div>
+
+          {loadingWallets ? (
+            <div className="text-center py-8">Loading wallets...</div>
+          ) : secondaryWallets.length === 0 ? (
+            <div className="border rounded-xl p-6 bg-gray-50 text-center">
+              <p className="text-gray-500 mb-2">No secondary wallets found</p>
+              <p className="text-sm text-gray-400">
+                {userEmail
+                  ? "Click 'Refresh from API' to fetch from the system or 'Add Wallet' to create manually"
+                  : "Click 'Add Wallet' to add secondary wallets for this identity"}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {secondaryWallets.map((wallet, index) => (
+                <div key={wallet.walletAddress || index} className="border rounded-xl p-4 bg-white">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold">Wallet Address:</span>
+                        <span className="text-gray-600 font-mono text-sm">{wallet.walletAddress}</span>
+                        {!wallet.walletAddress && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Not saved yet</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="text" icon={<EditOutlined />} onClick={() => handleEditWallet(wallet)} disabled={isProcessing} />
+                      <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDeleteWallet(wallet)} disabled={isProcessing} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex justify-end max-[600px]:justify-center">
           <Button
             onClick={handleCreateDigitalId}
@@ -948,6 +1156,33 @@ function CreateDigitalId({ service }) {
           </Button>
         </div>
       </div>
+
+      {/* Wallet Modal */}
+      <Modal
+        title={editingWallet ? "Edit Secondary Wallet" : "Add Secondary Wallet"}
+        open={isWalletModalVisible}
+        onOk={handleSaveWallet}
+        onCancel={() => {
+          setIsWalletModalVisible(false);
+          setEditingWallet(null);
+        }}
+        okText={editingWallet ? "Update" : "Add"}
+        okButtonProps={{ className: "bg-[#9952b3]" }}
+      >
+        <div className="flex flex-col gap-4 mt-4">
+          <div>
+            <label htmlFor="modalWalletAddress" className="block mb-2">
+              Wallet Address <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="modalWalletAddress"
+              value={walletForm.walletAddress}
+              onChange={(e) => setWalletForm({ ...walletForm, walletAddress: e.target.value })}
+              placeholder="Enter wallet address (0x...)"
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
