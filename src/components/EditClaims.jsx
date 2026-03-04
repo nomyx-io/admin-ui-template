@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from "@ant-design/icons";
 import { Breadcrumb, Button, Input, Transfer, Modal, message } from "antd";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -14,7 +14,10 @@ import { WalletPreference } from "../utils/Constants";
 
 const EditClaims = ({ service }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { identityId } = useParams();
+  const searchParams = new URLSearchParams(location.search);
+  const userEmail = searchParams.get("email") || null;
   const [identity, setIdentity] = useState({});
   const [claimTopics, setClaimTopics] = useState([]);
   const [targetKeys, setTargetKeys] = useState([]);
@@ -27,8 +30,6 @@ const EditClaims = ({ service }) => {
   const [refreshingWallet, setRefreshingWallet] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
-
-  const userId = identityId; // Assuming identityId represents userId
 
   // Handling the transfer box for compliance rules
   const onChange = (nextTargetKeys) => {
@@ -51,17 +52,17 @@ const EditClaims = ({ service }) => {
   // Secondary Wallet Handlers
 
   useEffect(() => {
-    if (userId) {
+    if (userEmail) {
       fetchUserWallets();
     }
-  }, [userId]);
+  }, [userEmail]);
 
   const fetchUserWallets = async () => {
-    if (!userId) return;
+    if (!userEmail) return;
 
     setLoadingWallets(true);
     try {
-      const wallets = await UserService.getUserWallets(userId);
+      const wallets = await UserService.getUserWallets(userEmail);
       setSecondaryWallets(wallets || []);
     } catch (error) {
       console.error("Error fetching wallets:", error);
@@ -88,7 +89,6 @@ const EditClaims = ({ service }) => {
   };
 
   const handleSaveWallet = async () => {
-    // Validation
     if (!walletForm.walletAddress) {
       message.error("Wallet Address is required");
       return;
@@ -99,10 +99,9 @@ const EditClaims = ({ service }) => {
       return;
     }
 
-    // Check for duplicate wallet address (excluding current wallet if editing)
     const isDuplicate = secondaryWallets.some((wallet) => {
-      if (editingWallet && wallet.id === editingWallet.id) {
-        return false; // Skip checking against itself when editing
+      if (editingWallet && wallet.walletAddress === editingWallet.walletAddress) {
+        return false;
       }
       return wallet.walletAddress.toLowerCase() === walletForm.walletAddress.toLowerCase();
     });
@@ -113,10 +112,8 @@ const EditClaims = ({ service }) => {
     }
 
     try {
-      if (!userId) {
-        message.warning("User ID not available. Wallet will be saved locally until identity is created.");
-
-        // Save locally if userId is not available yet
+      if (!identity?.address) {
+        message.warning("Identity address not available. Wallet will be saved locally.");
         if (editingWallet) {
           const updatedWallets = secondaryWallets.map((w) => (w === editingWallet ? { ...walletForm } : w));
           setSecondaryWallets(updatedWallets);
@@ -126,53 +123,92 @@ const EditClaims = ({ service }) => {
           message.success("Wallet added locally");
         }
       } else {
-        // Save to database if userId is available
-        const walletData = {
-          ...walletForm,
-          id: editingWallet?.id,
-        };
+        setIsProcessing(true);
+        const { initiateResponse, error: initError } = await DfnsService.initiateLinkWallet(
+          identity.address,
+          walletForm.walletAddress,
+          user.walletId,
+          dfnsToken
+        );
 
-        await UserService.saveUserWallet(userId, walletData);
-        message.success(editingWallet ? "Wallet updated successfully" : "Wallet created successfully");
+        if (initError) throw new Error(initError);
+
+        const { completeResponse, error: completeError } = await DfnsService.completeLinkWallet(
+          user.walletId,
+          dfnsToken,
+          initiateResponse.challenge,
+          initiateResponse.requestBody
+        );
+
+        if (completeError) throw new Error(completeError);
+
+        message.success("Wallet linked successfully");
         await fetchUserWallets();
       }
 
       setIsWalletModalVisible(false);
       setEditingWallet(null);
     } catch (error) {
-      console.error("Error saving wallet:", error);
-      message.error("Failed to save wallet");
+      console.error("Error linking wallet:", error);
+      message.error("Failed to link wallet");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDeleteWallet = async (walletId) => {
+  const handleDeleteWallet = async (wallet) => {
     Modal.confirm({
-      title: "Delete Wallet",
-      content: "Are you sure you want to delete this wallet?",
-      okText: "Delete",
+      title: "Unlink Wallet",
+      content: "Are you sure you want to unlink this wallet?",
+      okText: "Unlink",
       okType: "danger",
       onOk: async () => {
         try {
-          await service.deleteUserWallet(walletId);
-          message.success("Wallet deleted successfully");
+          if (!identity?.address) {
+            message.error("Identity address not available");
+            return;
+          }
+
+          setIsProcessing(true);
+          const { initiateResponse, error: initError } = await DfnsService.initiateUnlinkWallet(
+            identity.address,
+            wallet.walletAddress,
+            user.walletId,
+            dfnsToken
+          );
+
+          if (initError) throw new Error(initError);
+
+          const { completeResponse, error: completeError } = await DfnsService.completeUnlinkWallet(
+            user.walletId,
+            dfnsToken,
+            initiateResponse.challenge,
+            initiateResponse.requestBody
+          );
+
+          if (completeError) throw new Error(completeError);
+
+          message.success("Wallet unlinked successfully");
           await fetchUserWallets();
         } catch (error) {
-          console.error("Error deleting wallet:", error);
-          message.error("Failed to delete wallet");
+          console.error("Error unlinking wallet:", error);
+          message.error("Failed to unlink wallet");
+        } finally {
+          setIsProcessing(false);
         }
       },
     });
   };
 
   const handleRefreshWallet = async () => {
-    if (!userId) {
-      message.warning("User ID not available. Please save the identity first.");
+    if (!userEmail) {
+      message.warning("User email not available. Please save the identity first.");
       return;
     }
 
     setRefreshingWallet(true);
     try {
-      const result = await UserService.fetchAndStoreSecondaryWallet(userId);
+      const result = await UserService.fetchAndStoreSecondaryWallet(userEmail);
 
       if (result.noDataFound) {
         message.warning("Secondary wallet record does not exist. Please contact T7X support.");
@@ -501,11 +537,11 @@ const EditClaims = ({ service }) => {
           <div>
             <p className="text-lg font-semibold">Secondary Wallets (Optional)</p>
             <p className="text-sm text-gray-500">
-              {userId ? "Manage additional wallets for this identity" : "Add wallets locally. They will be saved after identity creation."}
+              {userEmail ? "Manage additional wallets for this identity" : "Add wallets locally. They will be saved after identity creation."}
             </p>
           </div>
           <div className="flex gap-2">
-            {userId && secondaryWallets.length === 0 && !loadingWallets && (
+            {userEmail && secondaryWallets.length === 0 && !loadingWallets && (
               <Button type="default" icon={<ReloadOutlined />} loading={refreshingWallet} onClick={handleRefreshWallet} disabled={isProcessing}>
                 Refresh from API
               </Button>
@@ -522,7 +558,7 @@ const EditClaims = ({ service }) => {
           <div className="border rounded-xl p-6 bg-gray-50 text-center">
             <p className="text-gray-500 mb-2">No secondary wallets found</p>
             <p className="text-sm text-gray-400">
-              {userId
+              {userEmail
                 ? "Click 'Refresh from API' to fetch from the system or 'Add Wallet' to create manually"
                 : "Click 'Add Wallet' to add secondary wallets for this identity"}
             </p>
@@ -530,13 +566,13 @@ const EditClaims = ({ service }) => {
         ) : (
           <div className="flex flex-col gap-3">
             {secondaryWallets.map((wallet, index) => (
-              <div key={wallet.id || index} className="border rounded-xl p-4 bg-white">
+              <div key={wallet.walletAddress || index} className="border rounded-xl p-4 bg-white">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="font-semibold">Wallet Address:</span>
                       <span className="text-gray-600 font-mono text-sm">{wallet.walletAddress}</span>
-                      {!wallet.id && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Not saved yet</span>}
+                      {!wallet.walletAddress && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Not saved yet</span>}
                     </div>
                   </div>
                   <div className="flex gap-2">

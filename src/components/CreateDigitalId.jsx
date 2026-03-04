@@ -33,7 +33,7 @@ function CreateDigitalId({ service }) {
   const [walletForm, setWalletForm] = useState({
     walletAddress: "",
   });
-  const [userId, setUserId] = useState(searchParams.get("userId") || null);
+  const userEmail = searchParams.get("email") || null;
 
   // Check for incomplete operations on mount
   useEffect(() => {
@@ -41,17 +41,17 @@ function CreateDigitalId({ service }) {
   }, []);
 
   useEffect(() => {
-    if (userId) {
+    if (userEmail) {
       fetchUserWallets();
     }
-  }, [userId]);
+  }, [userEmail]);
 
   const fetchUserWallets = async () => {
-    if (!userId) return;
+    if (!userEmail) return;
 
     setLoadingWallets(true);
     try {
-      const wallets = await UserService.getUserWallets(userId);
+      const wallets = await UserService.getUserWallets(userEmail);
       setSecondaryWallets(wallets || []);
     } catch (error) {
       console.error("Error fetching wallets:", error);
@@ -62,14 +62,14 @@ function CreateDigitalId({ service }) {
   };
 
   const handleRefreshWallet = async () => {
-    if (!userId) {
-      message.warning("User ID not available. Please save the identity first.");
+    if (!userEmail) {
+      message.warning("User email not available. Please save the identity first.");
       return;
     }
 
     setRefreshingWallet(true);
     try {
-      const result = await UserService.fetchAndStoreSecondaryWallet(userId);
+      const result = await UserService.fetchAndStoreSecondaryWallet(userEmail);
 
       if (result.noDataFound) {
         message.warning("Secondary wallet record does not exist. Please contact T7X support.");
@@ -136,27 +136,54 @@ function CreateDigitalId({ service }) {
     setIsWalletModalVisible(true);
   };
 
-  const handleDeleteWallet = async (walletId) => {
+  const handleDeleteWallet = async (wallet) => {
     Modal.confirm({
-      title: "Delete Wallet",
-      content: "Are you sure you want to delete this wallet?",
-      okText: "Delete",
+      title: "Unlink Wallet",
+      content: "Are you sure you want to unlink this wallet?",
+      okText: "Unlink",
       okType: "danger",
       onOk: async () => {
         try {
-          await service.deleteUserWallet(walletId);
-          message.success("Wallet deleted successfully");
+          if (!wallet.id) {
+            setSecondaryWallets(secondaryWallets.filter((w) => w.walletAddress !== wallet.walletAddress));
+            message.success("Wallet removed");
+            return;
+          }
+
+          setIsProcessing(true);
+          const identityAddress = await UserService.getIdentityByEmail(userEmail);
+
+          const { initiateResponse, error: initError } = await DfnsService.initiateUnlinkWallet(
+            identityAddress,
+            wallet.walletAddress,
+            user.walletId,
+            dfnsToken
+          );
+
+          if (initError) throw new Error(initError);
+
+          const { completeResponse, error: completeError } = await DfnsService.completeUnlinkWallet(
+            user.walletId,
+            dfnsToken,
+            initiateResponse.challenge,
+            initiateResponse.requestBody
+          );
+
+          if (completeError) throw new Error(completeError);
+
+          message.success("Wallet unlinked successfully");
           await fetchUserWallets();
         } catch (error) {
-          console.error("Error deleting wallet:", error);
-          message.error("Failed to delete wallet");
+          console.error("Error unlinking wallet:", error);
+          message.error("Failed to unlink wallet");
+        } finally {
+          setIsProcessing(false);
         }
       },
     });
   };
 
   const handleSaveWallet = async () => {
-    // Validation
     if (!walletForm.walletAddress) {
       message.error("Wallet Address is required");
       return;
@@ -167,10 +194,9 @@ function CreateDigitalId({ service }) {
       return;
     }
 
-    // Check for duplicate wallet address (excluding current wallet if editing)
     const isDuplicate = secondaryWallets.some((wallet) => {
-      if (editingWallet && wallet.id === editingWallet.id) {
-        return false; // Skip checking against itself when editing
+      if (editingWallet && wallet.walletAddress === editingWallet.walletAddress) {
+        return false;
       }
       return wallet.walletAddress.toLowerCase() === walletForm.walletAddress.toLowerCase();
     });
@@ -181,28 +207,13 @@ function CreateDigitalId({ service }) {
     }
 
     try {
-      if (!userId) {
-        message.warning("User ID not available. Wallet will be saved locally until identity is created.");
-
-        // Save locally if userId is not available yet
-        if (editingWallet) {
-          const updatedWallets = secondaryWallets.map((w) => (w === editingWallet ? { ...walletForm } : w));
-          setSecondaryWallets(updatedWallets);
-          message.success("Wallet updated locally");
-        } else {
-          setSecondaryWallets([...secondaryWallets, { ...walletForm }]);
-          message.success("Wallet added locally");
-        }
+      if (editingWallet) {
+        const updatedWallets = secondaryWallets.map((w) => (w === editingWallet ? { ...walletForm } : w));
+        setSecondaryWallets(updatedWallets);
+        message.success("Wallet updated locally");
       } else {
-        // Save to database if userId is available
-        const walletData = {
-          ...walletForm,
-          id: editingWallet?.id,
-        };
-
-        await UserService.saveUserWallet(userId, walletData);
-        message.success(editingWallet ? "Wallet updated successfully" : "Wallet created successfully");
-        await fetchUserWallets();
+        setSecondaryWallets([...secondaryWallets, { ...walletForm }]);
+        message.success("Wallet added locally");
       }
 
       setIsWalletModalVisible(false);
@@ -334,14 +345,14 @@ function CreateDigitalId({ service }) {
   }
 
   // Save secondary wallets to database after identity creation
-  const saveSecondaryWallets = async (userId) => {
+  const saveSecondaryWallets = async (email) => {
     if (secondaryWallets.length === 0) return;
 
     const toastId = toast.loading("Saving secondary wallets...");
 
     try {
       for (const wallet of secondaryWallets) {
-        await UserService.saveUserWallet(userId, wallet);
+        await UserService.saveUserWallet(email, wallet);
       }
 
       toast.update(toastId, {
@@ -416,10 +427,10 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get identity");
+          identity = await UserService.getIdentityByEmail(userEmail);
           console.log("Existing identity check:", identity);
 
-          if (identity && identity !== "0x0000000000000000000000000000000000000000") {
+          if (identity) {
             identityCreatedOrExists = true;
             saveOperationState(walletAddr, {
               displayName: trimmedDisplayName,
@@ -439,9 +450,17 @@ function CreateDigitalId({ service }) {
       if (!identityCreatedOrExists) {
         console.log("Creating new identity...");
         toast.update(toastId, { render: "Creating identity..." });
-
+        // This creates an array of lowercased wallet addresses (strings)
+        // .map() on an array returns an array, so .toArray() is unnecessary and would cause an error.
+        // Use just .map(...), which is correct for building a string array in JS.
+        const secondaryWalletAddresses = secondaryWallets.map((wallet) => wallet.walletAddress.toLowerCase());
         const createIdentity = async () => {
-          const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
+          const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(
+            walletAddress,
+            user.walletId,
+            dfnsToken,
+            secondaryWalletAddresses
+          );
 
           if (initError) {
             const errorInfo = classifyError({ message: initError });
@@ -536,7 +555,7 @@ function CreateDigitalId({ service }) {
 
         await retryWithBackoff(createIdentity, 8, "Create identity");
 
-        identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get created identity");
+        identity = await UserService.getIdentityByEmail(userEmail);
         console.log("New identity created:", identity);
         identityCreatedOrExists = true;
 
@@ -723,14 +742,8 @@ function CreateDigitalId({ service }) {
         completed: true,
       });
 
-      // Save secondary wallets if any
-      // Note: You'll need to get the userId from the created identity
-      // This might require an additional API call or getting it from the service
-      // For now, we'll use the wallet address as userId placeholder
-      if (secondaryWallets.length > 0) {
-        // You might need to fetch the user by wallet address to get the userId
-        // await saveSecondaryWallets(userId);
-        toast.info("Note: Secondary wallets will be saved after user approval");
+      if (secondaryWallets.length > 0 && userEmail) {
+        await saveSecondaryWallets(userEmail);
       }
 
       toast.update(toastId, {
@@ -796,10 +809,10 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get identity");
+          identity = await UserService.getIdentityByEmail(userEmail);
           console.log("Existing identity check:", identity);
 
-          if (identity && identity !== "0x0000000000000000000000000000000000000000") {
+          if (identity) {
             identityCreatedOrExists = true;
             saveOperationState(walletAddr, {
               displayName: trimmedDisplayName,
@@ -824,7 +837,7 @@ function CreateDigitalId({ service }) {
           await service.createIdentity(walletAddress);
           await awaitTimeout(2000);
 
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get created identity");
+          identity = await UserService.getIdentityByEmail(userEmail);
 
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;
@@ -1084,11 +1097,11 @@ function CreateDigitalId({ service }) {
             <div>
               <p className="text-lg font-semibold">Secondary Wallets (Optional)</p>
               <p className="text-sm text-gray-500">
-                {userId ? "Manage additional wallets for this identity" : "Add wallets locally. They will be saved after identity creation."}
+                {userEmail ? "Manage additional wallets for this identity" : "Add wallets locally. They will be saved after identity creation."}
               </p>
             </div>
             <div className="flex gap-2">
-              {userId && secondaryWallets.length === 0 && !loadingWallets && (
+              {userEmail && secondaryWallets.length === 0 && !loadingWallets && (
                 <Button type="default" icon={<ReloadOutlined />} loading={refreshingWallet} onClick={handleRefreshWallet} disabled={isProcessing}>
                   Refresh from API
                 </Button>
@@ -1105,7 +1118,7 @@ function CreateDigitalId({ service }) {
             <div className="border rounded-xl p-6 bg-gray-50 text-center">
               <p className="text-gray-500 mb-2">No secondary wallets found</p>
               <p className="text-sm text-gray-400">
-                {userId
+                {userEmail
                   ? "Click 'Refresh from API' to fetch from the system or 'Add Wallet' to create manually"
                   : "Click 'Add Wallet' to add secondary wallets for this identity"}
               </p>
@@ -1113,13 +1126,13 @@ function CreateDigitalId({ service }) {
           ) : (
             <div className="flex flex-col gap-3">
               {secondaryWallets.map((wallet, index) => (
-                <div key={wallet.id || index} className="border rounded-xl p-4 bg-white">
+                <div key={wallet.walletAddress || index} className="border rounded-xl p-4 bg-white">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="font-semibold">Wallet Address:</span>
                         <span className="text-gray-600 font-mono text-sm">{wallet.walletAddress}</span>
-                        {!wallet.id && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Not saved yet</span>}
+                        {!wallet.walletAddress && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Not saved yet</span>}
                       </div>
                     </div>
                     <div className="flex gap-2">

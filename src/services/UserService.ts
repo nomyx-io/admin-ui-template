@@ -12,9 +12,9 @@ class UserService {
 
   public async getInitialState() {}
 
-  getUserWallets = async (userId: string) => {
+  getUserWallets = async (email: string) => {
     try {
-      const result = await Parse.Cloud.run("getUserWallets", { userId });
+      const result = await Parse.Cloud.run("getUserWallets", { email });
       return result.wallets;
     } catch (error) {
       console.error("Error getting user wallets:", error);
@@ -22,9 +22,9 @@ class UserService {
     }
   };
 
-  fetchAndStoreSecondaryWallet = async (userId: string) => {
+  fetchAndStoreSecondaryWallet = async (email: string) => {
     try {
-      const result = await Parse.Cloud.run("fetchAndStoreSecondaryWallet", { userId });
+      const result = await Parse.Cloud.run("fetchAndStoreSecondaryWallet", { email });
       return result;
     } catch (error) {
       console.error("Error fetching secondary wallet:", error);
@@ -32,25 +32,25 @@ class UserService {
     }
   };
 
-  saveUserWallet = async (userId: string, walletData: any) => {
+  getIdentityByEmail = async (email: string) => {
+    try {
+      const response = await Parse.Cloud.run("getIdentityAddressByEmail", { email });
+      return response?.identityAddress || null;
+    } catch (error: any) {
+      console.error(`Failed to get identity by email: ${error.message}`);
+      return null;
+    }
+  };
+
+  saveUserWallet = async (email: string, walletData: any) => {
     try {
       const result = await Parse.Cloud.run("saveUserWallet", {
-        userId,
+        email,
         ...walletData,
       });
       return result;
     } catch (error) {
       console.error("Error saving wallet:", error);
-      throw error;
-    }
-  };
-
-  deleteUserWallet = async (walletId: string) => {
-    try {
-      const result = await Parse.Cloud.run("deleteUserWallet", { walletId });
-      return result;
-    } catch (error) {
-      console.error("Error deleting wallet:", error);
       throw error;
     }
   };
