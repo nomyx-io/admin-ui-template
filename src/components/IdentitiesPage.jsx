@@ -20,6 +20,8 @@ const IdentitiesPage = ({ service }) => {
   const [identities, setIdentities] = useState([]);
   const [claimsIdentities, setClaimsIdentities] = useState([]);
   const [pendingIdentities, setPendingIdentities] = useState([]);
+  const [deniedIdentities, setDeniedIdentities] = useState([]);
+  const [removedIdentities, setRemovedIdentities] = useState([]);
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,18 +30,23 @@ const IdentitiesPage = ({ service }) => {
     identities: { page: 1, limit: 10, totalCount: 0, hasMore: false },
     claims: { page: 1, limit: 10, totalCount: 0, hasMore: false },
     pending: { page: 1, limit: 10, totalCount: 0, hasMore: false },
+    denied: { page: 1, limit: 10, totalCount: 0, hasMore: false },
+    removed: { page: 1, limit: 10, totalCount: 0, hasMore: false },
   });
   const [loading, setLoading] = useState({
     identities: false,
     claims: false,
     pending: false,
+    denied: false,
+    removed: false,
   });
   const [isAssociateModalVisible, setIsAssociateModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [associateForm] = Form.useForm();
   const { walletPreference, user, dfnsToken } = useContext(RoleContext);
 
-  // Helper function to extract error message
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
+
   const getErrorMessage = (error) => {
     if (typeof error === "string") return error;
     if (error?.reason) return error.reason;
@@ -48,30 +55,82 @@ const IdentitiesPage = ({ service }) => {
     return "An unknown error occurred";
   };
 
+  const getTabMeta = (tab) => {
+    switch (tab) {
+      case "Pending":
+        return { key: "pending", status: "pending" };
+      case "Denied":
+        return { key: "denied", status: "denied" };
+      case "Removed":
+        return { key: "removed", status: "removed" };
+      case "Claims":
+        return { key: "claims", status: null };
+      default:
+        return { key: "identities", status: null };
+    }
+  };
+
+  const templateTypeMap = {
+    [process.env.REACT_APP_PERSONA_KYC_TEMPLATEID]: "KYC",
+    [process.env.REACT_APP_PERSONA_KYB_TEMPLATEID]: "KYB",
+    [process.env.REACT_APP_PERSONA_ACCREDITED_INVESTOR_TEMPLATEID]: "Accredited Investor",
+    [process.env.REACT_APP_PERSONA_QUALIFIED_INVESTOR_TEMPLATEID]: "Qualified Investor",
+    [process.env.REACT_APP_PERSONA_ACCREDITED_BUSINESS_TEMPLATEID]: "Accredited Business",
+  };
+
+  const mapPendingUser = (user) => {
+    const firstName = user.firstName || "";
+    const lastName = user.lastName || "";
+    const personaData = user.personaVerificationData ? JSON.parse(user.personaVerificationData) : {};
+    const identityType = templateTypeMap[user.templateId] || "";
+    const name = personaData?.data?.attributes?.name || "";
+    const status = name.split(".")[1]?.toUpperCase()?.replace(/-/g, " ") || "";
+
+    return {
+      id: user.objectId,
+      displayName: `${firstName} ${lastName}`.trim(),
+      email: user.username || user.email || "",
+      identityAddress: user.walletAddress || "",
+      kyc_id: user.personaReferenceId || "",
+      pepMatched: user.pepMatched || false,
+      watchlistMatched: user.watchlistMatched || false,
+      type: identityType,
+      status,
+      attributes: {
+        firstName,
+        lastName,
+        username: user.username,
+        walletAddress: user.walletAddress,
+        personaReferenceId: user.personaReferenceId,
+        personaVerificationData: user.personaVerificationData,
+        pepMatched: user.pepMatched,
+        watchlistMatched: user.watchlistMatched,
+      },
+    };
+  };
+
+  // ─── Data Fetching ────────────────────────────────────────────────────────────
+
   const fetchData = useCallback(
     async (tab, page = 1, search = "", filter = "all") => {
-      const loadingKey = tab === "Pending" ? "pending" : tab === "Claims" ? "claims" : "identities";
-      const paginationType = tab === "Pending" ? "pending" : tab === "Claims" ? "claims" : "identities";
-
-      // Set loading state for specific tab
-      setLoading((prev) => ({ ...prev, [loadingKey]: true }));
+      const { key, status } = getTabMeta(tab);
+      setLoading((prev) => ({ ...prev, [key]: true }));
 
       try {
         let fetchedIdentities = [];
         let paginationData = null;
 
         if (tab === "Identities") {
-          // Call paginated cloud function for active identities
           const result = await Parse.Cloud.run("getActiveIdentities", {
             page,
             limit: pagination.identities.limit,
-            withoutClaims: false, // Get all identities
+            withoutClaims: false,
             searchTerm: search,
           });
 
-          if (result && result.data) {
+          if (result?.data) {
             fetchedIdentities = result.data.map((identity) => {
-              let identityObj = {
+              const identityObj = {
                 claims: identity.claims || "",
                 displayName: identity.displayName || "",
                 email: identity.email || "",
@@ -82,7 +141,6 @@ const IdentitiesPage = ({ service }) => {
                 watchlistMatched: identity.watchlistMatched || false,
               };
 
-              // Re-sort claims numerically on the client side
               if (identityObj.claims) {
                 const claimsArray = identityObj.claims.split(", ");
                 const sortedClaims = claimsArray
@@ -90,211 +148,142 @@ const IdentitiesPage = ({ service }) => {
                   .filter((claim) => !isNaN(claim))
                   .sort((a, b) => a - b)
                   .map((claim) => claim.toString());
-
                 identityObj.claims = sortedClaims.join(", ");
               }
 
               return identityObj;
             });
-
             paginationData = result.pagination;
           }
 
           setIdentities(fetchedIdentities);
           setPagination((prev) => ({
             ...prev,
-            identities: {
-              ...prev.identities,
-              ...paginationData,
-              page: page,
-            },
+            identities: { ...prev.identities, ...paginationData, page },
           }));
         } else if (tab === "Claims") {
-          // Call paginated cloud function for identities without claims
           const result = await Parse.Cloud.run("getActiveIdentities", {
             page,
             limit: pagination.claims.limit,
-            withoutClaims: true, // Get only identities without claims
+            withoutClaims: true,
             searchTerm: search,
           });
 
-          if (result && result.data) {
-            fetchedIdentities = result.data.map((identity) => {
-              let identityObj = {
-                claims: identity.claims || "",
-                displayName: identity.displayName || "",
-                email: identity.email || "",
-                kyc_id: identity.kyc_id || "",
-                identityAddress: identity.identityAddress || "",
-                id: identity.id || "",
-                pepMatched: identity.pepMatched || false,
-                watchlistMatched: identity.watchlistMatched || false,
-              };
-
-              return identityObj;
-            });
-
+          if (result?.data) {
+            fetchedIdentities = result.data.map((identity) => ({
+              claims: identity.claims || "",
+              displayName: identity.displayName || "",
+              email: identity.email || "",
+              kyc_id: identity.kyc_id || "",
+              identityAddress: identity.identityAddress || "",
+              id: identity.id || "",
+              pepMatched: identity.pepMatched || false,
+              watchlistMatched: identity.watchlistMatched || false,
+            }));
             paginationData = result.pagination;
           }
 
           setClaimsIdentities(fetchedIdentities);
           setPagination((prev) => ({
             ...prev,
-            claims: {
-              ...prev.claims,
-              ...paginationData,
-              page: page,
-            },
+            claims: { ...prev.claims, ...paginationData, page },
           }));
-        } else if (tab === "Pending") {
-          // Call paginated cloud function for pending identities with filter
+        } else if (tab === "Pending" || tab === "Denied" || tab === "Removed") {
           const result = await Parse.Cloud.run("getPendingIdentities", {
             page,
-            limit: pagination.pending.limit,
+            limit: pagination[key].limit,
             searchTerm: search,
-            filter: filter, // Add filter parameter
+            filter: tab === "Pending" ? filter : "all",
+            status,
           });
 
-          if (result && result.data) {
-            fetchedIdentities = result.data.map((user) => {
-              const firstName = user.firstName || "";
-              const lastName = user.lastName || "";
-              const personaData = user.personaVerificationData ? JSON.parse(user.personaVerificationData) : {};
-
-              const templateId =
-                personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
-                personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
-                "";
-              const identityType =
-                templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
-                  ? "KYC"
-                  : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
-                    ? "KYB"
-                    : "";
-
-              const name = personaData?.data?.attributes?.name || "";
-              const status = name.split(".")[1]?.toUpperCase()?.replace(/-/g, " ") || "";
-
-              return {
-                id: user.objectId,
-                displayName: `${firstName} ${lastName}`.trim(),
-                email: user.username || user.email || "",
-                identityAddress: user.walletAddress || "",
-                kyc_id: user.personaReferenceId || "",
-                pepMatched: user.pepMatched || false,
-                watchlistMatched: user.watchlistMatched || false,
-                type: identityType || "",
-                status: status || "",
-                attributes: {
-                  firstName,
-                  lastName,
-                  username: user.username,
-                  walletAddress: user.walletAddress,
-                  personaReferenceId: user.personaReferenceId,
-                  personaVerificationData: user.personaVerificationData,
-                  pepMatched: user.pepMatched,
-                  watchlistMatched: user.watchlistMatched,
-                },
-              };
-            });
-
+          if (result?.data) {
+            fetchedIdentities = result.data.map(mapPendingUser);
             paginationData = result.pagination;
           }
 
-          setPendingIdentities(fetchedIdentities);
-          setPagination((prev) => ({
-            ...prev,
-            pending: {
-              ...prev.pending,
-              ...paginationData,
-              page: page,
-            },
-          }));
+          if (tab === "Pending") {
+            setPendingIdentities(fetchedIdentities);
+            setPagination((prev) => ({
+              ...prev,
+              pending: { ...prev.pending, ...paginationData, page },
+            }));
+          } else if (tab === "Denied") {
+            setDeniedIdentities(fetchedIdentities);
+            setPagination((prev) => ({
+              ...prev,
+              denied: { ...prev.denied, ...paginationData, page },
+            }));
+          } else {
+            setRemovedIdentities(fetchedIdentities);
+            setPagination((prev) => ({
+              ...prev,
+              removed: { ...prev.removed, ...paginationData, page },
+            }));
+          }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        const errorMessage = getErrorMessage(error);
-        toast.error(`Failed to fetch data: ${errorMessage}`);
+        toast.error(`Failed to fetch data: ${getErrorMessage(error)}`);
       } finally {
-        // Clear loading state for specific tab
-        setLoading((prev) => ({ ...prev, [loadingKey]: false }));
+        setLoading((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [pagination.identities.limit, pagination.claims.limit, pagination.pending.limit]
+    [pagination.identities.limit, pagination.claims.limit, pagination.pending.limit, pagination.denied.limit, pagination.removed.limit]
   );
 
   useEffect(() => {
-    // Reset pagination and search when tab changes or refresh is triggered
-    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
+    const { key } = getTabMeta(activeTab);
 
     setPagination((prev) => ({
       ...prev,
-      [paginationType]: {
-        ...prev[paginationType],
-        page: 1,
-      },
+      [key]: { ...prev[key], page: 1 },
     }));
 
     if (activeTab !== "Pending") {
-      setSearchTerm(""); // Clear search when switching to non-pending tabs
+      setSearchTerm("");
       fetchData(activeTab, 1, "");
     } else {
-      // For pending tab, load "All Pending Users" by default
       setPendingFilter("all");
       fetchData(activeTab, 1, "", "all");
     }
   }, [activeTab, refreshTrigger]);
 
-  const handleTabChange = (key) => {
-    setActiveTab(key);
+  // ─── Event Handlers ───────────────────────────────────────────────────────────
+
+  const removeFromLocalState = (record) => {
+    const { id } = record;
+    setIdentities((prev) => prev.filter((item) => item.id !== id));
+    setClaimsIdentities((prev) => prev.filter((item) => item.id !== id));
+    setPendingIdentities((prev) => prev.filter((item) => item.id !== id));
+    setDeniedIdentities((prev) => prev.filter((item) => item.id !== id));
+    setRemovedIdentities((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const handleTabChange = (key) => setActiveTab(key);
+
   const handlePageChange = (newPage) => {
-    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
-
-    setPagination((prev) => ({
-      ...prev,
-      [paginationType]: {
-        ...prev[paginationType],
-        page: newPage,
-      },
-    }));
-
+    const { key } = getTabMeta(activeTab);
+    setPagination((prev) => ({ ...prev, [key]: { ...prev[key], page: newPage } }));
     fetchData(activeTab, newPage, searchTerm);
   };
 
   const handleSearch = (newSearchTerm) => {
-    const paginationType = activeTab === "Pending" ? "pending" : activeTab === "Claims" ? "claims" : "identities";
-
-    // Reset to page 1 when searching
-    setPagination((prev) => ({
-      ...prev,
-      [paginationType]: {
-        ...prev[paginationType],
-        page: 1,
-      },
-    }));
-
+    const { key } = getTabMeta(activeTab);
+    setPagination((prev) => ({ ...prev, [key]: { ...prev[key], page: 1 } }));
     setSearchTerm(newSearchTerm);
     fetchData(activeTab, 1, newSearchTerm);
   };
 
-  // New handler for pending identities filter change
   const handlePendingFilterChange = (searchTerm, filter, page = 1) => {
-    setPagination((prev) => ({
-      ...prev,
-      pending: {
-        ...prev.pending,
-        page: page,
-      },
-    }));
-
+    setPagination((prev) => ({ ...prev, pending: { ...prev.pending, page } }));
     setPendingFilter(filter);
     fetchData("Pending", page, searchTerm, filter);
   };
 
   const handleRemoveUser = async (record) => {
     const { displayName, identityAddress } = record;
+    removeFromLocalState(record);
     toast
       .promise(
         async () => {
@@ -302,28 +291,23 @@ const IdentitiesPage = ({ service }) => {
           return deleted;
         },
         {
-          pending: `Removing ${displayName}...`,
+          pending: `Denying ${displayName}...`,
           success: (deleted) => {
             if (deleted) {
-              return `${displayName} has been successfully removed.`;
+              return `${displayName} has been successfully denied.`;
             } else {
-              throw new Error(`${displayName} couldn't be removed.`);
+              throw new Error(`${displayName} couldn't be denied.`);
             }
           },
           error: {
             render({ data }) {
-              const errorMessage = getErrorMessage(data);
-              return `${displayName} couldn't be removed: ${errorMessage}`;
+              return `${displayName} couldn't be denied: ${getErrorMessage(data)}`;
             },
           },
         }
       )
-      .then(() => {
-        setRefreshTrigger((prev) => !prev);
-      })
-      .catch((error) => {
-        console.error("Error in handleRemoveUser:", error);
-      });
+      .then(() => setRefreshTrigger((prev) => !prev))
+      .catch((error) => console.error("Error in handleRemoveUser:", error));
   };
 
   const handleSendVerificationEmail = async (record) => {
@@ -349,8 +333,7 @@ const IdentitiesPage = ({ service }) => {
         success: `Verification email sent successfully to ${email}`,
         error: {
           render({ data }) {
-            const errorMessage = getErrorMessage(data);
-            return `Failed to send verification email: ${errorMessage}`;
+            return `Failed to send verification email: ${getErrorMessage(data)}`;
           },
         },
       }
@@ -361,6 +344,7 @@ const IdentitiesPage = ({ service }) => {
     if (walletPreference === WalletPreference.MANAGED) {
       const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       const identities = [record.identityAddress];
+      removeFromLocalState(record);
       for (const identity of identities) {
         try {
           await toast.promise(
@@ -406,8 +390,7 @@ const IdentitiesPage = ({ service }) => {
               success: `Successfully removed ${record?.displayName}`,
               error: {
                 render({ data }) {
-                  const errorMessage = getErrorMessage(data);
-                  return <div>{errorMessage || `An error occurred while removing ${record?.displayName}`}</div>;
+                  return <div>{getErrorMessage(data) || `An error occurred while removing ${record?.displayName}`}</div>;
                 },
               },
             }
@@ -419,14 +402,13 @@ const IdentitiesPage = ({ service }) => {
     } else if (walletPreference === WalletPreference.PRIVATE) {
       toast.promise(
         async () => {
+          removeFromLocalState(record);
           try {
             const identities = [record.identityAddress];
-
             for (const identity of identities) {
               await service.removeIdentity(identity);
               await service.unregisterIdentity(identity);
             }
-
             setRefreshTrigger((prev) => !prev);
           } catch (error) {
             console.error("Error in private wallet remove identity:", error);
@@ -438,8 +420,7 @@ const IdentitiesPage = ({ service }) => {
           success: `Successfully removed ${record?.displayName}`,
           error: {
             render({ data }) {
-              const errorMessage = getErrorMessage(data);
-              return <div>{errorMessage || `An error occurred while removing ${record?.displayName}`}</div>;
+              return <div>{getErrorMessage(data) || `An error occurred while removing ${record?.displayName}`}</div>;
             },
           },
         }
@@ -467,7 +448,7 @@ const IdentitiesPage = ({ service }) => {
         async () => {
           const result = await Parse.Cloud.run("associatePersonaInquiry", {
             userId: selectedRecord.id,
-            personaInquiryId: personaInquiryId,
+            personaInquiryId,
           });
           return result;
         },
@@ -476,8 +457,7 @@ const IdentitiesPage = ({ service }) => {
           success: `Successfully associated Persona Inquiry ID for ${selectedRecord.displayName}`,
           error: {
             render({ data }) {
-              const errorMessage = getErrorMessage(data);
-              return `Failed to associate Persona Inquiry ID: ${errorMessage}`;
+              return `Failed to associate Persona Inquiry ID: ${getErrorMessage(data)}`;
             },
           },
         }
@@ -489,68 +469,6 @@ const IdentitiesPage = ({ service }) => {
       console.error("Error in handleAssociateModalOk:", error);
     }
   };
-
-  const columns = [
-    { label: "Identity", name: "displayName" },
-    { label: "Email", name: "email" },
-    { label: "Address", name: "identityAddress", width: "350px" },
-    { label: "KYC ID Account #", name: "kyc_id" },
-    { label: "Flagged?", name: "flagged_account" },
-    { label: "Claims", name: "claims" },
-  ];
-  const pendingColumns = [
-    { label: "Identity", name: "displayName" },
-    { label: "Email", name: "email" },
-    { label: "Address", name: "identityAddress", width: "350px" },
-    { label: "KYC ID Account #", name: "kyc_id" },
-    { label: "Flagged?", name: "flagged_account" },
-    { label: "Type", name: "type" },
-    { label: "Status", name: "status" },
-  ];
-
-  const addRulesColumns = [
-    { label: "Identity", name: "displayName" },
-    { label: "Email", name: "email" },
-    { label: "Address", name: "identityAddress", width: "350px" },
-    { label: "KYC ID Account #", name: "kyc_id" },
-    { label: "Flagged?", name: "flagged_account" },
-  ];
-
-  const actions = [
-    { label: "Edit Rules", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
-    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
-    {
-      label: "Remove",
-      name: NomyxAction.RemoveIdentity,
-      icon: <DeleteOutlined />,
-      confirmation: "Are you sure you want to remove this Identity?",
-    },
-  ];
-  const pendingActions = [
-    { label: "Approve", name: NomyxAction.CreatePendingIdentity, icon: <CheckOutlined /> },
-    { label: "View", name: NomyxAction.ViewPendingIdentity, icon: <EyeOutlined /> },
-    { label: "Associate", name: NomyxAction.AssociateInquiry, icon: <LinkOutlined /> },
-    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: <MailOutlined /> },
-    {
-      label: "Deny",
-      name: NomyxAction.RemoveUser,
-      icon: <CloseOutlined />,
-      confirmation: "Are you sure you want to deny this pending Identity?",
-    },
-  ];
-  const claimsActions = [
-    { label: "Add Rules", name: NomyxAction.AddClaims, icon: <PlusOutlined /> },
-    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
-    {
-      label: "Remove",
-      name: NomyxAction.RemoveIdentity,
-      icon: <DeleteOutlined />,
-      confirmation: "Are you sure you want to remove this Identity?",
-    },
-  ];
-  const globalActions = [{ label: "Create identity", name: NomyxAction.CreateIdentity, icon: <PlusOutlined /> }];
-
-  const search = true;
 
   const handleAction = async (event, action, record) => {
     try {
@@ -575,7 +493,9 @@ const IdentitiesPage = ({ service }) => {
           break;
         case NomyxAction.CreatePendingIdentity:
           const { displayName, kyc_id, identityAddress } = record;
-          navigate(`/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}`);
+          navigate(
+            `/identities/create?displayName=${encodeURIComponent(displayName)}&walletAddress=${encodeURIComponent(identityAddress)}&accountNumber=${encodeURIComponent(kyc_id)}`
+          );
           break;
         case NomyxAction.AssociateInquiry:
           handleAssociateInquiry(record);
@@ -592,33 +512,131 @@ const IdentitiesPage = ({ service }) => {
       }
     } catch (error) {
       console.error("Error in handleAction:", error);
-      const errorMessage = getErrorMessage(error);
-      toast.error(`Action failed: ${errorMessage}`);
+      toast.error(`Action failed: ${getErrorMessage(error)}`);
     }
   };
 
-  // Get current data and pagination based on active tab
+  // ─── Current Tab Data ─────────────────────────────────────────────────────────
+
   const getCurrentData = () => {
-    if (activeTab === "Identities") {
-      return identities;
-    } else if (activeTab === "Claims") {
-      return claimsIdentities;
-    } else if (activeTab === "Pending") {
-      return pendingIdentities;
+    switch (activeTab) {
+      case "Identities":
+        return identities;
+      case "Claims":
+        return claimsIdentities;
+      case "Pending":
+        return pendingIdentities;
+      case "Denied":
+        return deniedIdentities;
+      case "Removed":
+        return removedIdentities;
+      default:
+        return [];
     }
-    return [];
   };
 
   const getCurrentPagination = () => {
-    if (activeTab === "Identities") {
-      return pagination.identities;
-    } else if (activeTab === "Claims") {
-      return pagination.claims;
-    } else if (activeTab === "Pending") {
-      return pagination.pending;
+    switch (activeTab) {
+      case "Identities":
+        return pagination.identities;
+      case "Claims":
+        return pagination.claims;
+      case "Pending":
+        return pagination.pending;
+      case "Denied":
+        return pagination.denied;
+      case "Removed":
+        return pagination.removed;
+      default:
+        return { page: 1, limit: 10, totalCount: 0, hasMore: false };
     }
-    return { page: 1, limit: 10, totalCount: 0, hasMore: false };
   };
+
+  // ─── Column Definitions ───────────────────────────────────────────────────────
+
+  const columns = [
+    { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
+    { label: "Address", name: "identityAddress", width: "350px" },
+    { label: "KYC ID Account #", name: "kyc_id" },
+    { label: "Flagged?", name: "flagged_account" },
+    { label: "Claims", name: "claims" },
+  ];
+
+  const pendingColumns = [
+    { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
+    { label: "Address", name: "identityAddress", width: "350px" },
+    { label: "KYC ID Account #", name: "kyc_id" },
+    { label: "Flagged?", name: "flagged_account" },
+    { label: "Type", name: "type" },
+    { label: "Status", name: "status" },
+  ];
+
+  const addRulesColumns = [
+    { label: "Identity", name: "displayName" },
+    { label: "Email", name: "email" },
+    { label: "Address", name: "identityAddress", width: "350px" },
+    { label: "KYC ID Account #", name: "kyc_id" },
+    { label: "Flagged?", name: "flagged_account" },
+  ];
+
+  // ─── Action Definitions ───────────────────────────────────────────────────────
+
+  const actions = [
+    { label: "Edit Rules", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
+    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
+    {
+      label: "Remove",
+      name: NomyxAction.RemoveIdentity,
+      icon: <DeleteOutlined />,
+      confirmation: "Are you sure you want to remove this Identity?",
+    },
+  ];
+
+  const pendingActions = [
+    { label: "Approve", name: NomyxAction.CreatePendingIdentity, icon: <CheckOutlined /> },
+    { label: "View", name: NomyxAction.ViewPendingIdentity, icon: <EyeOutlined /> },
+    { label: "Associate", name: NomyxAction.AssociateInquiry, icon: <LinkOutlined /> },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: <MailOutlined /> },
+    {
+      label: "Deny",
+      name: NomyxAction.RemoveUser,
+      icon: <CloseOutlined />,
+      confirmation: "Are you sure you want to deny this pending Identity?",
+    },
+  ];
+
+  const deniedActions = [
+    { label: "Approve", name: NomyxAction.CreatePendingIdentity, icon: <CheckOutlined /> },
+    { label: "View", name: NomyxAction.ViewPendingIdentity, icon: <EyeOutlined /> },
+    { label: "Associate", name: NomyxAction.AssociateInquiry, icon: <LinkOutlined /> },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: <MailOutlined /> },
+  ];
+
+  const removedActions = [
+    { label: "Re-approve", name: NomyxAction.CreatePendingIdentity, icon: <CheckOutlined /> },
+    { label: "View", name: NomyxAction.ViewPendingIdentity, icon: <EyeOutlined /> },
+    { label: "Associate", name: NomyxAction.AssociateInquiry, icon: <LinkOutlined /> },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: <MailOutlined /> },
+  ];
+
+  const claimsActions = [
+    { label: "Add Rules", name: NomyxAction.AddClaims, icon: <PlusOutlined /> },
+    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
+    {
+      label: "Remove",
+      name: NomyxAction.RemoveIdentity,
+      icon: <DeleteOutlined />,
+      confirmation: "Are you sure you want to remove this Identity?",
+    },
+  ];
+
+  const globalActions = [{ label: "Create identity", name: NomyxAction.CreateIdentity, icon: <PlusOutlined /> }];
+
+  const search = true;
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -645,6 +663,7 @@ const IdentitiesPage = ({ service }) => {
             onSearch={handleSearch}
           />
         </TabPane>
+
         <TabPane tab="Pending" key="Pending">
           <PendingIdentitiesObjectList
             title="Pending"
@@ -664,10 +683,51 @@ const IdentitiesPage = ({ service }) => {
             onFilterChange={handlePendingFilterChange}
           />
         </TabPane>
+
+        <TabPane tab="Denied" key="Denied">
+          <PendingIdentitiesObjectList
+            title="Denied"
+            description="Identities that have been denied"
+            columns={pendingColumns}
+            actions={deniedActions}
+            globalActions={globalActions}
+            data={getCurrentData()}
+            pageSize={10}
+            onAction={handleAction}
+            onGlobalAction={handleAction}
+            loading={loading.denied}
+            hasMore={pagination.denied.hasMore}
+            totalCount={pagination.denied.totalCount}
+            currentPage={pagination.denied.page}
+            onPageChange={handlePageChange}
+            showFilterDropdown={false}
+          />
+        </TabPane>
+
+        <TabPane tab="Removed" key="Removed">
+          <PendingIdentitiesObjectList
+            title="Removed"
+            description="Identities that have been removed"
+            columns={pendingColumns}
+            actions={removedActions}
+            globalActions={globalActions}
+            data={getCurrentData()}
+            pageSize={10}
+            onAction={handleAction}
+            onGlobalAction={handleAction}
+            loading={loading.removed}
+            hasMore={pagination.removed.hasMore}
+            totalCount={pagination.removed.totalCount}
+            currentPage={pagination.removed.page}
+            onPageChange={handlePageChange}
+            showFilterDropdown={false}
+          />
+        </TabPane>
+
         <TabPane tab="Add Rules" key="Claims">
           <ObjectList
             title="Add Rules"
-            description="Identies that have yet to be related to Compliance Rules"
+            description="Identities that have yet to be related to Compliance Rules"
             columns={addRulesColumns}
             actions={claimsActions}
             globalActions={globalActions}
@@ -697,16 +757,7 @@ const IdentitiesPage = ({ service }) => {
         cancelText="Cancel"
       >
         <Form form={associateForm} layout="vertical" name="associateInquiryForm">
-          <Form.Item
-            name="personaInquiryId"
-            label="Persona Inquiry ID"
-            rules={[
-              {
-                required: true,
-                message: "Please enter the Persona Inquiry ID",
-              },
-            ]}
-          >
+          <Form.Item name="personaInquiryId" label="Persona Inquiry ID" rules={[{ required: true, message: "Please enter the Persona Inquiry ID" }]}>
             <Input placeholder="Enter Persona Inquiry ID" />
           </Form.Item>
         </Form>
