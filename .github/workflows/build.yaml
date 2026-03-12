@@ -1,0 +1,35 @@
+name: Build
+
+on:
+    push:
+        branches: [main, dev, t7x-release, prosperlink, sgh-capital, staging]
+    pull_request:
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [18, 20, 22]
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: npm
+
+            - name: Setup env file
+              run: |
+                  mv .env.sample .env
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Build
+              env:
+                  CI: false
+              run: npm run build

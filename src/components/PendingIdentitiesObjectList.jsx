@@ -51,6 +51,8 @@ const PendingIdentitiesObjectList = ({
   totalCount = 0,
   currentPage = 1,
   onFilterChange,
+  onPageChange,
+  showFilterDropdown = true,
 }) => {
   const [pageData, setPageData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,7 +67,11 @@ const PendingIdentitiesObjectList = ({
   const handleViewResults = () => {
     setSearchTerm(tempSearchTerm);
     setSelectedFilter(tempFilter);
-    onFilterChange(tempSearchTerm, tempFilter, 1);
+    if (onFilterChange) {
+      onFilterChange(tempSearchTerm, tempFilter, 1);
+    } else if (onPageChange) {
+      onPageChange(1, tempSearchTerm);
+    }
   };
 
   const handleFilterChange = (value) => {
@@ -107,7 +113,12 @@ const PendingIdentitiesObjectList = ({
   };
 
   const handlePageClick = (event) => {
-    onFilterChange(searchTerm, selectedFilter, event.selected + 1);
+    const newPage = event.selected + 1;
+    if (onFilterChange) {
+      onFilterChange(searchTerm, selectedFilter, newPage);
+    } else if (onPageChange) {
+      onPageChange(newPage);
+    }
   };
 
   const handleGlobalActionClick = (event, actionName, confirmation) => {
@@ -151,15 +162,17 @@ const PendingIdentitiesObjectList = ({
         <h1>{title}</h1>
         <h2>{description ? description : "A list of your " + title}</h2>
         <section className="controls">
-          {/* Custom Filter Controls */}
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-            <Select value={tempFilter} onChange={handleFilterChange} style={{ width: 280 }} placeholder="Select filter">
-              <Option value="all">All Pending Users</Option>
-              <Option value="kyc_wallet">KYC + Wallet Completed</Option>
-              <Option value="kyc_only">KYC Only (Wallet Incomplete)</Option>
-              <Option value="marked_for_review">Marked for Review</Option>
-              <Option value="email_only">Email Verified Only</Option>
-            </Select>
+            {/* Only show dropdown for Pending tab */}
+            {showFilterDropdown && (
+              <Select value={tempFilter} onChange={handleFilterChange} style={{ width: 350 }} placeholder="Select filter">
+                <Option value="all">All Pending Users</Option>
+                <Option value="kyc_wallet">Verification + Wallet Completed</Option>
+                <Option value="kyc_only">Verification Completed (Wallet Incomplete)</Option>
+                <Option value="marked_for_review">Marked for Review</Option>
+                <Option value="email_only">Email Verified Only</Option>
+              </Select>
+            )}
 
             <Input
               placeholder="Search by name, email, address, or KYC ID"
@@ -178,24 +191,22 @@ const PendingIdentitiesObjectList = ({
 
           {globalActions && (
             <div className="global-actions" style={{ marginLeft: "auto" }}>
-              {globalActions.map((globalAction) => {
-                return (
-                  <button
-                    key={globalAction.name}
-                    className={"btn global-action-" + globalAction.name}
-                    onClick={(event) => handleGlobalActionClick(event, globalAction.name, globalAction.confirmation)}
-                  >
-                    {globalAction.icon ? (
-                      <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        {globalAction.icon}
-                        {globalAction.label}
-                      </span>
-                    ) : (
-                      globalAction.label
-                    )}
-                  </button>
-                );
-              })}
+              {globalActions.map((globalAction) => (
+                <button
+                  key={globalAction.name}
+                  className={"btn global-action-" + globalAction.name}
+                  onClick={(event) => handleGlobalActionClick(event, globalAction.name, globalAction.confirmation)}
+                >
+                  {globalAction.icon ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      {globalAction.icon}
+                      {globalAction.label}
+                    </span>
+                  ) : (
+                    globalAction.label
+                  )}
+                </button>
+              ))}
             </div>
           )}
         </section>
@@ -232,69 +243,67 @@ const PendingIdentitiesObjectList = ({
           </tr>
         </thead>
         <tbody>
-          {pageData.map((record) => {
-            return (
-              <tr key={record.id}>
-                {columns.map((column) => {
-                  let fieldName = typeof column === "object" ? column.name : column;
-                  let key = fieldName + "-" + record.id;
-                  if (column.name !== "flagged_account")
-                    return <td key={key}>{column.render ? <>{column.render(record)}</> : <>{getValue(fieldName, record)}</>}</td>;
-                  else
-                    return (
-                      <td key={key}>
-                        {record.watchlistMatched && (
-                          <div className="w-7 text-red-700">
-                            <WarningIcon />
-                          </div>
-                        )}
-                        {record.pepMatched && (
-                          <div className="w-7 text-red-700">
-                            <WarningIcon />
-                          </div>
-                        )}
-                      </td>
-                    );
-                })}
-                {actions && actions.length > 0 && (
-                  <td key={"actions" + record.id}>
-                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                      {actions.map((action) => {
-                        const buttonContent = (
-                          <button
-                            key={record.id + "-action-" + action.name}
-                            onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
-                            style={{
-                              color: "var(--link-color)",
-                              transition: "0.5s all",
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: "0.25rem",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              fontSize: "1.1rem",
-                            }}
-                            aria-label={action.label}
-                          >
-                            {action.icon || action.label}
-                          </button>
-                        );
+          {pageData.map((record) => (
+            <tr key={record.id}>
+              {columns.map((column) => {
+                let fieldName = typeof column === "object" ? column.name : column;
+                let key = fieldName + "-" + record.id;
+                if (column.name !== "flagged_account")
+                  return <td key={key}>{column.render ? <>{column.render(record[column.name], record)}</> : <>{getValue(fieldName, record)}</>}</td>;
+                else
+                  return (
+                    <td key={key}>
+                      {record.watchlistMatched && (
+                        <div className="w-7 text-red-700">
+                          <WarningIcon />
+                        </div>
+                      )}
+                      {record.pepMatched && (
+                        <div className="w-7 text-red-700">
+                          <WarningIcon />
+                        </div>
+                      )}
+                    </td>
+                  );
+              })}
+              {actions && actions.length > 0 && (
+                <td key={"actions" + record.id}>
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                    {actions.map((action) => {
+                      const buttonContent = (
+                        <button
+                          key={record.id + "-action-" + action.name}
+                          onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
+                          style={{
+                            color: "var(--link-color)",
+                            transition: "0.5s all",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "0.25rem",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            fontSize: "1.1rem",
+                          }}
+                          aria-label={action.label}
+                        >
+                          {action.icon || action.label}
+                        </button>
+                      );
 
-                        return action.icon ? (
-                          <Tooltip key={record.id + "-action-" + action.name} title={action.label} placement="top">
-                            {buttonContent}
-                          </Tooltip>
-                        ) : (
-                          buttonContent
-                        );
-                      })}
-                    </div>
-                  </td>
-                )}
-              </tr>
-            );
-          })}
+                      return action.icon ? (
+                        <Tooltip key={record.id + "-action-" + action.name} title={action.label} placement="top">
+                          {buttonContent}
+                        </Tooltip>
+                      ) : (
+                        buttonContent
+                      );
+                    })}
+                  </div>
+                </td>
+              )}
+            </tr>
+          ))}
         </tbody>
       </table>
 
