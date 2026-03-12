@@ -283,17 +283,22 @@ const IdentitiesPage = ({ service }) => {
 
   const handleRemoveUser = async (record) => {
     const { displayName, identityAddress } = record;
+
     removeFromLocalState(record);
+
     toast
       .promise(
         async () => {
-          const deleted = await service.softRemoveUser(identityAddress);
-          return deleted;
+          const response = await Parse.Cloud.run("denyPendingUser", {
+            walletAddress: identityAddress,
+          });
+
+          return response;
         },
         {
           pending: `Denying ${displayName}...`,
-          success: (deleted) => {
-            if (deleted) {
+          success: (response) => {
+            if (response) {
               return `${displayName} has been successfully denied.`;
             } else {
               throw new Error(`${displayName} couldn't be denied.`);
