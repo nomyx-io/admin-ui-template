@@ -550,7 +550,7 @@ const IdentitiesPage = ({ service }) => {
   ];
 
   const actions = [
-    { label: "Edit Rules", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
+    { label: "Edit", name: NomyxAction.EditClaims, icon: <EditOutlined /> },
     { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined /> },
     { label: "Request for Investment", name: NomyxAction.RequestInvestment, icon: <DollarOutlined /> },
     {
@@ -599,10 +599,10 @@ const IdentitiesPage = ({ service }) => {
           navigate("/identities/pending/" + record.id);
           break;
         case NomyxAction.EditClaims:
-          navigate("/identities/" + record.id + "/edit");
+          navigate("/identities/" + record.id + "/edit?email=" + encodeURIComponent(record.email));
           break;
         case NomyxAction.AddClaims:
-          navigate("/identities/" + record.id + "/edit");
+          navigate("/identities/" + record.id + "/edit?email=" + encodeURIComponent(record.email));
           break;
         case NomyxAction.RemoveIdentity:
           handleRemoveIdentity(event, action, record);
@@ -612,8 +612,10 @@ const IdentitiesPage = ({ service }) => {
           setInvestmentModalVisible(true);
           break;
         case NomyxAction.CreatePendingIdentity:
-          const { displayName, kyc_id, identityAddress } = record;
-          navigate(`/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}`);
+          const { displayName, kyc_id, identityAddress, id, email } = record;
+          navigate(
+            `/identities/create?displayName=${displayName}&walletAddress=${identityAddress}&accountNumber=${kyc_id}&userId=${id}&email=${encodeURIComponent(email)}`
+          );
           break;
         case NomyxAction.AssociateInquiry:
           handleAssociateInquiry(record);
