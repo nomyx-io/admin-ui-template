@@ -555,8 +555,8 @@ function CreateDigitalId({ service }) {
 
         await retryWithBackoff(createIdentity, 8, "Create identity");
 
-        identity = await UserService.getIdentityByEmail(userEmail);
-        console.log("New identity created:", identity);
+        identity = await retryWithBackoff(async () => await service.getIdentityByEmail(userEmail), 8, "Get created identity");
+        console.log("New identity created:", identity.address);
         identityCreatedOrExists = true;
 
         saveOperationState(walletAddr, {
