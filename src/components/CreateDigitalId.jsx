@@ -427,7 +427,7 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await UserService.getIdentityByEmail(userEmail);
+          identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
           console.log("Existing identity check:", identity);
 
           if (identity) {
@@ -555,7 +555,7 @@ function CreateDigitalId({ service }) {
 
         await retryWithBackoff(createIdentity, 8, "Create identity");
 
-        identity = await retryWithBackoff(async () => await service.getIdentityByEmail(userEmail), 8, "Get created identity");
+        identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get created identity");
         console.log("New identity created:", identity.address);
         identityCreatedOrExists = true;
 
@@ -809,7 +809,7 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await UserService.getIdentityByEmail(userEmail);
+          identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
           console.log("Existing identity check:", identity);
 
           if (identity) {
@@ -837,7 +837,7 @@ function CreateDigitalId({ service }) {
           await service.createIdentity(walletAddress);
           await awaitTimeout(2000);
 
-          identity = await UserService.getIdentityByEmail(userEmail);
+          identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
 
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;
