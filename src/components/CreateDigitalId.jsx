@@ -516,8 +516,18 @@ function CreateDigitalId({ service }) {
         };
 
         await createIdentity();
-        await awaitTimeout(2000);
-        identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get created identity");
+        await awaitTimeout(5000);
+        identity = await retryWithBackoff(
+          async () => {
+            const result = await UserService.getIdentityByEmail(userEmail);
+            if (!result?.address) {
+              throw new Error("Identity not yet propagated"); // force retry
+            }
+            return result;
+          },
+          8,
+          "Get created identity"
+        );
         console.log("New identity created:", identity.address);
         identityCreatedOrExists = true;
 

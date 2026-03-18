@@ -476,13 +476,14 @@ class BlockchainService {
     // Fetch the identity record based on the given ID
     const identities = await ParseClient.getRecords("Identity", ["objectId"], [id], ["*"]);
     const identity = identities.length > 0 ? identities[0] : null;
-    const user = (await ParseClient.getRecords("_User", ["personaReferenceId"], [identity.attributes.accountNumber], ["*"]))[0];
-    const claims = await ParseClient.getRecords("ClaimTopic", undefined, undefined, ["*"]);
 
     // If no identity is found, return null
     if (!identity) {
       return null;
     }
+
+    const user = (await ParseClient.getRecords("_User", ["personaReferenceId"], [identity.attributes.accountNumber], ["*"]))[0];
+    const claimTopics = await ParseClient.getRecords("ClaimTopic", undefined, undefined, ["*"]);
 
     const claimAdded = await ParseClient.getRecords("ClaimAdded__e", ["identity"], [identity.attributes.identity], ["claimTopic", "blockHash"]);
 
@@ -492,19 +493,31 @@ class BlockchainService {
       return acc;
     }, {});
 
-    // Retrieve identity claims and filter them
-    const identityClaims = identity.attributes.claims || [];
-    const matchedClaims = claims
-      .filter((claim) => identityClaims.includes(claim?.attributes?.topic))
-      .map((claim) => ({
-        ...claim.attributes, // Include all original claim properties
-        blockHash: blockHashMap[claim.attributes.topic] || null, // Add blockHash if match is found
+    // Fetch active claims for this identity from the Claim table (same as getActiveIdentities cloud function)
+    const activeClaims = await ParseClient.getRecords("Claim", ["identityObj"], [identity.id], ["*"]);
+    const activeClaimTopics = new Set(
+      activeClaims
+        .filter((claim) => claim.attributes.active)
+        .map((claim) => {
+          const topic = claim.attributes.claimTopicObj?.attributes?.topic ?? claim.attributes.claimTopic;
+          return parseInt(topic, 10);
+        })
+        .filter((topic) => !isNaN(topic))
+    );
+
+    // Match active claim topics against ClaimTopic records and attach blockHash
+    const matchedClaims = claimTopics
+      .filter((claimTopic) => activeClaimTopics.has(claimTopic.attributes.topic))
+      .map((claimTopic) => ({
+        ...claimTopic.attributes,
+        blockHash: blockHashMap[claimTopic.attributes.topic] || null,
       }));
-    // Return the identity along with its attributes, including the claims directly from the record
+
+    // Return the identity along with its attributes, including the claims from the Claim table
     return {
-      ...identity, // The identity object itself
-      ...identity.attributes, // Spread the attributes of the identity for easier access
-      claims: matchedClaims || [], // Return claims from identity attributes or an empty array
+      ...identity,
+      ...identity.attributes,
+      claims: matchedClaims || [],
       personaData:
         user && user.attributes.personaVerificationData ? JSON.parse(user.attributes.personaVerificationData ?? "")?.data?.attributes : null,
       pepMatched: user && user.attributes.pepMatched,
