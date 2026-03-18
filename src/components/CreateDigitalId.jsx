@@ -512,49 +512,11 @@ function CreateDigitalId({ service }) {
             }
             throw new Error(completeError);
           }
-
-          // Wait for blockchain confirmation if the response includes a transaction hash
-          // if (completeResponse?.transactionHash && service?.provider?.waitForTransaction) {
-          //   console.log("⏳ Waiting for createIdentity tx confirmation:", completeResponse.transactionHash);
-          //   toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
-
-          //   const txHash = completeResponse.transactionHash;
-          //   const maxAttempts = 10; // roughly ~2 minutes total
-          //   const delayMs = 10000; // 10s between retries
-
-          //   let confirmed = false;
-
-          //   for (let i = 0; i < maxAttempts; i++) {
-          //     try {
-          //       const receipt = await service.provider.waitForTransaction(txHash, 1, delayMs);
-          //       if (receipt && receipt.status === 1) {
-          //         confirmed = true;
-          //         console.log(`Transaction ${txHash} confirmed in block ${receipt.blockNumber}`);
-          //         break;
-          //       } else {
-          //         console.warn(`⚠️ Attempt ${i + 1}: tx not confirmed yet, retrying...`);
-          //       }
-          //     } catch (err) {
-          //       console.warn(`waitForTransaction failed (attempt ${i + 1}/${maxAttempts}):`, err.message);
-          //     }
-
-          //     // Wait before retrying
-          //     await awaitTimeout(delayMs);
-          //   }
-
-          //   if (!confirmed) {
-          //     throw new Error(`Transaction ${txHash} not confirmed after ${maxAttempts * (delayMs / 1000)} seconds`);
-          //   }
-          // } else {
-          //   console.log("⚠️ No transaction hash from Dfns, waiting 10s before proceeding...");
-          //   await awaitTimeout(10000);
-          // }
-
           return completeResponse;
         };
 
-        await retryWithBackoff(createIdentity, 8, "Create identity");
-
+        await createIdentity();
+        await awaitTimeout(2000);
         identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get created identity");
         console.log("New identity created:", identity.address);
         identityCreatedOrExists = true;
@@ -693,46 +655,6 @@ function CreateDigitalId({ service }) {
         });
       }
 
-      // ONLY proceed with metadata update if identity was successfully created AND registered
-      // if (!identityCreatedOrExists || !identityRegisteredOrExists) {
-      //   toast.update(toastId, {
-      //     render: "Identity processing incomplete",
-      //     type: "error",
-      //     isLoading: false,
-      //     autoClose: 3000,
-      //   });
-      //   return;
-      // }
-
-      // Steps 5 and 6 are handled via server trigger for managed wallets
-
-      // 5 and 6 are now done via a server trigger to minimize frontend intera
-
-      // // Step 5: Update identity metadata
-      // toast.update(toastId, { render: "Updating identity metadata..." });
-      // await service.updateIdentity(walletAddress.toLowerCase(), {
-      //   displayName: trimmedDisplayName,
-      //   walletAddress: walletAddress.toLowerCase(),
-      //   accountNumber: trimmedAccountNumber,
-      // });
-
-      // // Step 6: Approve user only if requested via searchParams
-      // if (searchParams.has("walletAddress")) {
-      //   const userExists = await service.isUser(walletAddress.toLowerCase());
-      //   if (userExists) {
-      //     toast.update(toastId, { render: "Approving user..." });
-      //     await service.approveUser(walletAddress.toLowerCase());
-      //   } else {
-      //     toast.update(toastId, {
-      //       render: `User with wallet address ${walletAddress} does not exist`,
-      //       type: "error",
-      //       isLoading: false,
-      //       autoClose: 3000,
-      //     });
-      //     return;
-      //   }
-      // }
-      // Mark as completed and clear saved state
       saveOperationState(walletAddr, {
         displayName: trimmedDisplayName,
         accountNumber: trimmedAccountNumber,
@@ -923,53 +845,6 @@ function CreateDigitalId({ service }) {
           throw error;
         }
       }
-
-      // ONLY proceed with metadata update if identity was successfully created AND registered
-      // if (!identityCreatedOrExists || !identityRegisteredOrExists) {
-      //   toast.update(toastId, {
-      //     render: "Identity processing incomplete",
-      //     type: "error",
-      //     isLoading: false,
-      //     autoClose: 3000,
-      //   });
-      //   return;
-      // }
-
-      // Step 5: Update identity metadata
-      // toast.update(toastId, { render: "Updating identity metadata..." });
-      // try {
-      //   await retryWithBackoff(
-      //     async () =>
-      //       await service.updateIdentity(walletAddr, {
-      //         displayName: trimmedDisplayName,
-      //         walletAddress: walletAddr,
-      //         accountNumber: trimmedAccountNumber,
-      //       }),
-      //     3,
-      //     "Update metadata"
-      //   );
-      // } catch (error) {
-      //   console.error("Error updating identity:", error);
-      //   throw error;
-      // }
-
-      // Step 6: Approve user only if requested via searchParams
-      // if (searchParams.has("walletAddress")) {
-      //   const userExists = await service.isUser(walletAddr);
-      //   if (userExists) {
-      //     toast.update(toastId, { render: "Approving user..." });
-      //     await retryWithBackoff(async () => await service.approveUser(walletAddr), 3, "Approve user");
-      //   } else {
-      //     toast.update(toastId, {
-      //       render: `User with wallet address ${walletAddress} does not exist`,
-      //       type: "error",
-      //       isLoading: false,
-      //       autoClose: 3000,
-      //     });
-      //     return;
-      //   }
-      // }
-
       // Mark as completed and clear saved state
       saveOperationState(walletAddr, {
         displayName: trimmedDisplayName,
