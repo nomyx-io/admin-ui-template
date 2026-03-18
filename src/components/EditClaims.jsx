@@ -525,7 +525,7 @@ const EditClaims = ({ service }) => {
       <div className="flex justify-end gap-4">
         <Button
           onClick={saveClaims}
-          className="flex items-center gap-2 min-w-max text-center font-semibold rounded-2xl p-2 h-fit bg-[#7F56D9] text-white"
+          className="flex items-center gap-2 min-w-max text-center font-semibold rounded-2xl !p-4 h-fit bg-[#7F56D9] text-white mr-11"
         >
           <div>Save Claims</div>
         </Button>
