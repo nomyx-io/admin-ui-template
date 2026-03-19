@@ -494,7 +494,12 @@ class BlockchainService {
     }, {});
 
     // Fetch active claims for this identity from the Claim table (same as getActiveIdentities cloud function)
-    const activeClaims = await ParseClient.getRecords("Claim", ["identityObj"], [identity.id], ["*"]);
+    const identityPointer = {
+      __type: "Pointer",
+      className: "Identity",
+      objectId: identity.id,
+    };
+    const activeClaims = await ParseClient.getRecords("Claim", ["identityObj"], [identityPointer], ["*"]);
     const activeClaimTopics = new Set(
       activeClaims
         .filter((claim) => claim.attributes.active)
@@ -507,7 +512,7 @@ class BlockchainService {
 
     // Match active claim topics against ClaimTopic records and attach blockHash
     const matchedClaims = claimTopics
-      .filter((claimTopic) => activeClaimTopics.has(claimTopic.attributes.topic))
+      .filter((claimTopic) => activeClaimTopics.has(Number(claimTopic.attributes.topic)))
       .map((claimTopic) => ({
         ...claimTopic.attributes,
         blockHash: blockHashMap[claimTopic.attributes.topic] || null,
