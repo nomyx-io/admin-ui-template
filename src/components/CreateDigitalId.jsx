@@ -243,6 +243,9 @@ function CreateDigitalId({ service }) {
     if (errorMsg.includes("reject")) {
       return { type: "USER_REJECTED", retryable: false, userMessage: "Operation rejected" };
     }
+    if (errorMsg.includes("not yet propagated")) {
+      return { type: "PROPAGATION_DELAY", retryable: true, userMessage: "Waiting for blockchain propagation..." };
+    }
 
     return { type: "UNKNOWN", retryable: false, userMessage: errorMsg };
   }
@@ -512,10 +515,13 @@ function CreateDigitalId({ service }) {
             }
             throw new Error(completeError);
           }
-          return completeResponse;
+          return { completeResponse, includesRegistration: !!initiateResponse.includesRegistration };
         };
 
-        await createIdentity();
+        const createResult = await createIdentity();
+        if (createResult.includesRegistration) {
+          identityRegisteredOrExists = true;
+        }
         await awaitTimeout(5000);
         identity = await retryWithBackoff(
           async () => {
