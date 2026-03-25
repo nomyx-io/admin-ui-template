@@ -1,6 +1,25 @@
 import { WebAuthnSigner } from "@dfns/sdk-browser";
 import Parse from "parse";
 
+/** WebAuthn rpId must equal the current host or be a registrable domain suffix of it. */
+function resolveDfnsRelyingPartyId(): string {
+  const envId = process.env.REACT_APP_DFNS_RELYING_PARTY?.trim();
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    const host = window.location.hostname;
+    if (!envId || envId === "localhost") {
+      return host;
+    }
+    if (host === envId || host.endsWith(`.${envId}`)) {
+      return envId;
+    }
+    console.warn(
+      `[Dfns] REACT_APP_DFNS_RELYING_PARTY (${envId}) does not match hostname (${host}); using hostname. Align env and DFNS app WebAuthn settings.`
+    );
+    return host;
+  }
+  return envId || "localhost";
+}
+
 class DfnsService {
   private static _instance: DfnsService;
   private webauthn: WebAuthnSigner;
@@ -8,7 +27,7 @@ class DfnsService {
   constructor() {
     this.webauthn = new WebAuthnSigner({
       relyingParty: {
-        id: process.env.REACT_APP_DFNS_RELYING_PARTY || "localhost",
+        id: resolveDfnsRelyingPartyId(),
         name: "Nomyx Admin Portal",
       },
     });
