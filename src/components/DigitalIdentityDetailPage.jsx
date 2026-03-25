@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 
 import { Breadcrumb, Button, Input } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import { ClaimCard } from "./ClaimCard";
+import UserService from "../services/UserService";
 
 function toTitleCase(str) {
   return str.replace(/\w\S*/g, function (txt) {
@@ -16,12 +18,18 @@ function DigitalIdentityDetailView({ service }) {
   const [displayName, setDisplayName] = useState("");
   const [identity, setIdentity] = useState({});
   const personaData = identity?.personaData;
+  const [secondaryWallets, setSecondaryWallets] = useState([]);
+  const [loadingWallets, setLoadingWallets] = useState(false);
 
   // Determine identity type based on the templateId
   const templateId = personaData?.payload?.included?.filter((item) => item.type === "inquiry-template").map((item) => item.id)[0];
 
   const identityType =
     templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const userEmail = searchParams.get("email") || null;
 
   // Process verifications
   // Process verifications with specific labels
@@ -132,6 +140,25 @@ function DigitalIdentityDetailView({ service }) {
     getIdentity();
   }, [getIdentity]);
 
+  useEffect(() => {
+    if (userEmail) {
+      fetchUserWallets();
+    }
+  }, [userEmail]);
+
+  const fetchUserWallets = async () => {
+    if (!userEmail) return;
+    setLoadingWallets(true);
+    try {
+      const wallets = await UserService.getUserWallets(userEmail);
+      setSecondaryWallets(wallets || []);
+    } catch (error) {
+      console.error("Error fetching wallets:", error);
+    } finally {
+      setLoadingWallets(false);
+    }
+  };
+
   return (
     <div>
       <Breadcrumb
@@ -182,6 +209,32 @@ function DigitalIdentityDetailView({ service }) {
             className="font-light text-4xl max-[500px]:text-base text-gray-300"
           ></input>
         </div>
+
+        {/* Secondary Wallets Section */}
+        <div className="mt-6 mb-6 border p-6 rounded-lg">
+          <p className="text-lg font-semibold mb-1">Secondary Wallets</p>
+          <p className="text-sm text-gray-500 mb-4">Additional wallets linked to this identity</p>
+
+          {loadingWallets ? (
+            <div className="text-center py-8">Loading wallets...</div>
+          ) : secondaryWallets.length === 0 ? (
+            <div className="border rounded-xl p-6 bg-gray-50 text-center">
+              <p className="text-gray-500">No secondary wallets linked to this identity</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {secondaryWallets.map((wallet, index) => (
+                <div key={wallet.walletAddress || index} className="border rounded-xl p-4 bg-white">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">Wallet Address:</span>
+                    <span className="text-gray-600 font-mono text-sm">{wallet.walletAddress}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {personaData && (
           <div className="flex flex-col gap-2 rounded-lg bg-gray-200 p-6">
             <div className="flex">
