@@ -1,6 +1,25 @@
 import { WebAuthnSigner } from "@dfns/sdk-browser";
 import Parse from "parse";
 
+/** WebAuthn rpId must equal the current host or be a registrable domain suffix of it. */
+function resolveDfnsRelyingPartyId(): string {
+  const envId = process.env.REACT_APP_DFNS_RELYING_PARTY?.trim();
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    const host = window.location.hostname;
+    if (!envId || envId === "localhost") {
+      return host;
+    }
+    if (host === envId || host.endsWith(`.${envId}`)) {
+      return envId;
+    }
+    console.warn(
+      `[Dfns] REACT_APP_DFNS_RELYING_PARTY (${envId}) does not match hostname (${host}); using hostname. Align env and DFNS app WebAuthn settings.`
+    );
+    return host;
+  }
+  return envId || "localhost";
+}
+
 class DfnsService {
   private static _instance: DfnsService;
   private webauthn: WebAuthnSigner;
@@ -8,7 +27,7 @@ class DfnsService {
   constructor() {
     this.webauthn = new WebAuthnSigner({
       relyingParty: {
-        id: process.env.REACT_APP_DFNS_RELYING_PARTY || "localhost",
+        id: resolveDfnsRelyingPartyId(),
         name: "Nomyx Admin Portal",
       },
     });
@@ -216,7 +235,7 @@ class DfnsService {
     }
   }
 
-  public async initiateCreateIdentity(ownerAddress: string, walletId: string, dfnsToken: string) {
+  public async initiateCreateIdentity(ownerAddress: string, walletId: string, dfnsToken: string, secondaryWallets: string[] = []) {
     if (!ownerAddress || !walletId || !dfnsToken) {
       throw new Error("Missing required parameters for CreateIdentity.");
     }
@@ -226,6 +245,7 @@ class DfnsService {
         ownerAddress,
         walletId,
         dfns_token: dfnsToken,
+        additionalWallets: secondaryWallets,
       });
 
       console.log("CreateIdentity initiation response:", initiateResponse);
@@ -262,27 +282,6 @@ class DfnsService {
       console.error("Error completing CreateIdentity:", error);
       return { completeResponse: null, error: error.message };
     }
-  }
-
-  public async getIdentity(walletAddress: string) {
-    const maxRetries = 3,
-      delay = 1000;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const response = await Parse.Cloud.run("dfnsGetIdentity", {
-          identityOwner: walletAddress,
-        });
-        if (response?.identity) {
-          return response.identity; // Return identity if found
-        }
-      } catch (error: any) {
-        console.error(`Attempt ${attempt} failed: ${error.message}`);
-      }
-      // Wait for 1 second before retrying (if not the last attempt)
-      if (attempt < maxRetries) await new Promise((res) => setTimeout(res, delay));
-    }
-    console.error("Max retry attempts reached. Failed to fetch identity.");
-    return null; // Return null if all retries fail
   }
 
   public async initiateAddIdentity(ownerAddress: string, identity: any, walletId: string, dfnsToken: string) {
@@ -670,6 +669,104 @@ class DfnsService {
       return { completeResponse, error: null };
     } catch (error: any) {
       console.error("Error completing TransferOwnership:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
+
+  public async initiateLinkWallet(identityAddress: string, walletAddress: string, walletId: string, dfnsToken: string) {
+    if (!identityAddress || !walletAddress || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for LinkWallet.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsLinkUserWalletInit", {
+        identityAddress,
+        walletAddress,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("LinkWallet initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating LinkWallet:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeLinkWallet(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing LinkWallet.");
+    }
+
+    try {
+      const assertion = await this.webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsLinkUserWalletComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("LinkWallet completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing LinkWallet:", error);
+      return { completeResponse: null, error: error.message };
+    }
+  }
+
+  public async initiateUnlinkWallet(identityAddress: string, walletAddress: string, walletId: string, dfnsToken: string) {
+    if (!identityAddress || !walletAddress || !walletId || !dfnsToken) {
+      throw new Error("Missing required parameters for UnlinkWallet.");
+    }
+
+    try {
+      const initiateResponse = await Parse.Cloud.run("dfnsUnlinkUserWalletInit", {
+        identityAddress,
+        walletAddress,
+        walletId,
+        dfns_token: dfnsToken,
+      });
+
+      console.log("UnlinkWallet initiation response:", initiateResponse);
+
+      return { initiateResponse, error: null };
+    } catch (error: any) {
+      console.error("Error initiating UnlinkWallet:", error);
+      return { initiateResponse: null, error: error.message };
+    }
+  }
+
+  public async completeUnlinkWallet(walletId: string, dfnsToken: string, challenge: any, requestBody: any) {
+    if (!walletId || !dfnsToken || !challenge || !requestBody) {
+      throw new Error("Missing required parameters for completing UnlinkWallet.");
+    }
+
+    try {
+      const assertion = await this.webauthn.sign(challenge);
+
+      const completeResponse = await Parse.Cloud.run("dfnsUnlinkUserWalletComplete", {
+        walletId,
+        dfns_token: dfnsToken,
+        signedChallenge: {
+          challengeIdentifier: challenge.challengeIdentifier,
+          firstFactor: assertion,
+        },
+        requestBody,
+      });
+
+      console.log("UnlinkWallet completed:", completeResponse);
+
+      return { completeResponse, error: null };
+    } catch (error: any) {
+      console.error("Error completing UnlinkWallet:", error);
       return { completeResponse: null, error: error.message };
     }
   }

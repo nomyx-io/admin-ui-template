@@ -44,7 +44,6 @@ const AutoLogout = () => {
     //console.log(`✅ AutoLogout initialized - Token expires at: ${new Date(tokenExp).toLocaleTimeString()} (${tokenExp})`);
 
     const timeRemaining = tokenExp - Date.now();
-    console.log(`⏳ Time remaining: ${Math.max(Math.round(timeRemaining / 1000), 0)}s`);
 
     if (timeRemaining <= 0) {
       console.log("🚨 Token expired! Logging out...");
