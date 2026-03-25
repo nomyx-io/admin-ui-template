@@ -593,7 +593,7 @@ const IdentitiesPage = ({ service }) => {
           navigate("/identities/create");
           break;
         case NomyxAction.ViewIdentity:
-          navigate("/identities/" + record.id);
+          navigate("/identities/" + record.id + "?email=" + encodeURIComponent(record.email));
           break;
         case NomyxAction.ViewPendingIdentity:
           navigate("/identities/pending/" + record.id);
