@@ -483,9 +483,10 @@ class BlockchainService {
     }
 
     const user = (await ParseClient.getRecords("_User", ["personaReferenceId"], [identity.attributes.accountNumber], ["*"]))[0];
-    const claimTopics = await ParseClient.getRecords("ClaimTopic", undefined, undefined, ["*"]);
+    const claimTopics = (await ParseClient.getRecords("ClaimTopic", undefined, undefined, ["*"])) || [];
 
-    const claimAdded = await ParseClient.getRecords("ClaimAdded__e", ["identity"], [identity.attributes.identity], ["claimTopic", "blockHash"]);
+    const claimAdded =
+      (await ParseClient.getRecords("ClaimAdded__e", ["identity"], [identity.attributes.identity], ["claimTopic", "blockHash"])) || [];
 
     // Map claimTopics to blockHashes for easy lookup
     const blockHashMap = claimAdded.reduce((acc, record) => {
@@ -499,7 +500,7 @@ class BlockchainService {
       className: "Identity",
       objectId: identity.id,
     };
-    const activeClaims = await ParseClient.getRecords("Claim", ["identityObj"], [identityPointer], ["*"]);
+    const activeClaims = (await ParseClient.getRecords("Claim", ["identityObj"], [identityPointer], ["*"])) || [];
     const activeClaimTopics = new Set(
       activeClaims
         .filter((claim) => claim.attributes.active)
