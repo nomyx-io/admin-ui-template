@@ -132,8 +132,27 @@ const optimism: Chain = {
   },
 };
 
+const ethereum: Chain = {
+  id: 1,
+  network: "ethereum",
+  name: "Ethereum",
+  nativeCurrency: {
+    name: "Ethereum",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [process.env.REACT_APP_NETWORK_ETHEREUM || ""],
+    },
+    public: {
+      http: [process.env.REACT_APP_NETWORK_ETHEREUM || ""],
+    },
+  },
+};
+
 const { chains, publicClient } = configureChains(
-  [base, baseSep, localhost, optSep, optimism], // mainnet, polygon, optimism, arbitrum, zora,
+  [ethereum, base, baseSep, localhost, optSep, optimism], // mainnet, polygon, optimism, arbitrum, zora,
   [alchemyProvider({ apiKey: "CSgNtTJ6_Clrf1zNjVp2j1ppfLE2-aVX" }), publicProvider()]
 );
 
