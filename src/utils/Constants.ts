@@ -31,6 +31,7 @@ enum NomyxAction {
   AddClaims,
   AssociateInquiry,
   SendVerificationEmail,
+  ResetPersonaVerification,
 }
 
 enum WalletPreference {
