@@ -48,28 +48,6 @@ const IdentitiesPage = ({ service }) => {
     return "An unknown error occurred";
   };
 
-  function getTemplateNameById(inquiryTemplateId) {
-    const templateMap = {};
-
-    if (process.env.REACT_APP_PERSONA_KYB_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_KYB_TEMPLATEID] = "KYB";
-    }
-
-    if (process.env.REACT_APP_PERSONA_KYC_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_KYC_TEMPLATEID] = "KYC";
-    }
-
-    if (process.env.REACT_APP_PERSONA_ACCREDITED_INVESTOR_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_ACCREDITED_INVESTOR_TEMPLATEID] = "Accredited US Investor";
-    }
-
-    if (process.env.REACT_APP_PERSONA_QUALIFIED_INVESTOR_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_QUALIFIED_INVESTOR_TEMPLATEID] = "EU Qualified Investor";
-    }
-
-    return templateMap[inquiryTemplateId] || null;
-  }
-
   // Fetch token projects
   const fetchTokenProjects = useCallback(async () => {
     try {
