@@ -174,19 +174,11 @@ const IdentitiesPage = ({ service }) => {
             fetchedIdentities = result.data.map((user) => {
               const firstName = user.firstName || "";
               const lastName = user.lastName || "";
+
+              // Use server-resolved name; fall back to local map only if absent
+              const identityType = user.templateName || "";
+
               const personaData = user.personaVerificationData ? JSON.parse(user.personaVerificationData) : {};
-
-              const templateId =
-                personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
-                personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
-                "";
-              const identityType =
-                templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
-                  ? "KYC"
-                  : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
-                    ? "KYB"
-                    : "";
-
               const name = personaData?.data?.attributes?.name || "";
               const status = name.split(".")[1]?.toUpperCase() || (user.kycId ? "KYC Complete" : "") || "";
 
@@ -198,9 +190,9 @@ const IdentitiesPage = ({ service }) => {
                 kyc_id: user.personaReferenceId || "",
                 pepMatched: user.pepMatched || false,
                 watchlistMatched: user.watchlistMatched || false,
-                type: identityType || "",
-                status: status || "",
-                recommended_compliance_rules: templateId ? getTemplateNameById(templateId) : "",
+                type: identityType,
+                status,
+                //recommended_compliance_rules: identityType, // same resolved name
                 attributes: {
                   firstName,
                   lastName,
@@ -459,9 +451,20 @@ const IdentitiesPage = ({ service }) => {
     { label: "Email", name: "email" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
-    { label: "Recommended Compliance Rules", name: "recommended_compliance_rules" },
+    //{ label: "Recommended Compliance Rules", name: "recommended_compliance_rules" },
     { label: "Flagged?", name: "flagged_account" },
-    { label: "Type", name: "type" },
+    {
+      label: "Type",
+      name: "type",
+      width: "180px",
+      style: {
+        width: "180px",
+        minWidth: "180px",
+        maxWidth: "180px",
+        whiteSpace: "normal",
+        wordBreak: "break-word",
+      },
+    },
     { label: "Status", name: "status" },
   ];
 
