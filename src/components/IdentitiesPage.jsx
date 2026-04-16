@@ -55,8 +55,8 @@ const IdentitiesPage = ({ service }) => {
       templateMap[process.env.REACT_APP_PERSONA_KYB_TEMPLATEID] = "KYB";
     }
 
-    if (process.env.REACT_APP_PERSONA_KYC_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_KYC_TEMPLATEID] = "KYC";
+    if (process.env.REACT_APP_PERSONA_US_INVESTOR_TEMPLATEID) {
+      templateMap[process.env.REACT_APP_PERSONA_US_INVESTOR_TEMPLATEID] = "US Investor";
     }
 
     if (process.env.REACT_APP_PERSONA_ACCREDITED_INVESTOR_TEMPLATEID) {
@@ -181,8 +181,8 @@ const IdentitiesPage = ({ service }) => {
                 personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
                 "";
               const identityType =
-                templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
-                  ? "KYC"
+                templateId === process.env.REACT_APP_PERSONA_US_INVESTOR_TEMPLATEID
+                  ? "US Investor"
                   : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
                     ? "KYB"
                     : "";
