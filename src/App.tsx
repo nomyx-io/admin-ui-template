@@ -21,8 +21,8 @@ import CSPMeta from "./components/CSPMeta.jsx";
 import DigitalIdentityDetailView from "./components/DigitalIdentityDetailPage.jsx";
 import EditClaims from "./components/EditClaims.jsx";
 import EditClaimsSummaryView from "./components/EditClaimsSummaryView.jsx";
-import Home from "./components/Home.jsx";
 import { FixAuth } from "./components/FixAuth";
+import Home from "./components/Home.jsx";
 import IdentitiesPage from "./components/IdentitiesPage.jsx";
 import Layout from "./components/Layout";
 import Login from "./components/LoginPage.jsx";
@@ -510,10 +510,7 @@ function App() {
                   />
                   <Route path="/create-password/:token" element={<CreatePassword service={blockchainService} />} />
 
-                  <Route
-                    path="/fix-auth"
-                    element={<FixAuth dfnsToken={dfnsToken} />}
-                  />
+                  <Route path="/fix-auth" element={<FixAuth dfnsToken={dfnsToken} />} />
                   <Route
                     path="/topics"
                     element={
