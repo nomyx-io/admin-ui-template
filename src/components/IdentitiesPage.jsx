@@ -1,4 +1,15 @@
 import { useState, useEffect, useCallback, useContext } from "react";
+import {
+  EditOutlined,
+  EyeOutlined,
+  DeleteOutlined,
+  CheckOutlined,
+  MailOutlined,
+  CloseOutlined,
+  PlusOutlined,
+  LinkOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 
 import { Tabs } from "antd";
 import Parse from "parse";
@@ -171,6 +182,7 @@ const IdentitiesPage = ({ service }) => {
                 type: identityType,
                 status,
                 //recommended_compliance_rules: identityType, // same resolved name
+                personaVerified: user.personaVerified,
                 attributes: {
                   firstName,
                   lastName,
@@ -415,6 +427,32 @@ const IdentitiesPage = ({ service }) => {
     );
   };
 
+    // ─── Reset Persona Verification ─────────────────────────────────────────
+  const handleResetPersonaVerification = async (record) => {
+    const { id, displayName } = record;
+
+    toast
+      .promise(
+        async () => {
+          const result = await Parse.Cloud.run("resetPersonaVerification", {
+            userId: id,
+          });
+          return result;
+        },
+        {
+          pending: `Resetting Persona verification for ${displayName}...`,
+          success: `Persona verification reset for ${displayName}.`,
+          error: {
+            render({ data }) {
+              return `Failed to reset Persona verification: ${getErrorMessage(data)}`;
+            },
+          },
+        }
+      )
+      .then(() => setRefreshTrigger((prev) => !prev))
+      .catch((error) => console.error("Error in handleResetPersonaVerification:", error));
+  };
+
   const columns = [
     { label: "Identity", name: "displayName" },
     { label: "Email", name: "email" },
@@ -470,11 +508,19 @@ const IdentitiesPage = ({ service }) => {
     { label: "View", name: NomyxAction.ViewPendingIdentity },
     { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: "mail" },
     {
+      label: "Reset Persona",
+      name: NomyxAction.ResetPersonaVerification,
+      icon: <ReloadOutlined />,
+      confirmation: "This will clear the user's current Persona verification and require them to re-verify their identity. Are you sure?",
+    },
+    {
       label: "Deny",
       name: NomyxAction.RemoveUser,
       confirmation: "Are you sure you want to deny this pending Identity?",
     },
   ];
+
+ 
 
   const claimsActions = [
     { label: "Add Rules", name: NomyxAction.AddClaims },
@@ -524,6 +570,9 @@ const IdentitiesPage = ({ service }) => {
           break;
         case NomyxAction.RemoveUser:
           await handleRemoveUser(record);
+          break;
+       case NomyxAction.ResetPersonaVerification:
+          await handleResetPersonaVerification(record);
           break;
         default:
           console.log("Action not handled: ", action);
@@ -626,8 +675,8 @@ const IdentitiesPage = ({ service }) => {
             globalActions={globalActions}
             search={search}
             data={getCurrentData()}
-            pageSize={10}
             onAction={handleAction}
+            pageSize={10}
             onGlobalAction={handleAction}
             loading={getCurrentLoading()}
             hasMore={getCurrentPagination().hasMore}
