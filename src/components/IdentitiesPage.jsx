@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useContext } from "react";
+
 import {
   EditOutlined,
   EyeOutlined,
@@ -10,7 +11,6 @@ import {
   LinkOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
-
 import { Tabs } from "antd";
 import Parse from "parse";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -427,7 +427,7 @@ const IdentitiesPage = ({ service }) => {
     );
   };
 
-    // ─── Reset Persona Verification ─────────────────────────────────────────
+  // ─── Reset Persona Verification ─────────────────────────────────────────
   const handleResetPersonaVerification = async (record) => {
     const { id, displayName } = record;
 
@@ -520,8 +520,6 @@ const IdentitiesPage = ({ service }) => {
     },
   ];
 
- 
-
   const claimsActions = [
     { label: "Add Rules", name: NomyxAction.AddClaims },
     { label: "View", name: NomyxAction.ViewIdentity },
@@ -571,7 +569,7 @@ const IdentitiesPage = ({ service }) => {
         case NomyxAction.RemoveUser:
           await handleRemoveUser(record);
           break;
-       case NomyxAction.ResetPersonaVerification:
+        case NomyxAction.ResetPersonaVerification:
           await handleResetPersonaVerification(record);
           break;
         default:
