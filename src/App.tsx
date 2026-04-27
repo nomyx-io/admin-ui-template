@@ -151,8 +151,27 @@ const avaxFuji: Chain = {
   },
 };
 
+const avax: Chain = {
+  id: 43114,
+  network: "avalanche",
+  name: "Avalanche Mainnet",
+  nativeCurrency: {
+    name: "Avalanche",
+    symbol: "AVAX",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [process.env.REACT_APP_NETWORK_AVAX || ""],
+    },
+    public: {
+      http: [process.env.REACT_APP_NETWORK_AVAX || ""],
+    },
+  },
+};
+
 const { chains, publicClient } = configureChains(
-  [base, baseSep, localhost, optSep, optimism, avaxFuji], // mainnet, polygon, optimism, arbitrum, zora,
+  [base, baseSep, localhost, optSep, optimism, avaxFuji, avax], // mainnet, polygon, optimism, arbitrum, zora,
   [alchemyProvider({ apiKey: "CSgNtTJ6_Clrf1zNjVp2j1ppfLE2-aVX" }), publicProvider()]
 );
 
