@@ -21,7 +21,11 @@ function DigitalIdentityDetailView({ service }) {
   const templateId = personaData?.payload?.included?.filter((item) => item.type === "inquiry-template").map((item) => item.id)[0];
 
   const identityType =
-    templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID ? "KYC" : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID ? "KYB" : "";
+    templateId === process.env.REACT_APP_PERSONA_US_INVESTOR_TEMPLATEID
+      ? "US Investor"
+      : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
+        ? "KYB"
+        : "";
 
   // Process verifications
   // Process verifications with specific labels
@@ -50,7 +54,7 @@ function DigitalIdentityDetailView({ service }) {
 
       // Select labels based on identityType and index
       let label;
-      if (identityType === "KYC") {
+      if (identityType === "US Investor") {
         label = kycLabels[index] || (item.type ? toTitleCase(item.type.split("/")[1].replace("-", " ")) : defaultLabel);
       } else if (identityType === "KYB") {
         label = kybLabels[index] || (item.type ? toTitleCase(item.type.split("/")[1].replace("-", " ")) : defaultLabel);
@@ -83,7 +87,7 @@ function DigitalIdentityDetailView({ service }) {
 
       // Assign labels based on identity type
       let label;
-      if (identityType === "KYC") {
+      if (identityType === "US Investor") {
         label = kycLabels[index] || toTitleCase(item.type.split("/")[1].replace("-", " "));
       } else if (identityType === "KYB") {
         label = kybLabels[index] || toTitleCase(item.type.split("/")[1].replace("-", " "));
