@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 
+import { ReloadOutlined } from "@ant-design/icons";
 import { Tabs } from "antd";
 import Parse from "parse";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -47,28 +48,6 @@ const IdentitiesPage = ({ service }) => {
     if (error?.toString) return error.toString();
     return "An unknown error occurred";
   };
-
-  function getTemplateNameById(inquiryTemplateId) {
-    const templateMap = {};
-
-    if (process.env.REACT_APP_PERSONA_KYB_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_KYB_TEMPLATEID] = "KYB";
-    }
-
-    if (process.env.REACT_APP_PERSONA_KYC_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_KYC_TEMPLATEID] = "KYC";
-    }
-
-    if (process.env.REACT_APP_PERSONA_ACCREDITED_INVESTOR_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_ACCREDITED_INVESTOR_TEMPLATEID] = "Accredited US Investor";
-    }
-
-    if (process.env.REACT_APP_PERSONA_QUALIFIED_INVESTOR_TEMPLATEID) {
-      templateMap[process.env.REACT_APP_PERSONA_QUALIFIED_INVESTOR_TEMPLATEID] = "EU Qualified Investor";
-    }
-
-    return templateMap[inquiryTemplateId] || null;
-  }
 
   // Fetch token projects
   const fetchTokenProjects = useCallback(async () => {
@@ -174,19 +153,11 @@ const IdentitiesPage = ({ service }) => {
             fetchedIdentities = result.data.map((user) => {
               const firstName = user.firstName || "";
               const lastName = user.lastName || "";
+
+              // Use server-resolved name; fall back to local map only if absent
+              const identityType = user.templateName || "";
+
               const personaData = user.personaVerificationData ? JSON.parse(user.personaVerificationData) : {};
-
-              const templateId =
-                personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
-                personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
-                "";
-              const identityType =
-                templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
-                  ? "KYC"
-                  : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
-                    ? "KYB"
-                    : "";
-
               const name = personaData?.data?.attributes?.name || "";
               const status = name.split(".")[1]?.toUpperCase() || (user.kycId ? "KYC Complete" : "") || "";
 
@@ -198,9 +169,10 @@ const IdentitiesPage = ({ service }) => {
                 kyc_id: user.personaReferenceId || "",
                 pepMatched: user.pepMatched || false,
                 watchlistMatched: user.watchlistMatched || false,
-                type: identityType || "",
-                status: status || "",
-                recommended_compliance_rules: templateId ? getTemplateNameById(templateId) : "",
+                type: identityType,
+                status,
+                //recommended_compliance_rules: identityType, // same resolved name
+                personaVerified: user.personaVerified,
                 attributes: {
                   firstName,
                   lastName,
@@ -445,6 +417,32 @@ const IdentitiesPage = ({ service }) => {
     );
   };
 
+  // ─── Reset Persona Verification ─────────────────────────────────────────
+  const handleResetPersonaVerification = async (record) => {
+    const { id, displayName } = record;
+
+    toast
+      .promise(
+        async () => {
+          const result = await Parse.Cloud.run("resetPersonaVerification", {
+            userId: id,
+          });
+          return result;
+        },
+        {
+          pending: `Resetting Persona verification for ${displayName}...`,
+          success: `Persona verification reset for ${displayName}.`,
+          error: {
+            render({ data }) {
+              return `Failed to reset Persona verification: ${getErrorMessage(data)}`;
+            },
+          },
+        }
+      )
+      .then(() => setRefreshTrigger((prev) => !prev))
+      .catch((error) => console.error("Error in handleResetPersonaVerification:", error));
+  };
+
   const columns = [
     { label: "Identity", name: "displayName" },
     { label: "Email", name: "email" },
@@ -459,9 +457,20 @@ const IdentitiesPage = ({ service }) => {
     { label: "Email", name: "email" },
     { label: "Address", name: "identityAddress", width: "350px" },
     { label: "KYC ID Account #", name: "kyc_id" },
-    { label: "Recommended Compliance Rules", name: "recommended_compliance_rules" },
+    //{ label: "Recommended Compliance Rules", name: "recommended_compliance_rules" },
     { label: "Flagged?", name: "flagged_account" },
-    { label: "Type", name: "type" },
+    {
+      label: "Type",
+      name: "type",
+      width: "180px",
+      style: {
+        width: "180px",
+        minWidth: "180px",
+        maxWidth: "180px",
+        whiteSpace: "normal",
+        wordBreak: "break-word",
+      },
+    },
     { label: "Status", name: "status" },
   ];
 
@@ -488,6 +497,12 @@ const IdentitiesPage = ({ service }) => {
     { label: "Approve", name: NomyxAction.CreatePendingIdentity },
     { label: "View", name: NomyxAction.ViewPendingIdentity },
     { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: "mail" },
+    {
+      label: "Reset Persona",
+      name: NomyxAction.ResetPersonaVerification,
+      icon: <ReloadOutlined />,
+      confirmation: "This will clear the user's current Persona verification and require them to re-verify their identity. Are you sure?",
+    },
     {
       label: "Deny",
       name: NomyxAction.RemoveUser,
@@ -543,6 +558,9 @@ const IdentitiesPage = ({ service }) => {
           break;
         case NomyxAction.RemoveUser:
           await handleRemoveUser(record);
+          break;
+        case NomyxAction.ResetPersonaVerification:
+          await handleResetPersonaVerification(record);
           break;
         default:
           console.log("Action not handled: ", action);
@@ -623,8 +641,8 @@ const IdentitiesPage = ({ service }) => {
             globalActions={globalActions}
             search={search}
             data={getCurrentData()}
-            pageSize={10}
             onAction={handleAction}
+            pageSize={10}
             onGlobalAction={handleAction}
             loading={getCurrentLoading()}
             hasMore={getCurrentPagination().hasMore}
