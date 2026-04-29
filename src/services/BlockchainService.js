@@ -174,26 +174,26 @@ class BlockchainService {
   }
 
   async updateClaimTopic(claimTopic) {
-    const maxRetries = 3,
-      delay = 2000;
+    const maxRetries = 3;
+    const delay = 2000;
+    let lastError;
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        // Check if the record exists
         const existingRecord = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "topic", "desc");
-        if (existingRecord?.length > 0) {
-          // Attempt to update the record
-          await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
-
-          console.log("Record updated successfully!");
-          return; // Exit after successful update
+        if (!existingRecord?.length) {
+          throw new Error("No ClaimTopic records found");
         }
+        await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
+        return;
       } catch (error) {
-        console.error(`Attempt ${attempt} failed: ${error.message}`);
+        lastError = error;
+        console.error(`updateClaimTopic attempt ${attempt} failed: ${error.message}`);
       }
-      // Wait for 1 second before retrying (if not the last attempt)
       if (attempt < maxRetries) await new Promise((res) => setTimeout(res, delay));
     }
-    console.error("Max retry attempts reached. Failed to update the record.");
+
+    throw new Error(`Failed to update ClaimTopic after ${maxRetries} attempts: ${lastError?.message ?? "unknown error"}`);
   }
 
   async removeClaimTopic(claimTopic) {
