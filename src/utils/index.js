@@ -95,7 +95,10 @@ const awaitTimeout = (delay, reason) =>
     }, delay)
   );
 
-const waitFor = async (predicate, { timeoutMs = 30000, intervalMs = 1000, maxIntervalMs = 5000, label = "condition" } = {}) => {
+const waitFor = async (
+  predicate,
+  { timeoutMs = 30000, intervalMs = 1000, maxIntervalMs = 5000, backoffFactor = 2, jitter = false, label = "condition" } = {}
+) => {
   const deadline = Date.now() + timeoutMs;
   let interval = intervalMs;
   let lastError;
@@ -109,8 +112,10 @@ const waitFor = async (predicate, { timeoutMs = 30000, intervalMs = 1000, maxInt
     }
     const remaining = deadline - Date.now();
     if (remaining <= 0) break;
-    await new Promise((r) => setTimeout(r, Math.min(interval, remaining)));
-    interval = Math.min(interval * 1.5, maxIntervalMs);
+    // Full jitter: pick a random delay in [0, interval] to avoid synchronized retries hitting the backend.
+    const delay = jitter ? Math.random() * interval : interval;
+    await new Promise((r) => setTimeout(r, Math.min(delay, remaining)));
+    interval = Math.min(interval * backoffFactor, maxIntervalMs);
   }
 
   const reason = lastError ? `: ${lastError.message}` : "";
