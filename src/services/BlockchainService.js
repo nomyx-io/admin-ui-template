@@ -171,22 +171,26 @@ class BlockchainService {
   async addClaimTopic(claimTopic) {
     const contractWithSigner = this.claimTopicRegistryService.connect(this.signer);
     const tx = await contractWithSigner.addClaimTopic(claimTopic);
-    return await tx.wait();
+    const receipt = await tx.wait();
+    if (receipt.status === 0) {
+      throw new Error(`addClaimTopic transaction failed (txHash: ${receipt.transactionHash})`);
+    }
+    return receipt.transactionHash;
   }
 
-  async updateClaimTopic(claimTopic) {
-    const { topic, displayName } = claimTopic;
+  async updateClaimTopic(txhash,claimTopic) {
+    const {topic, displayName } = claimTopic;
     const topicKey = String(topic);
 
     await waitFor(
       async () => {
-        const rows = await ParseClient.getRecords("ClaimTopicAdded__e", ["claimTopic"], [topicKey], [], 1, 0, "createdAt", "desc");
+        const rows = await ParseClient.getRecords("ClaimTopic", ["transactionHash"], [txhash], [], 1, 0, "createdAt", "desc");
         return rows?.length ? rows[0] : null;
       },
       { timeoutMs: 30000, intervalMs: 1000, maxIntervalMs: 4000, label: `ClaimTopicAdded event for topic ${topicKey}` }
     );
 
-    await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [topicKey], claimTopic);
+    await ParseClient.updateExistingRecord("ClaimTopic", ["transactionHash"], [txhash], { topic: topicKey, displayName });
 
     return await waitFor(
       async () => {

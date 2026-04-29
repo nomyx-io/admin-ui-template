@@ -66,6 +66,7 @@ function CreateClaimTopic({ service }) {
     }
 
     const createPromise = (async () => {
+      let txhash;
       if (walletPreference === WalletPreference.MANAGED) {
         const { initiateResponse, error: initError } = await DfnsService.initiateAddClaimTopic(topicId, user.walletId, dfnsToken);
         if (initError) throw new Error(initError);
@@ -73,19 +74,24 @@ function CreateClaimTopic({ service }) {
           throw new Error("Unexpected response from DFNS initiateAddClaimTopic");
         }
 
-        const { error: completeError } = await DfnsService.completeAddClaimTopic(
+        const { completeResponse, error: completeError } = await DfnsService.completeAddClaimTopic(
           user.walletId,
           dfnsToken,
           initiateResponse.challenge,
           initiateResponse.requestBody
         );
         if (completeError) throw new Error(completeError);
+        txhash = completeResponse?.transactionHash;
       } else {
-        await service.addClaimTopic(topicId);
+        txhash = await service.addClaimTopic(topicId);
+      }
+
+      if (!txhash) {
+        throw new Error("Compliance rule transaction hash was not returned; cannot link the on-chain record to its display name.");
       }
 
       try {
-        await service.updateClaimTopic({
+        await service.updateClaimTopic(txhash, {
           topic: String(topicId),
           displayName: trimmedDisplayName,
         });
