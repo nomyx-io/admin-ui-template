@@ -178,8 +178,8 @@ class BlockchainService {
     return receipt.transactionHash;
   }
 
-  async updateClaimTopic(txhash,claimTopic) {
-    const {topic, displayName } = claimTopic;
+  async updateClaimTopic(txhash, claimTopic) {
+    const { topic, displayName } = claimTopic;
     const topicKey = String(topic);
 
     await waitFor(
