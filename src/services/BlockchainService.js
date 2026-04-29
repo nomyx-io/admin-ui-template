@@ -8,6 +8,7 @@ import * as IdentityRegistry from "../abi/IIdentityRegistry.json";
 import * as MinterFacet from "../abi/IMinterFacet.json";
 import * as TrustedIssuersRegistry from "../abi/ITrustedIssuersRegistry.json";
 import ParseClient from "../services/ParseClient"; // Import the singleton instance
+import { waitFor } from "../utils";
 import { NomyxEvent } from "../utils/Constants";
 
 class BlockchainService {
@@ -174,26 +175,27 @@ class BlockchainService {
   }
 
   async updateClaimTopic(claimTopic) {
-    const maxRetries = 3;
-    const delay = 2000;
-    let lastError;
+    const { topic, displayName } = claimTopic;
+    const topicKey = String(topic);
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const existingRecord = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "topic", "desc");
-        if (!existingRecord?.length) {
-          throw new Error("No ClaimTopic records found");
-        }
-        await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
-        return;
-      } catch (error) {
-        lastError = error;
-        console.error(`updateClaimTopic attempt ${attempt} failed: ${error.message}`);
-      }
-      if (attempt < maxRetries) await new Promise((res) => setTimeout(res, delay));
-    }
+    await waitFor(
+      async () => {
+        const rows = await ParseClient.getRecords("ClaimTopicAdded__e", ["claimTopic"], [topicKey], [], 1, 0, "createdAt", "desc");
+        return rows?.length ? rows[0] : null;
+      },
+      { timeoutMs: 30000, intervalMs: 1000, maxIntervalMs: 4000, label: `ClaimTopicAdded event for topic ${topicKey}` }
+    );
 
-    throw new Error(`Failed to update ClaimTopic after ${maxRetries} attempts: ${lastError?.message ?? "unknown error"}`);
+    await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [topicKey], claimTopic);
+
+    return await waitFor(
+      async () => {
+        const rows = await ParseClient.getRecords("ClaimTopic", ["topic"], [topicKey], [], 1);
+        const row = rows?.[0];
+        return row?.attributes?.displayName === displayName ? row : null;
+      },
+      { timeoutMs: 10000, intervalMs: 500, maxIntervalMs: 2000, label: `ClaimTopic.displayName for topic ${topicKey}` }
+    );
   }
 
   async removeClaimTopic(claimTopic) {

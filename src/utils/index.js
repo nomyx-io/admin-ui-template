@@ -95,4 +95,26 @@ const awaitTimeout = (delay, reason) =>
     }, delay)
   );
 
-export { getValue, recursiveSearch, isAlphanumeric, isAlphanumericAndSpace, isEthereumAddress, generateRandomString, awaitTimeout };
+const waitFor = async (predicate, { timeoutMs = 30000, intervalMs = 1000, maxIntervalMs = 5000, label = "condition" } = {}) => {
+  const deadline = Date.now() + timeoutMs;
+  let interval = intervalMs;
+  let lastError;
+
+  while (Date.now() < deadline) {
+    try {
+      const result = await predicate();
+      if (result) return result;
+    } catch (err) {
+      lastError = err;
+    }
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await new Promise((r) => setTimeout(r, Math.min(interval, remaining)));
+    interval = Math.min(interval * 1.5, maxIntervalMs);
+  }
+
+  const reason = lastError ? `: ${lastError.message}` : "";
+  throw new Error(`Timed out waiting for ${label} after ${timeoutMs}ms${reason}`);
+};
+
+export { getValue, recursiveSearch, isAlphanumeric, isAlphanumericAndSpace, isEthereumAddress, generateRandomString, awaitTimeout, waitFor };
