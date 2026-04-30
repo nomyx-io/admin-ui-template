@@ -8,7 +8,7 @@ import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
-import { waitAndUpdate } from "../utils/waitAndUpdate";
+import { waitAndUpdate } from "../utils/indexerWait";
 
 function CreateClaimTopic({ service }) {
   const navigate = useNavigate();
