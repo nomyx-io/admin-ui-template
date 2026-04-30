@@ -8,6 +8,7 @@ import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
+import { waitAndUpdate } from "../utils/waitAndUpdate";
 
 function CreateClaimTopic({ service }) {
   const navigate = useNavigate();
@@ -53,25 +54,27 @@ function CreateClaimTopic({ service }) {
         toast
           .promise(
             (async () => {
-              // Initiate adding the claim topic
               const { initiateResponse, error: initError } = await DfnsService.initiateAddClaimTopic(hiddenName, user.walletId, dfnsToken);
               if (initError) throw new Error(initError);
 
-              // Complete adding the claim topic
-              const { completeResponse, error: completeError } = await DfnsService.completeAddClaimTopic(
+              const { error: completeError } = await DfnsService.completeAddClaimTopic(
                 user.walletId,
                 dfnsToken,
-                initiateResponse.challenge, // Assuming challenge is part of the initiateResponse
+                initiateResponse.challenge,
                 initiateResponse.requestBody
               );
               if (completeError) throw new Error(completeError);
 
-              // Update the claim topic
-              await service.updateClaimTopic({
-                topic: String(hiddenName),
-                displayName: trimmedDisplayName,
+              await waitAndUpdate({
+                fetchFn: () => service.getClaimTopicByTopic(String(hiddenName)),
+                updateFn: () =>
+                  service.updateClaimTopic({
+                    topic: String(hiddenName),
+                    displayName: trimmedDisplayName,
+                  }),
+                resourceName: `Claim Topic ${hiddenName}`,
               });
-              // Navigate to topics after everything is successfully executed
+
               navigate("/topics");
             })(),
             {
@@ -89,9 +92,14 @@ function CreateClaimTopic({ service }) {
           .promise(
             (async () => {
               await service.addClaimTopic(hiddenName);
-              await service.updateClaimTopic({
-                topic: String(hiddenName),
-                displayName: trimmedDisplayName,
+              await waitAndUpdate({
+                fetchFn: () => service.getClaimTopicByTopic(String(hiddenName)),
+                updateFn: () =>
+                  service.updateClaimTopic({
+                    topic: String(hiddenName),
+                    displayName: trimmedDisplayName,
+                  }),
+                resourceName: `Claim Topic ${hiddenName}`,
               });
             })(),
             {

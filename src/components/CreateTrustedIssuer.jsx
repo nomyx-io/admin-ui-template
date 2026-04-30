@@ -9,6 +9,7 @@ import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { isAlphanumericAndSpace, isEthereumAddress, awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
+import { waitAndUpdate } from "../utils/indexerWait";
 
 function CreateTrustedIssuer({ service }) {
   const navigate = useNavigate();
@@ -241,7 +242,7 @@ function CreateTrustedIssuer({ service }) {
               );
               if (initError) throw new Error(initError);
 
-              const { completeResponse, error: completeError } = await DfnsService.completeAddTrustedIssuer(
+              const { error: completeError } = await DfnsService.completeAddTrustedIssuer(
                 user.walletId,
                 dfnsToken,
                 initiateResponse.challenge,
@@ -249,9 +250,13 @@ function CreateTrustedIssuer({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              await new Promise((resolve) => setTimeout(resolve, 6000));
+              // wait for the trusted issuer row to be indexed, then update
+              await waitAndUpdate({
+                fetchFn: () => service.getTrustedIssuerByAddress(walletAddress),
+                updateFn: () => service.updateTrustedIssuer(updateData),
+                resourceName: `Trusted Issuer ${walletAddress}`,
+              });
 
-              const result = await service.updateTrustedIssuer(updateData);
               navigate("/issuers");
             })(),
             {

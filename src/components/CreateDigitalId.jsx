@@ -7,8 +7,10 @@ import { toast } from "react-toastify";
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { isEthereumAddress } from "../utils";
-import { awaitTimeout } from "../utils";
 import { WalletPreference } from "../utils/Constants";
+import { waitForIndexer, retryDbWrite } from "../utils/indexerWait";
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 function CreateDigitalId({ service }) {
   const location = useLocation();
@@ -25,18 +27,15 @@ function CreateDigitalId({ service }) {
   // Check for incomplete operations on mount
   useEffect(() => {
     checkForIncompleteOperation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ---------- Validation ----------
   function validateDigitalID(displayName, walletAddress, accountNumber) {
     if (displayName.trim() === "") {
       toast.error("Identity display Name is required");
       return false;
     }
-
-    //if (!isAlphanumericAndSpace(displayName)) {
-    //    toast.error('Identity display Name must contain only alphanumeric characters');
-    //    return false;
-    //}
 
     if (walletAddress?.trim() === "") {
       toast.error("Investor Wallet Address is required");
@@ -53,20 +52,19 @@ function CreateDigitalId({ service }) {
       return false;
     }
 
-    //if (!isAlphanumericAndSpace(accountNumber)) {
-    //    toast.error('Investor KYC ID must contain only alphanumeric characters');
-    //    return false;
-    //}
-
     return true;
   }
 
-  // Helper: Classify errors for better handling
+  // ---------- Error Classification ----------
   function classifyError(error) {
-    const errorMsg = error.message || error.reason || "";
+    const errorMsg = error?.message || error?.reason || "";
 
-    if (errorMsg.includes("nonce") || error.code === "NONCE_EXPIRED") {
-      return { type: "NONCE_ERROR", retryable: true, userMessage: "Blockchain sync issue. Please try again after some time." };
+    if (errorMsg.includes("nonce") || error?.code === "NONCE_EXPIRED") {
+      return {
+        type: "NONCE_ERROR",
+        retryable: true,
+        userMessage: "Blockchain sync issue. Please try again after some time.",
+      };
     }
     if (errorMsg.includes("gas")) {
       return { type: "GAS_ERROR", retryable: false, userMessage: "Insufficient gas" };
@@ -74,7 +72,7 @@ function CreateDigitalId({ service }) {
     if (errorMsg.includes("already exists") || errorMsg.includes("duplicate")) {
       return { type: "DUPLICATE", retryable: false, userMessage: "Identity already exists" };
     }
-    if (error.code === 4001 || errorMsg.includes("cancel")) {
+    if (error?.code === 4001 || errorMsg.includes("cancel")) {
       return { type: "USER_CANCELLED", retryable: false, userMessage: "Operation cancelled" };
     }
     if (errorMsg.includes("reject")) {
@@ -84,42 +82,7 @@ function CreateDigitalId({ service }) {
     return { type: "UNKNOWN", retryable: false, userMessage: errorMsg };
   }
 
-  // Helper: Retry with exponential backoff
-  async function retryWithBackoff(operation, maxRetries = 3, operationName = "operation") {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        return await operation();
-      } catch (error) {
-        const errorInfo = classifyError(error);
-
-        // Don't retry user cancellations or non-retryable errors
-        if (!errorInfo.retryable || i === maxRetries - 1) {
-          throw error;
-        }
-
-        const delay = Math.min(1000 * Math.pow(2, i), 5000);
-        console.log(`${operationName} failed (attempt ${i + 1}/${maxRetries}), retrying in ${delay}ms...`, error);
-        await awaitTimeout(delay);
-      }
-    }
-  }
-
-  // Helper: Poll for blockchain verification until true
-  async function waitForVerification(service, walletAddress, maxAttempts = 12, delayMs = 5000) {
-    for (let i = 0; i < maxAttempts; i++) {
-      const isRegistered = await service.isVerified(walletAddress);
-      console.log(`Verification check (${i + 1}/${maxAttempts}):`, isRegistered);
-
-      if (isRegistered) return true;
-
-      // Wait before next attempt
-      await awaitTimeout(delayMs);
-    }
-
-    return false; // After all attempts, still not verified
-  }
-
-  // Helper: Save operation state
+  // ---------- LocalStorage State Persistence ----------
   function saveOperationState(walletAddr, state) {
     const stateKey = `identity-creation-${walletAddr.toLowerCase()}`;
     try {
@@ -135,7 +98,6 @@ function CreateDigitalId({ service }) {
     }
   }
 
-  // Helper: Load operation state
   function loadOperationState(walletAddr) {
     const stateKey = `identity-creation-${walletAddr.toLowerCase()}`;
     try {
@@ -156,7 +118,6 @@ function CreateDigitalId({ service }) {
     }
   }
 
-  // Helper: Clear operation state
   function clearOperationState(walletAddr) {
     const stateKey = `identity-creation-${walletAddr.toLowerCase()}`;
     try {
@@ -166,7 +127,6 @@ function CreateDigitalId({ service }) {
     }
   }
 
-  // Check for incomplete operations on mount
   async function checkForIncompleteOperation() {
     if (!walletAddress) return;
 
@@ -177,7 +137,6 @@ function CreateDigitalId({ service }) {
       if (shouldResume) {
         setDisplayName(savedState.displayName || displayName);
         setAccountNumber(savedState.accountNumber || accountNumber);
-        // The user can click the button again to resume
         toast.info('Ready to resume identity creation. Click "Create Digital Id" to continue.');
       } else {
         clearOperationState(walletAddress);
@@ -185,6 +144,85 @@ function CreateDigitalId({ service }) {
     }
   }
 
+  // ---------- Indexer-aware helpers (built on the shared utility) ----------
+
+  /**
+   * Wait until DfnsService.getIdentity(walletAddress) returns a non-zero identity.
+   * Throws if not indexed within the configured attempts.
+   */
+  const waitForIdentityOnChain = async (walletAddr, getIdentityFn, toastId) => {
+    return waitForIndexer(
+      async () => {
+        const result = await getIdentityFn(walletAddr);
+        return result && result !== ZERO_ADDRESS ? result : null;
+      },
+      {
+        resourceName: `Identity for ${walletAddr}`,
+        maxAttempts: 12,
+        onAttempt: (attempt, max) => {
+          if (toastId) {
+            toast.update(toastId, {
+              render: `Waiting for identity on-chain... (${attempt}/${max})`,
+            });
+          }
+        },
+      }
+    );
+  };
+
+  /**
+   * Wait until service.isVerified(walletAddress) returns true.
+   * Used after registration to confirm on-chain registry inclusion.
+   */
+  const waitForRegistrationOnChain = async (walletAddr, toastId) => {
+    return waitForIndexer(
+      async () => {
+        const isRegistered = await service.isVerified(walletAddr);
+        return isRegistered ? true : null;
+      },
+      {
+        resourceName: `Registration of ${walletAddr}`,
+        maxAttempts: 12,
+        onAttempt: (attempt, max) => {
+          if (toastId) {
+            toast.update(toastId, {
+              render: `Confirming on-chain registration... (${attempt}/${max})`,
+            });
+          }
+        },
+      }
+    );
+  };
+
+  /**
+   * Helper to handle USER_CANCELLED / USER_REJECTED toast updates uniformly.
+   * Returns true if the error was a user cancel/reject (and should be re-thrown).
+   */
+  const handleUserAbort = (errMsgOrError, toastId, action) => {
+    const errorInfo = classifyError(typeof errMsgOrError === "string" ? { message: errMsgOrError } : errMsgOrError);
+
+    if (errorInfo.type === "USER_CANCELLED") {
+      toast.update(toastId, {
+        render: `${action} cancelled`,
+        type: "warning",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      return "USER_CANCELLED";
+    }
+    if (errorInfo.type === "USER_REJECTED") {
+      toast.update(toastId, {
+        render: `${action} rejected`,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      return "USER_REJECTED";
+    }
+    return null;
+  };
+
+  // ---------- Entry Point ----------
   const handleCreateDigitalId = async () => {
     const trimmedDisplayName = displayName.trim();
     const trimmedAccountNumber = accountNumber.trim();
@@ -216,6 +254,7 @@ function CreateDigitalId({ service }) {
     }
   };
 
+  // ---------- MANAGED wallet flow ----------
   const processManagedWallet = async (trimmedDisplayName, trimmedAccountNumber) => {
     let toastId = null;
     const walletAddr = walletAddress.toLowerCase();
@@ -239,13 +278,20 @@ function CreateDigitalId({ service }) {
         completed: false,
       });
 
-      // Step 1: Check if identity already exists
-      if (!identity || identity === "0x0000000000000000000000000000000000000000") {
+      // ---------- Step 1: Check if identity already exists on-chain ----------
+      if (!identity || identity === ZERO_ADDRESS) {
         try {
-          identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get identity");
-          console.log("Existing identity check:", identity);
+          // Use waitForIndexer with low attempts as a "check, but don't insist"
+          identity = await waitForIndexer(
+            async () => {
+              const result = await DfnsService.getIdentity(walletAddress);
+              return result && result !== ZERO_ADDRESS ? result : null;
+            },
+            { resourceName: `Existing identity check ${walletAddress}`, maxAttempts: 2 }
+          ).catch(() => null);
 
-          if (identity && identity !== "0x0000000000000000000000000000000000000000") {
+          if (identity && identity !== ZERO_ADDRESS) {
+            console.log("Existing identity found:", identity);
             identityCreatedOrExists = true;
             saveOperationState(walletAddr, {
               displayName: trimmedDisplayName,
@@ -257,113 +303,38 @@ function CreateDigitalId({ service }) {
             });
           }
         } catch (error) {
-          console.log("No existing identity found, will create new one");
+          console.log("No existing identity found, will create a new one");
         }
       }
 
-      // Step 2: Create identity only if it doesn't exist
+      // ---------- Step 2: Create identity if it doesn't exist ----------
       if (!identityCreatedOrExists) {
         console.log("Creating new identity...");
         toast.update(toastId, { render: "Creating identity..." });
 
-        const createIdentity = async () => {
-          const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
+        const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
 
-          if (initError) {
-            const errorInfo = classifyError({ message: initError });
-            if (errorInfo.type === "USER_CANCELLED") {
-              toast.update(toastId, {
-                render: "Identity creation cancelled",
-                type: "warning",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_CANCELLED");
-            } else if (errorInfo.type === "USER_REJECTED") {
-              toast.update(toastId, {
-                render: "Identity creation rejected",
-                type: "error",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_REJECTED");
-            }
-            throw new Error(initError);
-          }
+        if (initError) {
+          const abortType = handleUserAbort(initError, toastId, "Identity creation");
+          if (abortType) throw new Error(abortType);
+          throw new Error(initError);
+        }
 
-          const { completeResponse, error: completeError } = await DfnsService.completeCreateIdentity(
-            user.walletId,
-            dfnsToken,
-            initiateResponse.challenge,
-            initiateResponse.requestBody
-          );
+        const { error: completeError } = await DfnsService.completeCreateIdentity(
+          user.walletId,
+          dfnsToken,
+          initiateResponse.challenge,
+          initiateResponse.requestBody
+        );
 
-          if (completeError) {
-            const errorInfo = classifyError({ message: completeError });
-            if (errorInfo.type === "USER_CANCELLED") {
-              toast.update(toastId, {
-                render: "Identity creation cancelled",
-                type: "warning",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_CANCELLED");
-            } else if (errorInfo.type === "USER_REJECTED") {
-              toast.update(toastId, {
-                render: "Identity creation rejected",
-                type: "error",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_REJECTED");
-            }
-            throw new Error(completeError);
-          }
+        if (completeError) {
+          const abortType = handleUserAbort(completeError, toastId, "Identity creation");
+          if (abortType) throw new Error(abortType);
+          throw new Error(completeError);
+        }
 
-          // Wait for blockchain confirmation if the response includes a transaction hash
-          // if (completeResponse?.transactionHash && service?.provider?.waitForTransaction) {
-          //   console.log("⏳ Waiting for createIdentity tx confirmation:", completeResponse.transactionHash);
-          //   toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
-
-          //   const txHash = completeResponse.transactionHash;
-          //   const maxAttempts = 10; // roughly ~2 minutes total
-          //   const delayMs = 10000; // 10s between retries
-
-          //   let confirmed = false;
-
-          //   for (let i = 0; i < maxAttempts; i++) {
-          //     try {
-          //       const receipt = await service.provider.waitForTransaction(txHash, 1, delayMs);
-          //       if (receipt && receipt.status === 1) {
-          //         confirmed = true;
-          //         console.log(`Transaction ${txHash} confirmed in block ${receipt.blockNumber}`);
-          //         break;
-          //       } else {
-          //         console.warn(`⚠️ Attempt ${i + 1}: tx not confirmed yet, retrying...`);
-          //       }
-          //     } catch (err) {
-          //       console.warn(`waitForTransaction failed (attempt ${i + 1}/${maxAttempts}):`, err.message);
-          //     }
-
-          //     // Wait before retrying
-          //     await awaitTimeout(delayMs);
-          //   }
-
-          //   if (!confirmed) {
-          //     throw new Error(`Transaction ${txHash} not confirmed after ${maxAttempts * (delayMs / 1000)} seconds`);
-          //   }
-          // } else {
-          //   console.log("⚠️ No transaction hash from Dfns, waiting 10s before proceeding...");
-          //   await awaitTimeout(10000);
-          // }
-
-          return completeResponse;
-        };
-
-        await retryWithBackoff(createIdentity, 8, "Create identity");
-
-        // After confirmation, check for identity on-chain
-        identity = await retryWithBackoff(async () => await DfnsService.getIdentity(walletAddress), 8, "Get created identity");
+        // Wait for the identity to actually appear on-chain (network-agnostic)
+        identity = await waitForIdentityOnChain(walletAddress, DfnsService.getIdentity, toastId);
         console.log("New identity created:", identity);
         identityCreatedOrExists = true;
 
@@ -380,115 +351,39 @@ function CreateDigitalId({ service }) {
         toast.update(toastId, { render: "Identity found, proceeding..." });
       }
 
-      // Step 3: Check if identity is already registered in Blockchain
+      // ---------- Step 3 & 4: Register identity in Blockchain (Identity Registry) ----------
       if (!identityRegisteredOrExists) {
-        // let needsRegistration = true;
-        // try {
-        //   const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
-
-        //   if (isRegistered) {
-        //     console.log("Identity already registered in Blockchain");
-        //     needsRegistration = false;
-        //     identityRegisteredOrExists = true;
-        //     toast.update(toastId, { render: "Identity already registered, updating metadata..." });
-
-        //     saveOperationState(walletAddr, {
-        //       displayName: trimmedDisplayName,
-        //       accountNumber: trimmedAccountNumber,
-        //       identityCreated: identityCreatedOrExists,
-        //       identityRegistered: true,
-        //       identity,
-        //       completed: false,
-        //     });
-        //   }
-        // } catch (error) {
-        //   console.log("Error checking registration, will attempt registration:", error);
-        // }
-
-        // Step 4: Register identity in Blockchain only if needed
-        //if (needsRegistration) {
         console.log("Registering identity in Blockchain...");
         toast.update(toastId, { render: "Registering identity on blockchain..." });
 
-        const registerIdentity = async () => {
-          const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
-            walletAddress,
-            identity,
-            user.walletId,
-            dfnsToken
-          );
+        const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
+          walletAddress,
+          identity,
+          user.walletId,
+          dfnsToken
+        );
 
-          if (addIdentityInitError) {
-            const errorInfo = classifyError({ message: addIdentityInitError });
-            if (errorInfo.type === "USER_CANCELLED") {
-              toast.update(toastId, {
-                render: "Identity registration cancelled",
-                type: "warning",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_CANCELLED");
-            } else if (errorInfo.type === "USER_REJECTED") {
-              toast.update(toastId, {
-                render: "Identity registration rejected",
-                type: "error",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_REJECTED");
-            }
-            throw new Error(addIdentityInitError);
-          }
-
-          const { addIdentityCompleteResponse, error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
-            user.walletId,
-            dfnsToken,
-            addIdentityInitResponse.challenge,
-            addIdentityInitResponse.requestBody
-          );
-
-          if (addIdentityCompleteError) {
-            const errorInfo = classifyError({ message: addIdentityCompleteError });
-            if (errorInfo.type === "USER_CANCELLED") {
-              toast.update(toastId, {
-                render: "Identity registration cancelled",
-                type: "warning",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_CANCELLED");
-            } else if (errorInfo.type === "USER_REJECTED") {
-              toast.update(toastId, {
-                render: "Identity registration rejected",
-                type: "error",
-                isLoading: false,
-                autoClose: 3000,
-              });
-              throw new Error("USER_REJECTED");
-            }
-            throw new Error(addIdentityCompleteError);
-          }
-
-          return addIdentityCompleteResponse;
-        };
-
-        const registrationResponse = await retryWithBackoff(registerIdentity, 8, "Register identity");
-
-        // Wait for transaction confirmation if we have a transaction hash
-        if (registrationResponse?.transactionHash) {
-          toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
-        } else {
-          // If no transaction hash, wait a bit for the blockchain to process
-          await awaitTimeout(3000);
+        if (addIdentityInitError) {
+          const abortType = handleUserAbort(addIdentityInitError, toastId, "Identity registration");
+          if (abortType) throw new Error(abortType);
+          throw new Error(addIdentityInitError);
         }
 
-        // Verify registration succeeded
-        // const isNowRegistered = await waitForVerification(service, walletAddress, 12, 5000);
-        // console.log("Final verification status:", isNowRegistered);
+        const { error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
+          user.walletId,
+          dfnsToken,
+          addIdentityInitResponse.challenge,
+          addIdentityInitResponse.requestBody
+        );
 
-        // if (!isNowRegistered) {
-        //   throw new Error("Registration verification failed - identity not found on blockchain after waiting");
-        // }
+        if (addIdentityCompleteError) {
+          const abortType = handleUserAbort(addIdentityCompleteError, toastId, "Identity registration");
+          if (abortType) throw new Error(abortType);
+          throw new Error(addIdentityCompleteError);
+        }
+
+        // Wait for the registry to reflect the registration on-chain
+        await waitForRegistrationOnChain(walletAddress, toastId);
 
         console.log("Identity registered in Blockchain successfully");
         identityRegisteredOrExists = true;
@@ -501,49 +396,11 @@ function CreateDigitalId({ service }) {
           identity,
           completed: false,
         });
-        //}
       }
 
-      // ONLY proceed with metadata update if identity was successfully created AND registered
-      // if (!identityCreatedOrExists || !identityRegisteredOrExists) {
-      //   toast.update(toastId, {
-      //     render: "Identity processing incomplete",
-      //     type: "error",
-      //     isLoading: false,
-      //     autoClose: 3000,
-      //   });
-      //   return;
-      // }
+      // ---------- Steps 5 & 6 are handled by a server-side trigger for managed wallets ----------
+      // (metadata update + user approval). Frontend just needs to mark complete.
 
-      // Steps 5 and 6 are handled via server trigger for managed wallets
-
-      // 5 and 6 are now done via a server trigger to minimize frontend intera
-
-      // // Step 5: Update identity metadata
-      // toast.update(toastId, { render: "Updating identity metadata..." });
-      // await service.updateIdentity(walletAddress.toLowerCase(), {
-      //   displayName: trimmedDisplayName,
-      //   walletAddress: walletAddress.toLowerCase(),
-      //   accountNumber: trimmedAccountNumber,
-      // });
-
-      // // Step 6: Approve user only if requested via searchParams
-      // if (searchParams.has("walletAddress")) {
-      //   const userExists = await service.isUser(walletAddress.toLowerCase());
-      //   if (userExists) {
-      //     toast.update(toastId, { render: "Approving user..." });
-      //     await service.approveUser(walletAddress.toLowerCase());
-      //   } else {
-      //     toast.update(toastId, {
-      //       render: `User with wallet address ${walletAddress} does not exist`,
-      //       type: "error",
-      //       isLoading: false,
-      //       autoClose: 3000,
-      //     });
-      //     return;
-      //   }
-      // }
-      // Mark as completed and clear saved state
       saveOperationState(walletAddr, {
         displayName: trimmedDisplayName,
         accountNumber: trimmedAccountNumber,
@@ -553,7 +410,6 @@ function CreateDigitalId({ service }) {
         completed: true,
       });
 
-      // All steps completed successfully
       toast.update(toastId, {
         render: "Digital Identity processed successfully",
         type: "success",
@@ -561,14 +417,13 @@ function CreateDigitalId({ service }) {
         autoClose: 3000,
       });
 
-      // Clear the saved state after success
       clearOperationState(walletAddr);
       navigate("/identities");
     } catch (error) {
       const errorInfo = classifyError(error);
 
       if (errorInfo.type === "USER_CANCELLED" || errorInfo.type === "USER_REJECTED") {
-        // User cancelled, keep the saved state for potential resume
+        // Keep saved state so user can resume
         return;
       }
 
@@ -595,6 +450,7 @@ function CreateDigitalId({ service }) {
     }
   };
 
+  // ---------- PRIVATE wallet flow ----------
   const processPrivateWallet = async (trimmedDisplayName, trimmedAccountNumber) => {
     let toastId = null;
     const walletAddr = walletAddress.toLowerCase();
@@ -618,13 +474,19 @@ function CreateDigitalId({ service }) {
         completed: false,
       });
 
-      // Step 1: Check if identity already exists
-      if (!identity || identity === "0x0000000000000000000000000000000000000000") {
+      // ---------- Step 1: Check if identity already exists on-chain ----------
+      if (!identity || identity === ZERO_ADDRESS) {
         try {
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get identity");
-          console.log("Existing identity check:", identity);
+          identity = await waitForIndexer(
+            async () => {
+              const result = await service.getIdentity(walletAddress);
+              return result && result !== ZERO_ADDRESS ? result : null;
+            },
+            { resourceName: `Existing identity check ${walletAddress}`, maxAttempts: 2 }
+          ).catch(() => null);
 
-          if (identity && identity !== "0x0000000000000000000000000000000000000000") {
+          if (identity && identity !== ZERO_ADDRESS) {
+            console.log("Existing identity found:", identity);
             identityCreatedOrExists = true;
             saveOperationState(walletAddr, {
               displayName: trimmedDisplayName,
@@ -636,11 +498,11 @@ function CreateDigitalId({ service }) {
             });
           }
         } catch (error) {
-          console.log("No existing identity found, will create new one");
+          console.log("No existing identity found, will create a new one");
         }
       }
 
-      // Step 2: Create identity only if it doesn't exist
+      // ---------- Step 2: Create identity if it doesn't exist ----------
       if (!identityCreatedOrExists) {
         console.log("Creating new identity...");
         toast.update(toastId, { render: "Creating identity..." });
@@ -648,10 +510,8 @@ function CreateDigitalId({ service }) {
         try {
           await service.createIdentity(walletAddress);
 
-          // Wait for transaction to be mined
-          await awaitTimeout(2000);
-
-          identity = await retryWithBackoff(async () => await service.getIdentity(walletAddress), 8, "Get created identity");
+          // Wait for the identity to be readable on-chain (replaces the old fixed 2s sleep)
+          identity = await waitForIdentityOnChain(walletAddress, service.getIdentity.bind(service), toastId);
 
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;
@@ -665,24 +525,8 @@ function CreateDigitalId({ service }) {
             completed: false,
           });
         } catch (error) {
-          const errorInfo = classifyError(error);
-          if (errorInfo.type === "USER_CANCELLED") {
-            toast.update(toastId, {
-              render: "Identity creation cancelled",
-              type: "warning",
-              isLoading: false,
-              autoClose: 3000,
-            });
-            throw new Error("USER_CANCELLED");
-          } else if (errorInfo.type === "USER_REJECTED") {
-            toast.update(toastId, {
-              render: "Identity creation rejected",
-              type: "error",
-              isLoading: false,
-              autoClose: 3000,
-            });
-            throw new Error("USER_REJECTED");
-          }
+          const abortType = handleUserAbort(error, toastId, "Identity creation");
+          if (abortType) throw new Error(abortType);
           throw error;
         }
       } else {
@@ -690,54 +534,16 @@ function CreateDigitalId({ service }) {
         toast.update(toastId, { render: "Identity found, proceeding..." });
       }
 
-      // Step 3: Check if identity is already registered in Blockchain
+      // ---------- Step 3 & 4: Register identity in Blockchain ----------
       if (!identityRegisteredOrExists) {
-        // let needsRegistration = true;
-        // try {
-        //   const isRegistered = await retryWithBackoff(async () => await service.isVerified(walletAddress), 8, "Check registration");
-
-        //   if (isRegistered) {
-        //     console.log("Identity already registered in Blockchain");
-        //     needsRegistration = false;
-        //     identityRegisteredOrExists = true;
-        //     toast.update(toastId, { render: "Identity already registered, updating metadata..." });
-
-        //     saveOperationState(walletAddr, {
-        //       displayName: trimmedDisplayName,
-        //       accountNumber: trimmedAccountNumber,
-        //       identityCreated: identityCreatedOrExists,
-        //       identityRegistered: true,
-        //       identity,
-        //       completed: false,
-        //     });
-        //   }
-        // } catch (error) {
-        //   console.log("Error checking registration, will attempt registration:", error);
-        // }
-
-        // Step 4: Register identity in Blockchain only if needed
-        // if (needsRegistration) {
         console.log("Registering identity in Blockchain...");
         toast.update(toastId, { render: "Registering identity in Blockchain..." });
 
         try {
-          const tx = await service.addIdentity(walletAddress, identity);
+          await service.addIdentity(walletAddress, identity);
 
-          // Wait for transaction confirmation
-          if (tx?.hash) {
-            toast.update(toastId, { render: "Waiting for blockchain confirmation..." });
-          } else {
-            // If no transaction hash, wait a bit for the blockchain to process
-            await awaitTimeout(3000);
-          }
-
-          // Verify registration succeeded
-          // const isNowRegistered = await waitForVerification(service, walletAddress, 12, 5000);
-          // console.log("Final verification status:", isNowRegistered);
-
-          // if (!isNowRegistered) {
-          //   throw new Error("Registration verification failed - identity not found on blockchain after waiting");
-          // }
+          // Wait for the registry to reflect the registration on-chain
+          await waitForRegistrationOnChain(walletAddress, toastId);
 
           console.log("Identity registered in Blockchain successfully");
           identityRegisteredOrExists = true;
@@ -751,64 +557,32 @@ function CreateDigitalId({ service }) {
             completed: false,
           });
         } catch (error) {
-          const errorInfo = classifyError(error);
-          if (errorInfo.type === "USER_CANCELLED") {
-            toast.update(toastId, {
-              render: "Identity registration cancelled",
-              type: "warning",
-              isLoading: false,
-              autoClose: 3000,
-            });
-            throw new Error("USER_CANCELLED");
-          } else if (errorInfo.type === "USER_REJECTED") {
-            toast.update(toastId, {
-              render: "Identity registration rejected",
-              type: "error",
-              isLoading: false,
-              autoClose: 3000,
-            });
-            throw new Error("USER_REJECTED");
-          }
+          const abortType = handleUserAbort(error, toastId, "Identity registration");
+          if (abortType) throw new Error(abortType);
           throw error;
         }
-        //}
       }
 
-      // ONLY proceed with metadata update if identity was successfully created AND registered
-      // if (!identityCreatedOrExists || !identityRegisteredOrExists) {
-      //   toast.update(toastId, {
-      //     render: "Identity processing incomplete",
-      //     type: "error",
-      //     isLoading: false,
-      //     autoClose: 3000,
-      //   });
-      //   return;
-      // }
-
-      // Step 5: Update identity metadata
+      // ---------- Step 5: Update identity metadata (off-chain) ----------
+      // If you re-enable metadata writes here, use retryDbWrite for transient failures:
+      //
       // toast.update(toastId, { render: "Updating identity metadata..." });
-      // try {
-      //   await retryWithBackoff(
-      //     async () =>
-      //       await service.updateIdentity(walletAddr, {
-      //         displayName: trimmedDisplayName,
-      //         walletAddress: walletAddr,
-      //         accountNumber: trimmedAccountNumber,
-      //       }),
-      //     3,
-      //     "Update metadata"
-      //   );
-      // } catch (error) {
-      //   console.error("Error updating identity:", error);
-      //   throw error;
-      // }
+      // await retryDbWrite(
+      //   () =>
+      //     service.updateIdentity(walletAddr, {
+      //       displayName: trimmedDisplayName,
+      //       walletAddress: walletAddr,
+      //       accountNumber: trimmedAccountNumber,
+      //     }),
+      //   { operationName: "Update identity metadata" }
+      // );
 
-      // Step 6: Approve user only if requested via searchParams
+      // ---------- Step 6: Approve user (off-chain) ----------
       // if (searchParams.has("walletAddress")) {
       //   const userExists = await service.isUser(walletAddr);
       //   if (userExists) {
       //     toast.update(toastId, { render: "Approving user..." });
-      //     await retryWithBackoff(async () => await service.approveUser(walletAddr), 3, "Approve user");
+      //     await retryDbWrite(() => service.approveUser(walletAddr), { operationName: "Approve user" });
       //   } else {
       //     toast.update(toastId, {
       //       render: `User with wallet address ${walletAddress} does not exist`,
@@ -820,7 +594,6 @@ function CreateDigitalId({ service }) {
       //   }
       // }
 
-      // Mark as completed and clear saved state
       saveOperationState(walletAddr, {
         displayName: trimmedDisplayName,
         accountNumber: trimmedAccountNumber,
@@ -830,7 +603,6 @@ function CreateDigitalId({ service }) {
         completed: true,
       });
 
-      // All steps completed successfully
       toast.update(toastId, {
         render: "Digital Identity processed successfully",
         type: "success",
@@ -838,14 +610,13 @@ function CreateDigitalId({ service }) {
         autoClose: 3000,
       });
 
-      // Clear the saved state after success
       clearOperationState(walletAddr);
       navigate("/identities");
     } catch (error) {
       const errorInfo = classifyError(error);
 
       if (errorInfo.type === "USER_CANCELLED" || errorInfo.type === "USER_REJECTED") {
-        // User cancelled, keep the saved state for potential resume
+        // Keep saved state so user can resume
         return;
       }
 
@@ -872,24 +643,15 @@ function CreateDigitalId({ service }) {
     }
   };
 
+  // ---------- Render ----------
   return (
     <div>
       <Breadcrumb
         className="bg-transparent"
-        items={[
-          {
-            title: <Link to={"/"}>Home</Link>,
-          },
-          {
-            title: <Link to={"/identities"}>Identities</Link>,
-          },
-          {
-            title: "Add",
-          },
-        ]}
+        items={[{ title: <Link to={"/"}>Home</Link> }, { title: <Link to={"/identities"}>Identities</Link> }, { title: "Add" }]}
       />
       <p className="text-xl p-6">Create Digital Id</p>
-      <hr></hr>
+      <hr />
       <div className="p-6 mt-2">
         <div>
           <label htmlFor="identityName">Identity display name *</label>
