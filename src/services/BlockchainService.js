@@ -739,6 +739,40 @@ class BlockchainService {
       throw error;
     }
   }
+
+  async getClaimTopicByTopic(topic) {
+    try {
+      if (topic === null || topic === undefined || topic === "") {
+        console.warn("getClaimTopicByTopic called with empty topic");
+        return null;
+      }
+
+      const records = await ParseClient.getRecords("ClaimTopic", ["topic"], [String(topic)], ["*"]);
+
+      return records && records.length > 0 ? records[0] : null;
+    } catch (error) {
+      console.error(`Error fetching ClaimTopic with topic ${topic}:`, error);
+      throw error;
+    }
+  }
+
+  async getTrustedIssuerByAddress(walletAddress) {
+    try {
+      if (!walletAddress || typeof walletAddress !== "string") {
+        console.warn("getTrustedIssuerByAddress called with invalid wallet address");
+        return null;
+      }
+
+      const normalizedAddress = walletAddress.toLowerCase();
+
+      const records = await ParseClient.getRecords("TrustedIssuer", ["issuer"], [normalizedAddress], ["*"]);
+
+      return records && records.length > 0 ? records[0] : null;
+    } catch (error) {
+      console.error(`Error fetching TrustedIssuer with address ${walletAddress}:`, error);
+      throw error;
+    }
+  }
 }
 
 export default BlockchainService;
