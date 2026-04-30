@@ -493,39 +493,46 @@ const IdentitiesPage = ({ service }) => {
   ];
 
   const actions = [
-    { label: "Edit Rules", name: NomyxAction.EditClaims },
-    { label: "View", name: NomyxAction.ViewIdentity },
-    { label: "Request for Investment", name: NomyxAction.RequestInvestment }, // New action
+    { label: "Edit Rules", name: NomyxAction.EditClaims, icon: <EditOutlined />, tooltip: "Edit Rules" },
+    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined />, tooltip: "View" },
+    { label: "Request for Investment", name: NomyxAction.RequestInvestment, icon: <LinkOutlined />, tooltip: "Request for Investment" },
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
+      icon: <DeleteOutlined />,
+      tooltip: "Remove",
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];
 
   const pendingActions = [
-    { label: "Approve", name: NomyxAction.CreatePendingIdentity },
-    { label: "View", name: NomyxAction.ViewPendingIdentity },
-    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: "mail" },
+    { label: "Approve", name: NomyxAction.CreatePendingIdentity, icon: <CheckOutlined />, tooltip: "Approve" },
+    { label: "View", name: NomyxAction.ViewPendingIdentity, icon: <EyeOutlined />, tooltip: "View" },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: <MailOutlined />, tooltip: "Send Verification Email" },
     {
       label: "Reset Persona",
       name: NomyxAction.ResetPersonaVerification,
       icon: <ReloadOutlined />,
+      tooltip: "Reset Persona Verification",
       confirmation: "This will clear the user's current Persona verification and require them to re-verify their identity. Are you sure?",
     },
     {
       label: "Deny",
       name: NomyxAction.RemoveUser,
+      icon: <CloseOutlined />,
+      tooltip: "Deny",
       confirmation: "Are you sure you want to deny this pending Identity?",
     },
   ];
 
   const claimsActions = [
-    { label: "Add Rules", name: NomyxAction.AddClaims },
-    { label: "View", name: NomyxAction.ViewIdentity },
+    { label: "Add Rules", name: NomyxAction.AddClaims, icon: <PlusOutlined />, tooltip: "Add Rules" },
+    { label: "View", name: NomyxAction.ViewIdentity, icon: <EyeOutlined />, tooltip: "View" },
     {
       label: "Remove",
       name: NomyxAction.RemoveIdentity,
+      icon: <DeleteOutlined />,
+      tooltip: "Remove",
       confirmation: "Are you sure you want to remove this Identity?",
     },
   ];

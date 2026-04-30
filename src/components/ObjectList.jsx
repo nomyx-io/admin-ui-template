@@ -2,6 +2,7 @@ import "./ObjectList.css";
 
 import { useState, useEffect } from "react";
 
+import { Tooltip } from "antd";
 import ReactPaginate from "react-paginate";
 
 import { WarningIcon } from "../assets/icons";
@@ -251,26 +252,32 @@ const ObjectList = ({
                       </td>
                     );
                 })}
-                {actions && actions.length > 0 && (
-                  <td key={"actions" + record.id}>
-                    {actions.map((action) => {
-                      return (
-                        <button
-                          key={record.id + "-action-" + action.name}
-                          onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
-                          style={{
-                            marginRight: "1rem",
-                            color: "var(--link-color)",
-                            transition: "0.5s all",
-                            lineHeight: "0.2",
-                          }}
-                        >
-                          {action.label}
-                        </button>
-                      );
-                    })}
-                  </td>
-                )}
+                {actions.map((action) => {
+                  return (
+                    <Tooltip key={record.id + "-action-" + action.name} title={action.tooltip || action.label}>
+                      <button
+                        onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
+                        aria-label={action.tooltip || action.label}
+                        style={{
+                          marginRight: "1rem",
+                          color: "var(--link-color)",
+                          transition: "0.5s all",
+                          lineHeight: "0.2",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.25rem",
+                          fontSize: "1.25rem",
+                        }}
+                      >
+                        {action.icon ? action.icon : action.label}
+                      </button>
+                    </Tooltip>
+                  );
+                })}
               </tr>
             );
           })}
