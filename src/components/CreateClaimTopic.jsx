@@ -80,7 +80,16 @@ function CreateClaimTopic({ service }) {
             {
               pending: "Creating Compliance Rule...",
               success: `Successfully created ${displayName} compliance rule`,
-              error: `An error occurred while Creating Compliance Rule ${displayName}`,
+              error: {
+                render({ data }) {
+                  const msg =
+                    data?.reason ||
+                    data?.message ||
+                    (typeof data === "string" ? data : null) ||
+                    `An error occurred while creating Compliance Rule ${displayName}`;
+                  return <div>{msg}</div>;
+                },
+              },
             }
           )
           .catch((error) => {

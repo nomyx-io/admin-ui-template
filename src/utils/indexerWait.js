@@ -15,32 +15,35 @@ export async function waitForIndexer(checkFn, options = {}) {
     maxDelayMs = DEFAULT_CONFIG.maxDelayMs,
     backoffMultiplier = DEFAULT_CONFIG.backoffMultiplier,
     onAttempt,
-    maxConsecutiveErrors = 4,
+    failFastOnError = true, // ← NEW: fail immediately if checkFn throws
   } = options;
 
   let delay = initialDelayMs;
-  let consecutiveErrors = 0;
-  let lastError = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    let checkSucceeded = false;
     let result;
 
     try {
       result = await checkFn();
-      checkSucceeded = true;
-      consecutiveErrors = 0;
     } catch (err) {
-      consecutiveErrors++;
-      lastError = err;
-      console.warn(`[indexerWait] ${resourceName} attempt ${attempt}/${maxAttempts} threw:`, err?.message || err);
+      // The check itself failed (Parse error, permission, network) —
+      // this is NOT "not yet indexed", it's a real problem. Retrying won't fix it.
+      console.error(`[indexerWait] ${resourceName} check threw on attempt ${attempt}:`, err);
 
-      if (consecutiveErrors >= maxConsecutiveErrors) {
-        throw new Error(`Unable to verify ${resourceName} — indexer check failed repeatedly. ` + `Last error: ${lastError?.message || lastError}`);
+      if (failFastOnError) {
+        // Preserve the original error message so the toast can display it
+        const wrapped = new Error(err?.message || err?.reason || String(err));
+        wrapped.cause = err;
+        wrapped.originalError = err;
+        wrapped.resourceName = resourceName;
+        throw wrapped;
       }
+
+      // Legacy behavior: treat as "not yet indexed", continue polling
+      result = null;
     }
 
-    if (checkSucceeded && onAttempt) {
+    if (onAttempt) {
       try {
         onAttempt(attempt, maxAttempts);
       } catch (e) {
@@ -48,7 +51,7 @@ export async function waitForIndexer(checkFn, options = {}) {
       }
     }
 
-    if (checkSucceeded && result) {
+    if (result) {
       console.log(`[indexerWait] ${resourceName} indexed on attempt ${attempt}`);
       return result;
     }

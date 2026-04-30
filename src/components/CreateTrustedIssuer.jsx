@@ -264,7 +264,12 @@ function CreateTrustedIssuer({ service }) {
               success: `Successfully Added Trusted Issuer ${walletAddress}`,
               error: {
                 render({ data }) {
-                  return <div>{data?.reason || `An error occurred while adding Trusted Issuer ${walletAddress}`}</div>;
+                  const msg =
+                    data?.reason ||
+                    data?.message ||
+                    (typeof data === "string" ? data : null) ||
+                    `An error occurred while adding Trusted Issuer ${walletAddress}`;
+                  return <div>{msg}</div>;
                 },
               },
             }
@@ -337,9 +342,11 @@ function CreateTrustedIssuer({ service }) {
               );
               if (completeError) throw new Error(completeError);
 
-              await delay(6000);
-
-              const result = await service.updateTrustedIssuer(updateData);
+              await waitAndUpdate({
+                fetchFn: () => service.getTrustedIssuerByAddress(walletAddress),
+                updateFn: () => service.updateTrustedIssuer(updateData),
+                resourceName: `Trusted Issuer ${walletAddress}`,
+              });
               navigate("/issuers");
             })(),
             {
