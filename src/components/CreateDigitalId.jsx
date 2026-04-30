@@ -312,28 +312,48 @@ function CreateDigitalId({ service }) {
         console.log("Creating new identity...");
         toast.update(toastId, { render: "Creating identity..." });
 
-        const { initiateResponse, error: initError } = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
-
-        if (initError) {
-          const abortType = handleUserAbort(initError, toastId, "Identity creation");
+        let createInitResponse;
+        try {
+          const initResult = await DfnsService.initiateCreateIdentity(walletAddress, user.walletId, dfnsToken);
+          if (initResult?.error) throw new Error(initResult.error);
+          createInitResponse = initResult.initiateResponse;
+        } catch (err) {
+          const abortType = handleUserAbort(err, toastId, "Identity creation");
           if (abortType) throw new Error(abortType);
-          throw new Error(initError);
+
+          const msg = err?.reason || err?.message || "Identity creation failed";
+          toast.update(toastId, {
+            render: msg,
+            type: "error",
+            isLoading: false,
+            autoClose: 6000,
+          });
+          throw err; // STOP. Don't poll.
         }
 
-        const { error: completeError } = await DfnsService.completeCreateIdentity(
-          user.walletId,
-          dfnsToken,
-          initiateResponse.challenge,
-          initiateResponse.requestBody
-        );
-
-        if (completeError) {
-          const abortType = handleUserAbort(completeError, toastId, "Identity creation");
+        try {
+          const completeResult = await DfnsService.completeCreateIdentity(
+            user.walletId,
+            dfnsToken,
+            createInitResponse.challenge,
+            createInitResponse.requestBody
+          );
+          if (completeResult?.error) throw new Error(completeResult.error);
+        } catch (err) {
+          const abortType = handleUserAbort(err, toastId, "Identity creation");
           if (abortType) throw new Error(abortType);
-          throw new Error(completeError);
+
+          const msg = err?.reason || err?.message || "Identity creation failed";
+          toast.update(toastId, {
+            render: msg,
+            type: "error",
+            isLoading: false,
+            autoClose: 6000,
+          });
+          throw err; // STOP. Don't poll.
         }
 
-        // Wait for the identity to actually appear on-chain (network-agnostic)
+        // Broadcast succeeded — now poll for the identity on-chain
         identity = await waitForIdentityOnChain(walletAddress, DfnsService.getIdentity, toastId);
         console.log("New identity created:", identity);
         identityCreatedOrExists = true;
@@ -356,33 +376,52 @@ function CreateDigitalId({ service }) {
         console.log("Registering identity in Blockchain...");
         toast.update(toastId, { render: "Registering identity on blockchain..." });
 
-        const { addIdentityInitResponse, error: addIdentityInitError } = await DfnsService.initiateAddIdentity(
-          walletAddress,
-          identity,
-          user.walletId,
-          dfnsToken
-        );
-
-        if (addIdentityInitError) {
-          const abortType = handleUserAbort(addIdentityInitError, toastId, "Identity registration");
+        // --- DFNS broadcast: must succeed before we wait for indexer ---
+        let addIdentityInitResponse;
+        try {
+          const initResult = await DfnsService.initiateAddIdentity(walletAddress, identity, user.walletId, dfnsToken);
+          if (initResult?.error) throw new Error(initResult.error);
+          addIdentityInitResponse = initResult.addIdentityInitResponse;
+        } catch (err) {
+          const abortType = handleUserAbort(err, toastId, "Identity registration");
           if (abortType) throw new Error(abortType);
-          throw new Error(addIdentityInitError);
+
+          const msg = err?.reason || err?.message || "Identity registration failed";
+          toast.update(toastId, {
+            render: msg,
+            type: "error",
+            isLoading: false,
+            autoClose: 6000,
+          });
+          throw err; // STOP. No polling, no retries.
         }
 
-        const { error: addIdentityCompleteError } = await DfnsService.completeAddIdentity(
-          user.walletId,
-          dfnsToken,
-          addIdentityInitResponse.challenge,
-          addIdentityInitResponse.requestBody
-        );
-
-        if (addIdentityCompleteError) {
-          const abortType = handleUserAbort(addIdentityCompleteError, toastId, "Identity registration");
+        let completeResponse;
+        try {
+          const completeResult = await DfnsService.completeAddIdentity(
+            user.walletId,
+            dfnsToken,
+            addIdentityInitResponse.challenge,
+            addIdentityInitResponse.requestBody
+          );
+          if (completeResult?.error) throw new Error(completeResult.error);
+          completeResponse = completeResult.addIdentityCompleteResponse;
+        } catch (err) {
+          const abortType = handleUserAbort(err, toastId, "Identity registration");
           if (abortType) throw new Error(abortType);
-          throw new Error(addIdentityCompleteError);
+
+          const msg = err?.reason || err?.message || "Identity registration failed";
+          toast.update(toastId, {
+            render: msg,
+            type: "error",
+            isLoading: false,
+            autoClose: 6000,
+          });
+          throw err; // STOP. No polling, no retries.
         }
 
-        // Wait for the registry to reflect the registration on-chain
+        // --- Broadcast succeeded. NOW it's safe to wait for the indexer. ---
+        console.log("Broadcast successful, waiting for on-chain confirmation:", completeResponse);
         await waitForRegistrationOnChain(walletAddress, toastId);
 
         console.log("Identity registered in Blockchain successfully");

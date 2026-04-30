@@ -1,9 +1,5 @@
-import { awaitTimeout } from "./index"; // adjust path to your existing awaitTimeout
+import { awaitTimeout } from "./index";
 
-/**
- * Total worst-case wait: ~75s (12 attempts with backoff 1.5s → 8s)
- * Fast networks resolve on attempt 1-2 (~3s).
- */
 const DEFAULT_CONFIG = {
   maxAttempts: 12,
   initialDelayMs: 1500,
@@ -11,20 +7,6 @@ const DEFAULT_CONFIG = {
   backoffMultiplier: 1.5,
 };
 
-/**
- * Generic poller — repeatedly invokes `checkFn` until it returns a truthy value.
- *
- * @param {Function} checkFn   async () => any. Truthy result = success, returned to caller.
- * @param {Object}   options
- * @param {string}   options.resourceName  Human-readable name for error messages (e.g. "Claim Topic 3")
- * @param {number}   [options.maxAttempts]
- * @param {number}   [options.initialDelayMs]
- * @param {number}   [options.maxDelayMs]
- * @param {number}   [options.backoffMultiplier]
- * @param {Function} [options.onAttempt]   (attempt, maxAttempts) => void — for UI updates
- * @returns {Promise<any>} the truthy value returned by checkFn
- * @throws if maxAttempts exhausted without success
- */
 export async function waitForIndexer(checkFn, options = {}) {
   const {
     resourceName = "resource",
@@ -33,27 +15,42 @@ export async function waitForIndexer(checkFn, options = {}) {
     maxDelayMs = DEFAULT_CONFIG.maxDelayMs,
     backoffMultiplier = DEFAULT_CONFIG.backoffMultiplier,
     onAttempt,
+    maxConsecutiveErrors = 4,
   } = options;
 
   let delay = initialDelayMs;
+  let consecutiveErrors = 0;
+  let lastError = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    if (onAttempt) {
-      try {
-        onAttempt(attempt, maxAttempts);
-      } catch (e) {
-        /* ignore UI callback errors */
+    let checkSucceeded = false;
+    let result;
+
+    try {
+      result = await checkFn();
+      checkSucceeded = true;
+      consecutiveErrors = 0;
+    } catch (err) {
+      consecutiveErrors++;
+      lastError = err;
+      console.warn(`[indexerWait] ${resourceName} attempt ${attempt}/${maxAttempts} threw:`, err?.message || err);
+
+      if (consecutiveErrors >= maxConsecutiveErrors) {
+        throw new Error(`Unable to verify ${resourceName} — indexer check failed repeatedly. ` + `Last error: ${lastError?.message || lastError}`);
       }
     }
 
-    try {
-      const result = await checkFn();
-      if (result) {
-        console.log(`[indexerWait] ${resourceName} indexed on attempt ${attempt}`);
-        return result;
+    if (checkSucceeded && onAttempt) {
+      try {
+        onAttempt(attempt, maxAttempts);
+      } catch (e) {
+        /* ignore */
       }
-    } catch (err) {
-      console.warn(`[indexerWait] ${resourceName} attempt ${attempt}/${maxAttempts} threw:`, err?.message || err);
+    }
+
+    if (checkSucceeded && result) {
+      console.log(`[indexerWait] ${resourceName} indexed on attempt ${attempt}`);
+      return result;
     }
 
     if (attempt < maxAttempts) {
@@ -62,16 +59,9 @@ export async function waitForIndexer(checkFn, options = {}) {
     }
   }
 
-  throw new Error(
-    `${resourceName} was not indexed after ${maxAttempts} attempts. ` +
-      `The on-chain transaction likely succeeded — please refresh the page in a moment.`
-  );
+  throw new Error(`${resourceName} not yet indexed after ${maxAttempts} attempts. Please refresh in a moment.`);
 }
 
-/**
- * Retry wrapper for off-chain DB writes (Parse/Back4App updateXxx calls).
- * Use when the row exists but the write itself might transiently fail.
- */
 export async function retryDbWrite(writeFn, options = {}) {
   const { retries = 3, baseDelayMs = 1000, operationName = "DB write" } = options;
   let lastErr;
@@ -87,16 +77,6 @@ export async function retryDbWrite(writeFn, options = {}) {
   throw lastErr;
 }
 
-/**
- * Convenience: wait for a Parse/Back4App row to appear, then update it.
- * This is the canonical "create on chain → wait for indexer → patch metadata" pattern.
- *
- * @param {Object} args
- * @param {Function} args.fetchFn      async () => row | null/undefined
- * @param {Function} args.updateFn     async (row?) => void  — called once row exists
- * @param {string}   args.resourceName For logging/errors
- * @param {Object}   [args.waitOptions]
- */
 export async function waitAndUpdate({ fetchFn, updateFn, resourceName, waitOptions = {} }) {
   const row = await waitForIndexer(fetchFn, { resourceName, ...waitOptions });
   return retryDbWrite(() => updateFn(row), { operationName: `Update ${resourceName}` });
