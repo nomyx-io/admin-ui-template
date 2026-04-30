@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { WalletPreference } from "../utils/Constants";
+import { waitForIndexer } from "../utils/indexerWait";
 
 const EditClaims = ({ service }) => {
   const navigate = useNavigate();
@@ -143,15 +144,18 @@ const EditClaims = ({ service }) => {
                   );
                   if (completeError) throw new Error(completeError);
 
-                  let claimResponse = {
-                    events: [
-                      {
-                        transactionHash: completeResponse?.transactionHash,
-                      },
-                    ],
-                  };
-                  await delay(4000);
-                  //navigate(/identities/${JSON.stringify({ data: claimResponse })}/edit/summary);
+                  // poll until claims actually appear on the identity
+                  await waitForIndexer(
+                    async () => {
+                      const updated = await service.getDigitalIdentity(identityId);
+                      const updatedTopics = (updated?.claims || []).map((c) => c.topic);
+                      // Success when every newly-added claim is present
+                      const allPresent = claimsToAdd.every((c) => updatedTopics.includes(c));
+                      return allPresent ? updated : null;
+                    },
+                    { resourceName: `Claims on identity ${identityId}` }
+                  );
+
                   navigate("/identities", { state: { refresh: true } });
                 } catch (error) {
                   console.error("Error in set claims operation:", error);
