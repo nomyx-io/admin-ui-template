@@ -252,32 +252,41 @@ const ObjectList = ({
                       </td>
                     );
                 })}
-                {actions.map((action) => {
-                  return (
-                    <Tooltip key={record.id + "-action-" + action.name} title={action.tooltip || action.label}>
-                      <button
-                        onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
-                        aria-label={action.tooltip || action.label}
-                        style={{
-                          marginRight: "1rem",
-                          color: "var(--link-color)",
-                          transition: "0.5s all",
-                          lineHeight: "0.2",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: "0.25rem",
-                          fontSize: "1.25rem",
-                        }}
-                      >
-                        {action.icon ? action.icon : action.label}
-                      </button>
-                    </Tooltip>
-                  );
-                })}
+                {actions && actions.length > 0 && (
+                  <td key={"actions" + record.id}>
+                    {actions.map((action) => {
+                      return (
+                        <Tooltip
+                          key={record.id + "-action-" + action.name}
+                          title={action.tooltip || action.label}
+                          placement="top"
+                          mouseEnterDelay={0.2}
+                        >
+                          <button
+                            onClick={(event) => handleAction(event, action.name, action.confirmation, record)}
+                            aria-label={action.tooltip || action.label}
+                            style={{
+                              marginRight: "1rem",
+                              color: "var(--link-color)",
+                              transition: "color 0.2s",
+                              lineHeight: 1,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "0.25rem",
+                              fontSize: "18px",
+                            }}
+                          >
+                            {action.icon ? action.icon : action.label}
+                          </button>
+                        </Tooltip>
+                      );
+                    })}
+                  </td>
+                )}
               </tr>
             );
           })}
