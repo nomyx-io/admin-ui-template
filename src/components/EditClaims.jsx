@@ -236,6 +236,11 @@ const EditClaims = ({ service }) => {
 
   // Save the selected compliance rules
   const saveClaims = async () => {
+    if (!secondaryWallets || secondaryWallets.length === 0) {
+      toast.error("At least one secondary wallet is required");
+      return;
+    }
+
     const currentClaims = identity.claims || [];
     const selectedClaimTopics = targetKeys;
     // Claims that are selected but were not already part of the current claims
@@ -535,7 +540,9 @@ const EditClaims = ({ service }) => {
       <div className="mt-6 mb-6 w-[100%] max-[600px]:w-full border p-6 rounded-lg">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <p className="text-lg font-semibold">Secondary Wallets (Optional)</p>
+            <p className="text-lg font-semibold">
+              Secondary Wallets <span className="text-red-500">*</span>
+            </p>
             <p className="text-sm text-gray-500">
               {userEmail ? "Manage additional wallets for this identity" : "Add wallets locally. They will be saved after identity creation."}
             </p>
@@ -543,7 +550,7 @@ const EditClaims = ({ service }) => {
           <div className="flex gap-2">
             {userEmail && secondaryWallets.length === 0 && !loadingWallets && (
               <Button type="default" icon={<ReloadOutlined />} loading={refreshingWallet} onClick={handleRefreshWallet} disabled={isProcessing}>
-                Refresh from API
+                Fetch Secondary Wallet
               </Button>
             )}
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAddWallet} className="bg-[#9952b3]" disabled={isProcessing}>
@@ -559,7 +566,7 @@ const EditClaims = ({ service }) => {
             <p className="text-gray-500 mb-2">No secondary wallets found</p>
             <p className="text-sm text-gray-400">
               {userEmail
-                ? "Click 'Refresh from API' to fetch from the system or 'Add Wallet' to create manually"
+                ? "Click 'Fetch Secondary Wallet' to fetch from the system or 'Add Wallet' to create manually"
                 : "Click 'Add Wallet' to add secondary wallets for this identity"}
             </p>
           </div>
