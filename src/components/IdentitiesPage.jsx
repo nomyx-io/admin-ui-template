@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 
 import InvestmentRequestModal from "./InvestmentRequestModal"; // Import the new modal
 import ObjectList from "./ObjectList";
+import PendingIdentitiesObjectList from "./PendingIdentitiesObjectList";
 import { RoleContext } from "../context/RoleContext";
 import DfnsService from "../services/DfnsService";
 import { NomyxAction } from "../utils/Constants";
@@ -22,6 +23,7 @@ const IdentitiesPage = ({ service }) => {
   const [activeTab, setActiveTab] = useState("Identities");
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pendingFilter, setPendingFilter] = useState("all");
   const [pagination, setPagination] = useState({
     identities: { page: 1, limit: 10, totalCount: 0, hasMore: false },
     claims: { page: 1, limit: 10, totalCount: 0, hasMore: false },
@@ -89,7 +91,7 @@ const IdentitiesPage = ({ service }) => {
   }, [fetchTokenProjects]);
 
   const fetchData = useCallback(
-    async (tab, page = 1, search = "") => {
+    async (tab, page = 1, search = "", filter = "all") => {
       const loadingKey = tab === "Pending" ? "pending" : tab === "Claims" ? "claims" : "identities";
       const paginationType = tab === "Pending" ? "pending" : tab === "Claims" ? "claims" : "identities";
 
@@ -101,12 +103,13 @@ const IdentitiesPage = ({ service }) => {
         let paginationData = null;
 
         if (tab === "Identities" || tab === "Claims") {
-          // Call paginated cloud function for active identities
+          // Call paginated cloud function for pending identities with filter
           const result = await Parse.Cloud.run("getActiveIdentities", {
             page,
             limit: pagination[paginationType].limit,
             withoutClaims: tab === "Claims", // Get only identities without claims for Claims tab
             searchTerm: search,
+            filter: filter,
           });
 
           if (result && result.data) {
@@ -168,6 +171,7 @@ const IdentitiesPage = ({ service }) => {
             page,
             limit: pagination.pending.limit,
             searchTerm: search,
+            filter: filter,
           });
 
           if (result && result.data) {
@@ -253,8 +257,14 @@ const IdentitiesPage = ({ service }) => {
       },
     }));
 
-    setSearchTerm(""); // Clear search when switching tabs
-    fetchData(activeTab, 1, "");
+    if (activeTab !== "Pending") {
+      setSearchTerm(""); // Clear search when switching to non-pending tabs
+      fetchData(activeTab, 1, "");
+    } else {
+      // For pending tab, load "All Pending Users" by default
+      setPendingFilter("all");
+      fetchData(activeTab, 1, "", "all");
+    }
   }, [activeTab, refreshTrigger]);
 
   const handleTabChange = (key) => {
@@ -272,7 +282,7 @@ const IdentitiesPage = ({ service }) => {
       },
     }));
 
-    fetchData(activeTab, newPage, searchTerm);
+    fetchData(activeTab, newPage, searchTerm, pendingFilter);
   };
 
   const handleSearch = (newSearchTerm) => {
@@ -289,6 +299,20 @@ const IdentitiesPage = ({ service }) => {
 
     setSearchTerm(newSearchTerm);
     fetchData(activeTab, 1, newSearchTerm);
+  };
+
+  // New handler for pending identities filter change
+  const handlePendingFilterChange = (searchTerm, filter, page = 1) => {
+    setPagination((prev) => ({
+      ...prev,
+      pending: {
+        ...prev.pending,
+        page: page,
+      },
+    }));
+
+    setPendingFilter(filter);
+    fetchData("Pending", page, searchTerm, filter);
   };
 
   const handleRemoveUser = async (record) => {
@@ -487,7 +511,7 @@ const IdentitiesPage = ({ service }) => {
   const pendingActions = [
     { label: "Approve", name: NomyxAction.CreatePendingIdentity },
     { label: "View", name: NomyxAction.ViewPendingIdentity },
-    { label: "Send Verification", name: NomyxAction.SendVerificationEmail, icon: "mail" },
+    { label: "Send Verification", name: NomyxAction.SendVerificationEmail },
     {
       label: "Deny",
       name: NomyxAction.RemoveUser,
@@ -637,13 +661,12 @@ const IdentitiesPage = ({ service }) => {
           />
         </TabPane>
         <TabPane tab="Pending" key="Pending">
-          <ObjectList
+          <PendingIdentitiesObjectList
             title="Pending"
             description="Identities that have yet to be approved or denied"
             columns={getCurrentColumns()}
             actions={getCurrentActions()}
             globalActions={globalActions}
-            search={search}
             data={getCurrentData()}
             pageSize={10}
             onAction={handleAction}
@@ -651,11 +674,9 @@ const IdentitiesPage = ({ service }) => {
             loading={getCurrentLoading()}
             hasMore={getCurrentPagination().hasMore}
             totalCount={getCurrentPagination().totalCount}
-            useServerPagination={true}
             currentPage={getCurrentPagination().page}
             onPageChange={handlePageChange}
-            searchTerm={searchTerm}
-            onSearch={handleSearch}
+            onFilterChange={handlePendingFilterChange}
           />
         </TabPane>
         <TabPane tab="Add Rules" key="Claims">
