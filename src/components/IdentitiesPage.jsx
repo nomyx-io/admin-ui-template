@@ -193,21 +193,13 @@ const IdentitiesPage = ({ service }) => {
             fetchedIdentities = result.data.map((user) => {
               const firstName = user.firstName || "";
               const lastName = user.lastName || "";
+
+              // Use server-resolved template name; no more local template-ID lookup
+              const identityType = user.templateName || "";
+
               const personaData = user.personaVerificationData ? JSON.parse(user.personaVerificationData) : {};
-
-              const templateId =
-                personaData?.data?.attributes?.payload?.data?.relationships?.inquiry_template?.data?.id ||
-                personaData?.data?.attributes?.payload?.data?.relationships?.["inquiry-template"]?.data?.id ||
-                "";
-              const identityType =
-                templateId === process.env.REACT_APP_PERSONA_KYC_TEMPLATEID
-                  ? "KYC"
-                  : templateId === process.env.REACT_APP_PERSONA_KYB_TEMPLATEID
-                    ? "KYB"
-                    : "";
-
               const name = personaData?.data?.attributes?.name || "";
-              const status = name.split(".")[1]?.toUpperCase() || "";
+              const status = name.split(".")[1]?.toUpperCase() || (user.kycId ? "KYC Complete" : "") || "";
 
               return {
                 id: user.objectId,
@@ -217,18 +209,20 @@ const IdentitiesPage = ({ service }) => {
                 kyc_id: user.personaReferenceId || "",
                 pepMatched: user.pepMatched || false,
                 watchlistMatched: user.watchlistMatched || false,
-                type: identityType || "",
-                status: status || "",
+                type: identityType,
+                status,
                 personaVerified: user.personaVerified,
                 attributes: {
                   firstName,
                   lastName,
+                  email: user.email,
                   username: user.username,
                   walletAddress: user.walletAddress,
                   personaReferenceId: user.personaReferenceId,
                   personaVerificationData: user.personaVerificationData,
                   pepMatched: user.pepMatched,
                   watchlistMatched: user.watchlistMatched,
+                  kycId: user.kycId,
                 },
               };
             });
