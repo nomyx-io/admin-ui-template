@@ -272,7 +272,7 @@ const PendingIdentitiesObjectList = ({
                               padding: "0.25rem",
                               display: "inline-flex",
                               alignItems: "center",
-                              fontSize: "14px",
+                              fontSize: "16px",
                             }}
                             aria-label={action.label}
                           >
