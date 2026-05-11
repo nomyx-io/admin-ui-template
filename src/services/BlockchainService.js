@@ -8,6 +8,7 @@ import * as IdentityRegistry from "../abi/IIdentityRegistry.json";
 import * as MinterFacet from "../abi/IMinterFacet.json";
 import * as TrustedIssuersRegistry from "../abi/ITrustedIssuersRegistry.json";
 import ParseClient from "../services/ParseClient"; // Import the singleton instance
+import { waitFor } from "../utils";
 import { NomyxEvent } from "../utils/Constants";
 
 class BlockchainService {
@@ -170,30 +171,35 @@ class BlockchainService {
   async addClaimTopic(claimTopic) {
     const contractWithSigner = this.claimTopicRegistryService.connect(this.signer);
     const tx = await contractWithSigner.addClaimTopic(claimTopic);
-    return await tx.wait();
+    const receipt = await tx.wait();
+    if (receipt.status === 0) {
+      throw new Error(`addClaimTopic transaction failed (txHash: ${receipt.transactionHash})`);
+    }
+    return receipt.transactionHash;
   }
 
-  async updateClaimTopic(claimTopic) {
-    const maxRetries = 3,
-      delay = 2000;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // Check if the record exists
-        const existingRecord = await ParseClient.getRecords("ClaimTopic", [], [], ["topic"], 1, 0, "topic", "desc");
-        if (existingRecord?.length > 0) {
-          // Attempt to update the record
-          await ParseClient.updateExistingRecord("ClaimTopic", ["topic"], [claimTopic.topic], claimTopic);
+  async updateClaimTopic(txhash, claimTopic) {
+    const { topic, displayName } = claimTopic;
+    const topicKey = String(topic);
 
-          console.log("Record updated successfully!");
-          return; // Exit after successful update
-        }
-      } catch (error) {
-        console.error(`Attempt ${attempt} failed: ${error.message}`);
-      }
-      // Wait for 1 second before retrying (if not the last attempt)
-      if (attempt < maxRetries) await new Promise((res) => setTimeout(res, delay));
-    }
-    console.error("Max retry attempts reached. Failed to update the record.");
+    await waitFor(
+      async () => {
+        const rows = await ParseClient.getRecords("ClaimTopic", ["transactionHash"], [txhash], [], 1, 0, "createdAt", "desc");
+        return rows?.length ? rows[0] : null;
+      },
+      { timeoutMs: 30000, intervalMs: 1000, maxIntervalMs: 4000, label: `ClaimTopicAdded event for topic ${topicKey}` }
+    );
+
+    await ParseClient.updateExistingRecord("ClaimTopic", ["transactionHash"], [txhash], { topic: topicKey, displayName });
+
+    return await waitFor(
+      async () => {
+        const rows = await ParseClient.getRecords("ClaimTopic", ["topic"], [topicKey], [], 1);
+        const row = rows?.[0];
+        return row?.attributes?.displayName === displayName ? row : null;
+      },
+      { timeoutMs: 10000, intervalMs: 500, maxIntervalMs: 2000, label: `ClaimTopic.displayName for topic ${topicKey}` }
+    );
   }
 
   async removeClaimTopic(claimTopic) {
