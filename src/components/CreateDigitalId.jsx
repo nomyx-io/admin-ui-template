@@ -156,10 +156,10 @@ function CreateDigitalId({ service }) {
           }
 
           setIsProcessing(true);
-          const identityAddress = await UserService.getIdentityByEmail(userEmail);
+          const identityResult = await UserService.getIdentityByEmail(userEmail);
 
           const { initiateResponse, error: initError } = await DfnsService.initiateUnlinkWallet(
-            identityAddress,
+            identityResult?.identityAddress,
             wallet.walletAddress,
             user.walletId,
             dfnsToken
@@ -435,7 +435,8 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
+          const existingResult = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
+          identity = existingResult?.identityAddress;
           console.log("Existing identity check:", identity);
 
           if (identity) {
@@ -528,10 +529,10 @@ function CreateDigitalId({ service }) {
           identityRegisteredOrExists = true;
         }
         await awaitTimeout(5000);
-        identity = await retryWithBackoff(
+        const createdResult = await retryWithBackoff(
           async () => {
             const result = await UserService.getIdentityByEmail(userEmail);
-            if (!result?.address) {
+            if (!result?.identityAddress) {
               throw new Error("Identity not yet propagated"); // force retry
             }
             return result;
@@ -539,7 +540,8 @@ function CreateDigitalId({ service }) {
           8,
           "Get created identity"
         );
-        console.log("New identity created:", identity.address);
+        identity = createdResult?.identityAddress;
+        console.log("New identity created:", identity);
         identityCreatedOrExists = true;
 
         saveOperationState(walletAddr, {
@@ -752,7 +754,8 @@ function CreateDigitalId({ service }) {
       // Step 1: Check if identity already exists
       if (!identity || identity === "0x0000000000000000000000000000000000000000") {
         try {
-          identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
+          const existingResult = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
+          identity = existingResult?.identityAddress;
           console.log("Existing identity check:", identity);
 
           if (identity) {
@@ -780,7 +783,8 @@ function CreateDigitalId({ service }) {
           await service.createIdentity(walletAddress);
           await awaitTimeout(2000);
 
-          identity = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
+          const createdResult = await retryWithBackoff(async () => await UserService.getIdentityByEmail(userEmail), 8, "Get existing identity");
+          identity = createdResult?.identityAddress;
 
           console.log("New identity created:", identity);
           identityCreatedOrExists = true;

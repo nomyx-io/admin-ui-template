@@ -35,7 +35,7 @@ class UserService {
   getIdentityByEmail = async (email: string) => {
     try {
       const response = await Parse.Cloud.run("getIdentityAddressByEmail", { email });
-      return response?.identityAddress || null;
+      return response || null;
     } catch (error: any) {
       console.error(`Failed to get identity by email: ${error.message}`);
       return null;
