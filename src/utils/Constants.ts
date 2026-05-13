@@ -40,9 +40,4 @@ enum WalletPreference {
   PRIVATE,
 }
 
-enum LoginPreference {
-  USERNAME_PASSWORD,
-  WALLET,
-}
-
-export { NomyxEvent, NomyxAction, WalletPreference, LoginPreference };
+export { NomyxEvent, NomyxAction, WalletPreference };
