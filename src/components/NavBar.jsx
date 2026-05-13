@@ -1,32 +1,21 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
-import { useAccount, useDisconnect } from "wagmi";
 
 import NomyxLogo from "../assets/nomyx_logo_black.svg";
 import { RoleContext } from "../context/RoleContext";
 import { WalletPreference } from "../utils/Constants";
 import "@rainbow-me/rainbowkit/styles.css";
 
-const NavBar = ({ onConnect, onDisconnect, onLogout, role }) => {
+const NavBar = ({ onLogout, role }) => {
   const { walletPreference } = useContext(RoleContext);
-  const { disconnect } = useDisconnect();
 
-  // Handle logout based on wallet preference
   const handleLogout = () => {
     if (walletPreference === WalletPreference.MANAGED) {
-      // Logout for wallet-based login
       onLogout();
     }
   };
-
-  useAccount({
-    onDisconnect: function () {
-      disconnect();
-      onDisconnect();
-    },
-  });
 
   return (
     <nav className="bg-white text-black p-6">
