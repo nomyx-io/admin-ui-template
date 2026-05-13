@@ -33,7 +33,6 @@ import ViewClaimTopic from "./components/ViewClaimTopic";
 import { RoleContext } from "./context/RoleContext";
 import BlockchainService from "./services/BlockchainService.js";
 import parseInitialize from "./services/parseInitialize";
-import { generateRandomString } from "./utils";
 import AutoLogout from "./utils/AutoLogout";
 import { WalletPreference } from "./utils/Constants.js";
 
@@ -221,7 +220,6 @@ function App() {
   const [role, setRole] = useState<any>([]);
   const [walletPreference, setWalletPreference] = useState<WalletPreference | null>(null);
   const [dfnsToken, setDfnsToken] = useState<string | null>(null);
-  const [forceLogout, setForceLogout] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true); // New state for initialization
   //let provider: ethers.providers.Provider | null = null;
@@ -261,60 +259,6 @@ function App() {
     setBlockchainService(_blockchainService);
   };
 
-  const onConnect = async (address: any, connector: any) => {
-    if (isConnected) {
-      return;
-    }
-
-    const provider = new ethers.providers.Web3Provider((window as any).ethereum);
-    const RandomString = generateRandomString(10);
-    const message = `Sign this message to validate that you are the owner of the account. Random string: ${RandomString}`;
-    const signer = provider.getSigner();
-
-    let signature;
-    try {
-      signature = await signer.signMessage(message);
-    } catch (error: any) {
-      const message = error.reason ? error.reason : error.message;
-      toast.error(message);
-      setForceLogout(true);
-      return;
-    }
-
-    const { token, roles, walletPreference, dfnsToken }: any = await getToken({
-      message: message,
-      signature: signature,
-    });
-
-    if (roles.length > 0) {
-      setRole([...roles]);
-      setUser(user);
-      setWalletPreference(walletPreference);
-      setDfnsToken(dfnsToken);
-      localStorage.setItem("sessionToken", token);
-    } else {
-      if (signature) {
-        toast.error("Sorry you are not authorized!");
-        setForceLogout(true);
-      }
-    }
-
-    const network = await provider.getNetwork();
-    const chainId = network.chainId;
-    const configChainId = Number(process.env.REACT_APP_HARDHAT_CHAIN_ID) || 0;
-
-    if (!configChainId || configChainId !== chainId) {
-      setIsConnected(false);
-      return;
-    }
-
-    setIsConnected(true);
-
-    initializeBlockchainService(provider);
-    // Initialize Parse
-    parseInitialize();
-  };
-
   // Define the onLogout function for email/password login
   const onLogoutEmailPassword = async () => {
     try {
@@ -342,7 +286,6 @@ function App() {
     setWalletPreference(null);
     setDfnsToken(null);
     setUser(null);
-    setForceLogout(false);
     setIsConnected(false);
     localStorage.removeItem("sessionToken");
     localStorage.removeItem("tokenExpiration");
@@ -378,7 +321,6 @@ function App() {
       parseInitialize();
     } else {
       toast.error("Incorrect username / password");
-      setForceLogout(true);
     }
   };
 
@@ -435,7 +377,6 @@ function App() {
         // Token is invalid or roles are empty
         localStorage.removeItem("sessionToken");
         localStorage.removeItem("tokenExpiration");
-        setForceLogout(true);
       }
     }
     setInitializing(false);
@@ -446,17 +387,6 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // // Handle forced logout
-  // useEffect(() => {
-  //   if (forceLogout) {
-  //     // Clear state and localStorage
-  //     setRole([]);
-  //     setIsConnected(false);
-  //     localStorage.removeItem("sessionToken");
-  //     setForceLogout(false);
-  //   }
-  // }, [forceLogout]);
-
   // Handle loading state when roles change
   useEffect(() => {
     if (role.length > 0) {
@@ -466,18 +396,6 @@ function App() {
       }, 1000);
     }
   }, [role]);
-
-  const onDisconnect = () => {
-    setRole([]);
-    setDfnsToken(null);
-    setUser(null);
-    setWalletPreference(null);
-    setForceLogout(false);
-    setIsConnected(false);
-    localStorage.removeItem("sessionToken");
-    localStorage.removeItem("tokenExpiration");
-    setBlockchainService(null);
-  };
 
   useEffect(() => {
     if (provider && isConnected) {
@@ -509,7 +427,7 @@ function App() {
             {/* Navigation Bar (Only visible when logged in) */}
             {role.length > 0 && (
               <div className={`topnav p-0`}>
-                <NavBar onConnect={onConnect} onDisconnect={onDisconnect} onLogout={onLogoutEmailPassword} role={role} />
+                <NavBar onLogout={onLogoutEmailPassword} role={role} />
               </div>
             )}
 
@@ -533,18 +451,7 @@ function App() {
                       </Protected>
                     }
                   />
-                  <Route
-                    path="/login"
-                    element={
-                      <Login
-                        forceLogout={forceLogout}
-                        onConnect={onConnect}
-                        onDisconnect={onDisconnect}
-                        onLogin={onLogin}
-                        service={blockchainService}
-                      />
-                    }
-                  />
+                  <Route path="/login" element={<Login onLogin={onLogin} />} />
                   <Route path="/create-password/:token" element={<CreatePassword service={blockchainService} />} />
 
                   <Route
