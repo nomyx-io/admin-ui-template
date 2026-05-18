@@ -124,7 +124,7 @@ const { connectors } = getDefaultWallets({
 });
 
 const wagmiConfig = createConfig({
-  autoConnect: true,
+  autoConnect: false,
   connectors,
   publicClient,
 });
@@ -277,12 +277,9 @@ function App() {
 
     if (typeof window !== "undefined" && (window as any).ethereum) {
       try {
-        console.log("🟢 Requesting wallet connection...");
-        await (window as any).ethereum.request({ method: "eth_requestAccounts" });
-        console.log("🟢 Wallet connected! Using Web3 provider...");
         newProvider = new ethers.providers.Web3Provider((window as any).ethereum);
       } catch (error) {
-        console.error("❌ Wallet connection error:", error);
+        console.error("❌ Wallet provider error:", error);
       }
     }
 
