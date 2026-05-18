@@ -44,6 +44,28 @@ const writeFallback = (reason) => {
     return;
   }
 
+  // Additive: if value is a local absolute path (and not an http(s) URL), read it from disk.
+  // The HTTP/Drive path below stays untouched for production.
+  const isHttp = /^https?:\/\//i.test(raw);
+  if (!isHttp && path.isAbsolute(raw)) {
+    console.log(`[fetch-tenant] Reading local file ${raw}`);
+    try {
+      const text = fs.readFileSync(raw, "utf8");
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        writeFallback(`Local file was not JSON (first 80 chars: ${text.slice(0, 80)})`);
+        return;
+      }
+      fs.writeFileSync(OUTPUT, JSON.stringify(rewriteAssetUrls(data), null, 2));
+      console.log(`[fetch-tenant] Wrote ${OUTPUT}`);
+    } catch (err) {
+      writeFallback(err.message || String(err));
+    }
+    return;
+  }
+
   const url = toDirectUrl(raw);
   console.log(`[fetch-tenant] Fetching ${url}`);
 
