@@ -28,6 +28,7 @@ import Login from "./components/LoginPage.jsx";
 import MintPage from "./components/MintPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import Protected from "./components/Protected";
+import TenantProvider from "./components/TenantProvider";
 import TrustedIssuersPage from "./components/TrustedIssuersPage.jsx";
 import ViewClaimTopic from "./components/ViewClaimTopic";
 import { RoleContext } from "./context/RoleContext";
@@ -412,223 +413,225 @@ function App() {
   }
 
   return (
-    <WagmiConfig config={wagmiConfig}>
-      {/* <CSPMeta /> */}
-      <RainbowKitProvider chains={chains}>
-        <RoleContext.Provider value={{ role, setRole, walletPreference, setWalletPreference, dfnsToken, setDfnsToken, user, setUser }}>
-          {/* Loading Spinner Overlay */}
-          {loading && (
-            <div className="z-50 h-screen w-screen overflow-hidden absolute top-0 left-0 flex justify-center items-center bg-[#00000040]">
-              <Spin />
-            </div>
-          )}
-          <Router>
-            <AutoLogout />
-            {/* Navigation Bar (Only visible when logged in) */}
-            {role.length > 0 && (
-              <div className={`topnav p-0`}>
-                <NavBar onLogout={onLogoutEmailPassword} role={role} />
+    <TenantProvider>
+      <WagmiConfig config={wagmiConfig}>
+        {/* <CSPMeta /> */}
+        <RainbowKitProvider chains={chains}>
+          <RoleContext.Provider value={{ role, setRole, walletPreference, setWalletPreference, dfnsToken, setDfnsToken, user, setUser }}>
+            {/* Loading Spinner Overlay */}
+            {loading && (
+              <div className="z-50 h-screen w-screen overflow-hidden absolute top-0 left-0 flex justify-center items-center bg-[#00000040]">
+                <Spin />
               </div>
             )}
+            <Router>
+              <AutoLogout />
+              {/* Navigation Bar (Only visible when logged in) */}
+              {role.length > 0 && (
+                <div className={`topnav p-0`}>
+                  <NavBar onLogout={onLogoutEmailPassword} role={role} />
+                </div>
+              )}
 
-            <Layout>
-              <div className={`${role.length === 0 ? "p-0 -ml-4 overflow-hidden" : "content"}`}>
-                <ToastContainer
-                  position="top-right"
-                  className="toast-background"
-                  progressClassName="toast-progress-bar"
-                  autoClose={4000}
-                  closeOnClick
-                  pauseOnHover
-                />
-                {/* Application Routes */}
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      <Protected role={"CentralAuthority"} roles={role}>
-                        <Home />
-                      </Protected>
-                    }
+              <Layout>
+                <div className={`${role.length === 0 ? "p-0 -ml-4 overflow-hidden" : "content"}`}>
+                  <ToastContainer
+                    position="top-right"
+                    className="toast-background"
+                    progressClassName="toast-progress-bar"
+                    autoClose={4000}
+                    closeOnClick
+                    pauseOnHover
                   />
-                  <Route path="/login" element={<Login onLogin={onLogin} />} />
-                  <Route path="/create-password/:token" element={<CreatePassword service={blockchainService} />} />
+                  {/* Application Routes */}
+                  <Routes>
+                    <Route
+                      path="/"
+                      element={
+                        <Protected role={"CentralAuthority"} roles={role}>
+                          <Home />
+                        </Protected>
+                      }
+                    />
+                    <Route path="/login" element={<Login onLogin={onLogin} />} />
+                    <Route path="/create-password/:token" element={<CreatePassword service={blockchainService} />} />
 
-                  <Route
-                    path="/topics"
-                    element={
-                      <Protected role={"CentralAuthority"} roles={role}>
-                        {blockchainService ? (
-                          <ClaimTopicsPage service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/topics/create"
-                    element={
-                      <Protected role={"CentralAuthority"} roles={role}>
-                        {blockchainService ? (
-                          <CreateClaimTopic service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/topics/:topicId"
-                    element={
-                      <Protected role={"CentralAuthority"} roles={role}>
-                        {blockchainService ? (
-                          <ViewClaimTopic service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/issuers"
-                    element={
-                      <Protected role={"CentralAuthority"} roles={role}>
-                        {blockchainService ? (
-                          <TrustedIssuersPage service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/issuers/create"
-                    element={
-                      <Protected role={"CentralAuthority"} roles={role}>
-                        {blockchainService ? (
-                          <CreateTrustedIssuer service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/issuers/:issuerId"
-                    element={
-                      <Protected role={"CentralAuthority"} roles={role}>
-                        {blockchainService ? (
-                          <CreateTrustedIssuer service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/identities"
-                    element={
-                      <Protected role={"TrustedIssuer"} roles={role}>
-                        {blockchainService ? (
-                          <IdentitiesPage service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/identities/create"
-                    element={
-                      <Protected role={"TrustedIssuer"} roles={role}>
-                        {blockchainService ? (
-                          <CreateDigitalId service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/identities/:identityId/:userId?"
-                    element={
-                      <Protected role={"TrustedIssuer"} roles={role}>
-                        {blockchainService ? (
-                          <DigitalIdentityDetailView service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/identities/:identityId/edit"
-                    element={
-                      <Protected role={"TrustedIssuer"} roles={role}>
-                        {blockchainService ? (
-                          <EditClaims service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/identities/:identity/edit/summary"
-                    element={
-                      <Protected role={"TrustedIssuer"} roles={role}>
-                        {blockchainService ? (
-                          <EditClaimsSummaryView service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                  <Route
-                    path="/mint"
-                    element={
-                      <Protected role={"TrustedIssuer"} roles={role}>
-                        {blockchainService ? (
-                          <MintPage service={blockchainService} />
-                        ) : (
-                          <div className="flex justify-center items-center h-full">
-                            <Spin tip="Initializing service..." />
-                          </div>
-                        )}
-                      </Protected>
-                    }
-                  />
-                </Routes>
-              </div>
-            </Layout>
-          </Router>
-        </RoleContext.Provider>
-      </RainbowKitProvider>
-    </WagmiConfig>
+                    <Route
+                      path="/topics"
+                      element={
+                        <Protected role={"CentralAuthority"} roles={role}>
+                          {blockchainService ? (
+                            <ClaimTopicsPage service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/topics/create"
+                      element={
+                        <Protected role={"CentralAuthority"} roles={role}>
+                          {blockchainService ? (
+                            <CreateClaimTopic service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/topics/:topicId"
+                      element={
+                        <Protected role={"CentralAuthority"} roles={role}>
+                          {blockchainService ? (
+                            <ViewClaimTopic service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/issuers"
+                      element={
+                        <Protected role={"CentralAuthority"} roles={role}>
+                          {blockchainService ? (
+                            <TrustedIssuersPage service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/issuers/create"
+                      element={
+                        <Protected role={"CentralAuthority"} roles={role}>
+                          {blockchainService ? (
+                            <CreateTrustedIssuer service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/issuers/:issuerId"
+                      element={
+                        <Protected role={"CentralAuthority"} roles={role}>
+                          {blockchainService ? (
+                            <CreateTrustedIssuer service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/identities"
+                      element={
+                        <Protected role={"TrustedIssuer"} roles={role}>
+                          {blockchainService ? (
+                            <IdentitiesPage service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/identities/create"
+                      element={
+                        <Protected role={"TrustedIssuer"} roles={role}>
+                          {blockchainService ? (
+                            <CreateDigitalId service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/identities/:identityId/:userId?"
+                      element={
+                        <Protected role={"TrustedIssuer"} roles={role}>
+                          {blockchainService ? (
+                            <DigitalIdentityDetailView service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/identities/:identityId/edit"
+                      element={
+                        <Protected role={"TrustedIssuer"} roles={role}>
+                          {blockchainService ? (
+                            <EditClaims service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/identities/:identity/edit/summary"
+                      element={
+                        <Protected role={"TrustedIssuer"} roles={role}>
+                          {blockchainService ? (
+                            <EditClaimsSummaryView service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="/mint"
+                      element={
+                        <Protected role={"TrustedIssuer"} roles={role}>
+                          {blockchainService ? (
+                            <MintPage service={blockchainService} />
+                          ) : (
+                            <div className="flex justify-center items-center h-full">
+                              <Spin tip="Initializing service..." />
+                            </div>
+                          )}
+                        </Protected>
+                      }
+                    />
+                  </Routes>
+                </div>
+              </Layout>
+            </Router>
+          </RoleContext.Provider>
+        </RainbowKitProvider>
+      </WagmiConfig>
+    </TenantProvider>
   );
 }
 

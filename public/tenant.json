@@ -1,0 +1,118 @@
+{
+  "id": "rezyfi",
+  "brand": {
+    "name": "Rezyfi",
+    "productSuffix": "Customer Portal"
+  },
+  "assets": {
+    "logoUrl": "https://lh3.googleusercontent.com/d/1qse8KB3uM3cxazaVIvKo7quk-xosyzw8",
+    "logoDarkUrl": "https://lh3.googleusercontent.com/d/1qse8KB3uM3cxazaVIvKo7quk-xosyzw8",
+    "authBackgroundUrl": "https://lh3.googleusercontent.com/d/1fcDIgUfNV_URcieC4o0wLdL1n9IHi7vq",
+    "faviconUrl": "/favicon.ico"
+  },
+  "theme": {
+    "colors": {
+      "main1": "#1568DB",
+      "main2": "#3F206B",
+      "secondary": "#D27685",
+      "success": "#409C43",
+      "warning": "#DC9B1B",
+      "danger": "#EB5757",
+      "blue": "#3396ff",
+      "violet": "#3F206B",
+      "textLight": "#1F1F1F",
+      "textDark": "#DCDCDC",
+      "dark1Light": "#F1F5F9",
+      "dark1Dark": "#000000",
+      "dark2Light": "#FEFEFE",
+      "dark2Dark": "#0F172A",
+      "gray1Light": "#484848",
+      "gray1Dark": "#BBBBBB",
+      "gray2Light": "#626262",
+      "gray2Dark": "#878787",
+      "gray3Light": "#878787",
+      "gray3Dark": "#626262",
+      "gray4Light": "#BBBBBB",
+      "gray4Dark": "#1e293b"
+    }
+  },
+  "legal": {
+    "termsPdfUrl": "https://drive.google.com/file/d/14vb--SJpt-zG9gSe5p-C5BIZdL-UU5wW/view?usp=drive_link"
+  },
+  "nav": {
+    "/dashboard": "Dashboard",
+    "/my-portfolio": "My Portfolio",
+    "/marketplace": "Marketplace",
+    "/transfer-in-out": "Transfer In/Out",
+    "/home": "Dashboard",
+    "/nft-create": "Mint Tokens",
+    "/projects": "Marketplace"
+  },
+  "wordMappings": {
+    "myPortfolio": {
+      "tabs": {
+        "pools": "Pools",
+        "availableTokens": "Available Tokens",
+        "retiredTokens": "Retired Tokens",
+        "maturedDebt": "Matured Debt",
+        "redemptionHistory": "Redemption History"
+      },
+      "actions": {
+        "retire": "Retire Now",
+        "claim": "Claim Now"
+      }
+    },
+    "marketplace": {
+      "tabs": {
+        "loans": "Loans",
+        "currentListings": "Current Listings",
+        "history": "History",
+        "redeemedCollateral": "Redeemed Collateral Token",
+        "redemptionHistory": "Redemption History"
+      }
+    },
+    "pools": {
+      "actions": {
+        "redeemInvestment": "Redeem Investment",
+        "claimDistribution": "Claim Distribution",
+        "investInPool": "Invest in Pool",
+        "cancelInvestmentRequest": "Cancel Investment Request"
+      }
+    },
+    "dashboard": {
+      "kpis": {
+        "totalAssets": "Total Assets",
+        "totalIssuedValue": "Total Issued Value",
+        "totalLoans": "Total Loans",
+        "totalActiveLoans": "Total Active Loans",
+        "activeTokenizedLoanValue": "Active Value of Tokenized Loans",
+        "qtyRetiredLoans": "Qty. Retired Loans",
+        "retiredLoans": "Retired Loans",
+        "totalFunding": "Total Funding"
+      },
+      "tabs": {
+        "tokenInsights": "Token Insights",
+        "tokenInsightsLoans": "Token Insights (Loans)",
+        "loanInsights": "Loan Insights",
+        "portfolioOverview": "Portfolio Overview"
+      },
+      "charts": {
+        "netTokenIssuedRedeemed": "Net Token Issued & Redeemed",
+        "totalLoansOutstandingRetired": "Total Loans Outstanding & Retired",
+        "loanValues": "Loan Values",
+        "poolStatistics": "Pool Statistics"
+      },
+      "labels": {
+        "totalLoansOutstanding": "Total Loans Outstanding",
+        "totalLoansRetired": "Total Loans Retired",
+        "totalLoansOutstandingUsd": "Total Loans Outstanding ($)",
+        "totalLoansPaidOff": "Total Loans Paid-off ($)",
+        "totalPoolsActive": "Total Pools Active",
+        "totalPoolsRetired": "Total Pools Retired",
+        "totalTokensIssued": "Total Tokens Issued",
+        "totalDeposits": "Total Deposits",
+        "redemptions": "Redemptions"
+      }
+    }
+  }
+}
