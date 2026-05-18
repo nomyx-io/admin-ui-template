@@ -55,6 +55,9 @@
     "yup": "^1.4.0"
   },
   "scripts": {
+    "prestart": "node scripts/fetch-tenant.js",
+    "prebuild": "node scripts/fetch-tenant.js",
+    "fetch-tenant": "node scripts/fetch-tenant.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

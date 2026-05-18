@@ -4,10 +4,14 @@ import { Card, Form, Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 
 import { RoleContext } from "../context/RoleContext";
+import { useTenant } from "../context/TenantContext";
 
 export default function Login({ onLogin }) {
   const navigate = useNavigate();
   const { role } = useContext(RoleContext);
+  const tenant = useTenant();
+  const logoUrl = tenant?.assets?.logoDarkUrl || tenant?.assets?.logoUrl;
+  const backgroundUrl = tenant?.assets?.authBackgroundUrl;
   const previousRole = useRef(role);
 
   useEffect(() => {
@@ -33,7 +37,7 @@ export default function Login({ onLogin }) {
     <div
       className="relative w-full min-h-screen overflow-hidden flex flex-col"
       style={{
-        backgroundImage: "url('/images/rezify_investor_background.svg')",
+        backgroundImage: backgroundUrl ? `url('${backgroundUrl}')` : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -42,9 +46,7 @@ export default function Login({ onLogin }) {
       <div className="flex flex-1 flex-col lg:flex-row">
         {/* Left Side */}
         <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-4 md:px-6 my-10">
-          <div className="w-full max-w-5xl">
-            <img src="/images/rezyfi_logo.svg" alt="Logo" width={830} height={440} priority />
-          </div>
+          <div className="w-full max-w-5xl">{logoUrl && <img src={logoUrl} alt="Logo" width={830} height={440} priority />}</div>
         </div>
 
         <div className="max-[550px]:hidden w-1/2 flex flex-col justify-center items-center p-2">

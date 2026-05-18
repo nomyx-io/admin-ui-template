@@ -3,13 +3,15 @@ import { useContext } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
 
-import NomyxLogo from "../assets/nomyx_logo_black.svg";
 import { RoleContext } from "../context/RoleContext";
+import { useTenant } from "../context/TenantContext";
 import { WalletPreference } from "../utils/Constants";
 import "@rainbow-me/rainbowkit/styles.css";
 
 const NavBar = ({ onLogout, role }) => {
   const { walletPreference } = useContext(RoleContext);
+  const tenant = useTenant();
+  const logoUrl = tenant?.assets?.logoUrl;
 
   const handleLogout = () => {
     if (walletPreference === WalletPreference.MANAGED) {
@@ -22,9 +24,7 @@ const NavBar = ({ onLogout, role }) => {
       <ul className="flex space-x-6">
         {role.includes("CentralAuthority") && (
           <>
-            <li style={{ padding: "20px 20px", minWidth: "100px" }}>
-              <img src={NomyxLogo} alt="Nomyx Logo" className="h-8 w-auto" />
-            </li>
+            <li style={{ padding: "20px 20px", minWidth: "100px" }}>{logoUrl && <img src={logoUrl} alt="Logo" className="h-8 w-auto" />}</li>
             <li>
               <Link to="/" className="hover:underline">
                 Home
