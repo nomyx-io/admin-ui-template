@@ -22,7 +22,7 @@ class BlockchainService {
     this.contractAddress = contractAddress;
     this.provider = provider;
 
-    this.dedicatedProvider = new ethers.providers.JsonRpcProvider(process.env.REACT_APP_RPC_URL);
+    this.dedicatedProvider = new ethers.providers.JsonRpcProvider(process.env.REACT_APP_NETWORK_AVAX_FUJI);
 
     if (provider instanceof ethers.providers.Web3Provider) {
       console.log("🔹 Web3 Wallet Detected, setting signer...");
