@@ -37,101 +37,6 @@ import parseInitialize from "./services/parseInitialize";
 import AutoLogout from "./utils/AutoLogout";
 import { WalletPreference } from "./utils/Constants.js";
 
-const localhost: Chain = {
-  id: 31337,
-  name: "Localhost",
-  network: "localhost",
-  nativeCurrency: {
-    decimals: 18,
-    name: "Ethereum",
-    symbol: "ETH",
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_LOCALHOST || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_LOCALHOST || ""],
-    },
-  },
-  testnet: true,
-};
-
-const baseSep: Chain = {
-  id: 84532,
-  network: "base",
-  name: "Base Sepolia",
-  nativeCurrency: {
-    name: "Base",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_BASE_SEPOLIA || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_BASE_SEPOLIA || ""],
-    },
-  },
-};
-
-const optSep: Chain = {
-  id: 11155420,
-  network: "optimism",
-  name: "Optimism Sepolia",
-  nativeCurrency: {
-    name: "OP Sepolia",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_OPTIMISM_SEPOLIA || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_OPTIMISM_SEPOLIA || ""],
-    },
-  },
-};
-
-const base: Chain = {
-  id: 8453,
-  network: "base",
-  name: "Base",
-  nativeCurrency: {
-    name: "Base",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_BASE || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_BASE || ""],
-    },
-  },
-};
-const optimism: Chain = {
-  id: 10,
-  network: "optimism",
-  name: "Optimism",
-  nativeCurrency: {
-    name: "Optimism",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_OPTIMISM || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_OPTIMISM || ""],
-    },
-  },
-};
-
 const avaxFuji: Chain = {
   id: 43113,
   network: "avalanche",
@@ -151,29 +56,7 @@ const avaxFuji: Chain = {
   },
 };
 
-const avax: Chain = {
-  id: 43114,
-  network: "avalanche",
-  name: "Avalanche Mainnet",
-  nativeCurrency: {
-    name: "Avalanche",
-    symbol: "AVAX",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [process.env.REACT_APP_NETWORK_AVAX || ""],
-    },
-    public: {
-      http: [process.env.REACT_APP_NETWORK_AVAX || ""],
-    },
-  },
-};
-
-const { chains, publicClient } = configureChains(
-  [base, baseSep, localhost, optSep, optimism, avaxFuji, avax], // mainnet, polygon, optimism, arbitrum, zora,
-  [alchemyProvider({ apiKey: "CSgNtTJ6_Clrf1zNjVp2j1ppfLE2-aVX" }), publicProvider()]
-);
+const { chains, publicClient } = configureChains([avaxFuji], [alchemyProvider({ apiKey: "CSgNtTJ6_Clrf1zNjVp2j1ppfLE2-aVX" }), publicProvider()]);
 
 const { connectors } = getDefaultWallets({
   appName: "LL Testing",
@@ -344,7 +227,7 @@ function App() {
     }
 
     if (!newProvider) {
-      const rpcUrl = process.env.REACT_APP_RPC_URL;
+      const rpcUrl = process.env.REACT_APP_NETWORK_AVAX_FUJI;
       if (rpcUrl) {
         console.log("⚠️ No wallet detected. Using RPC provider instead:", rpcUrl);
         newProvider = new ethers.providers.StaticJsonRpcProvider(rpcUrl);
